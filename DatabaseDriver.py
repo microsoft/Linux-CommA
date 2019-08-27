@@ -39,8 +39,7 @@ class DatabaseDriver:
         '''
         check if this commit is already present in Upstream
         '''
-        rows = self.cursor.execute("select * from [Upstream-PatchTracker] where commitId like ?;",str(commit_id)).fetchall()
-        print(rows)
+        rows = self.cursor.execute("select * from [Upstream-PatchTracker] where commitId like ?;",commit_id).fetchall()
         if rows is None or len(rows) == 0:
             return False
         else:
