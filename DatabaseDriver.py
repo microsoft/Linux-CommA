@@ -9,6 +9,9 @@ class DatabaseDriver:
     connection = ''
     cursor = ''
     def __init__(self):
+        '''
+        Initialize database connection
+        '''
         print("Connecting to Database...")
         self.server = 'linuxpatchtracker.database.windows.net'
         self.database = 'linuxpatchtracker'
@@ -18,11 +21,14 @@ class DatabaseDriver:
         self.cursor = self.connection.cursor()
 
     def executeSelect(self):
+        '''
+        View all the data from Upstream-PatchTracker
+        '''
         rows = self.cursor.execute("select * from [Upstream-PatchTracker];").fetchall()
         for r in rows:
             print(r)
     
-    def insertData(self):
+    def insertDataTest(self):
         '''
         Insert data into Upstream-PatchTracker
         '''
@@ -33,5 +39,17 @@ class DatabaseDriver:
         '''
         check if this commit is already present in Upstream
         '''
-        return False
+        rows = self.cursor.execute("select * from [Upstream-PatchTracker] where commitId like ?;",str(commit_id)).fetchall()
+        print(rows)
+        if rows is None or len(rows) == 0:
+            return False
+        else:
+            return True
+    
+    def insertIntoUpstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files):
+        '''
+        dump data into Upstream 
+        '''
+        conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles]) values(?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files)
+        conx.commit()
     
