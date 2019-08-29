@@ -1,5 +1,6 @@
 import re
 import json
+import os
 from DatabaseDriver import DatabaseDriver
 
 print("Welcome to Patch tracker!!")
@@ -68,7 +69,11 @@ def getEachPatch( filename ):
 
     if (commit_id is not None or len(commit_id) != 0) and not db.checkCommitPresent(commit_id):
         db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files)
-    
+
+
+for root, dirs, files in os.walk("../commit-log"):
+    for filename in files:
+        print(filename)   
 getEachPatch('./sample.txt')
 
 # 3. Update Database
