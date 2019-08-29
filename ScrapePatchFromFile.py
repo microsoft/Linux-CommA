@@ -70,11 +70,12 @@ def getEachPatch( filename ):
     if (commit_id is not None or len(commit_id) != 0) and not db.checkCommitPresent(commit_id):
         db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files)
 
-
-for root, dirs, files in os.walk("../commit-log"):
+commitLogPath = "../commit-log"
+for root, dirs, files in os.walk(commitLogPath):
     for filename in files:
-        print(filename)   
-getEachPatch('./sample.txt')
+        print(filename)
+        getEachPatch(commitLogPath+"/"+filename)   
+#getEachPatch('./sample.txt')
 
 # 3. Update Database
 
