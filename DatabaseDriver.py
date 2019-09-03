@@ -49,6 +49,13 @@ class DatabaseDriver:
         '''
         dump data into Upstream 
         '''
-        conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles]) values(?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files)
-        conx.commit()
+        try:
+            conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles]) values(?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files)
+            conx.commit()
+        except pyodbc.Error as Error:
+            print("[ERROR] Pyodbc error")
+            print(Error)
+    
+    def __del__(self):
+        self.connection.close()
     
