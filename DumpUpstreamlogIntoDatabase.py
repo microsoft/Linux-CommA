@@ -5,9 +5,7 @@ from DatabaseDriver import DatabaseDriver
 
 print("Welcome to Patch tracker!!")
 db = DatabaseDriver()
-# 1. Go through whole bunch of Hyper-v files to get patches
 
-# 2. Separate out each commit / patch and check database
 '''
 getEachPatch will scrape each patch from git log
 '''
@@ -27,7 +25,6 @@ def getEachPatch( filename ):
         with open (filename, 'r', encoding="utf8") as f:
             try:    
                 for line in f:
-                
                     words = line.strip().split()
                     if words == None or len(words)==0:
                         continue
@@ -76,8 +73,6 @@ def getEachPatch( filename ):
                 print("[Error] Something gone wrong at line")
                 print(line)
 
-        
-
         if (commit_id is not None or len(commit_id) != 0) and not db.checkCommitPresent(commit_id):
             db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files)
     except IOError:
@@ -89,10 +84,4 @@ for root, dirs, files in os.walk(commitLogPath):
     for filename in files:
         print("----------------------"+filename+"-----------------------------")
         getEachPatch(commitLogPath+"/"+filename)
-#getEachPatch('./sample.txt')
 
-# 3. Update Database
-
-#db.executeSelect()
-# should do sanitization before inserting data into db
-#db.insertDataTest()
