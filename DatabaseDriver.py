@@ -45,12 +45,12 @@ class DatabaseDriver:
         else:
             return True
     
-    def insertIntoUpstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj):
+    def insertIntoUpstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj,diff_fNames):
         '''
         dump data into Upstream 
         '''
         try:
-            conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles],[commitTime]) values(?,?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files,datetime_obj)
+            conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles],[commitTime],[diff_fileNames]) values(?,?,?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files,datetime_obj,diff_fNames)
             conx.commit()
         except pyodbc.Error as Error:
             print("[ERROR] Pyodbc error")

@@ -24,6 +24,9 @@ def getEachPatch( filename ):
     prev_line_date=False
     diff_started=False
     commit_msg_started=False
+    diff_fileNames = []
+    count_added = 0
+    count_present = 0
     try:
         with open (filename, 'r', encoding="utf8") as f:
             try:    
@@ -32,12 +35,14 @@ def getEachPatch( filename ):
                     if words == None or len(words)==0:
                         continue
                     if len(words) == 2 and words[0] == "commit":
-                        print("Commit id: "+commit_id)
+                        # print("Commit id: "+commit_id)
                         if commit_id is not None and len(commit_id) > 0:
                             if db.checkCommitPresent(commit_id):
-                                print("Commit id "+commit_id+" already present")
+                                # print("Commit id "+commit_id+" already present")
+                                count_present += 1
                             else:
-                                db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj)
+                                db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj," ".join(diff_fileNames))
+                                count_added += 1
                             author_name=""
                             author_id=""
                             date=""
@@ -48,7 +53,7 @@ def getEachPatch( filename ):
                             diff_started=False
                             commit_msg_started=False
                         commit_id=words[1]
-                    elif len(words) > 3 and words[0] == "Author:":
+                    elif len(words) >= 3 and words[0] == "Author:":
                         for word in range(1,len(words)-1):
                             author_name += " "+words[word]
                         author_id = words[len(words)-1]
@@ -59,36 +64,41 @@ def getEachPatch( filename ):
                         date = date.strip()
                         datetime_obj = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
                         prev_line_date = True
-                    elif prev_line_date:    #and ':' in line removed as not all subject lines have :
+                    elif prev_line_date:
                         commit_sub=line
                         prev_line_date=False
                         commit_msg_started=True
+                    elif line.startswith('Merge:'):
+                        continue
                     elif commit_msg_started and line.startswith('diff --git'):
+                        fileN = words[2][1:]
+                        diff_fileNames.append(fileN)
                         commit_msg_started = False
                         diff_started=True
                         diff_files += line
                     elif commit_msg_started:
-                        commit_msg += line
+                        if 'Reported-by:' in line and 'Signed-off-by:' in line and 'Reviewed-by:' in line and 'Cc:' in line and 'fixes' in line:
+                            continue
+                        else:
+                            commit_msg += line
                     elif diff_started:
                         diff_files += line
                     else:
                         print("[Warning] No parsing done for the following line..")
                         print(line)
-                        print("\n")
             except:
                 print("[Error] Something gone wrong at line")
                 print(line)
 
         if (commit_id is not None or len(commit_id) != 0) and not db.checkCommitPresent(commit_id):
-            db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj)
+            db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj," ".join(diff_fileNames))
+            count_added += 1
     except IOError:
         print("[Error] Failed to read "+ filename)
     finally:
+        print("Added new commits: "+str(count_added)+"\t Already present:"+str(count_present))
         f.closed
-# commitLogPath = "../commit-log"
+
 getEachPatch(PathToCommitLog+"/log")
-# for root, dirs, files in os.walk(commitLogPath):
-#     for filename in files:
-#         print("----------------------"+filename+"-----------------------------")
-#         getEachPatch(commitLogPath+"/"+filename)
+
 
