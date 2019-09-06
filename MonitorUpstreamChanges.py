@@ -1,10 +1,19 @@
 import git
 import os
-from constants import PathToLinux, NameMaintainers
+from constants import *
 
-repo = git.Repo(PathToLinux)
-repo.remotes.origin.pull()
-
+os.makedirs(os.path.dirname(PathToCommitLog), exist_ok=True)
+if os.path.exists(PathToLinux):
+    print("[Info] Path to Linux Repo exists")
+    repo = git.Repo(PathToLinux)
+    print("[Info] Pulling recent changes")
+    repo.remotes.origin.pull()
+    print("[Info] Git pull complete")
+else:
+    print("[Info] Path to Linux repo does not exists")
+    print("[Info] Cloning linux repo")
+    git.Git(PathToCloneLinux).clone("https://github.com/torvalds/linux.git")
+    print("[Info] Cloning Complete")
 def parseMaintainers():
     found_hyperv_block = False
     found_files = False
@@ -43,15 +52,17 @@ def sanitizeFIleNames(fileNames):
             newList.append(fileName)
     return newList
 
+print("[Info] parsing maintainers files")
 fileList = parseMaintainers()
+print("[Info] Received HyperV file paths")
 fileNames = sanitizeFIleNames(fileList)
-print(fileNames)
+print("[Info] Preprocessed HyperV file paths")
+# print(fileNames)
 i = 0
 currDir = os.getcwd()
 os.chdir(PathToLinux)
-for file in fileNames:
-    i += 1
-    command = "git log -p -- "+file+" >> ../commit-log/"+str(i)
-    print(command)
-    os.system(command)
+# print(' '.join(fileNames))
+command = "git log -p -- "+' '.join(fileNames)+" >> ../commit-log/log"
+os.system(command)
+print("[Info] Created HyperV files git logs at "+PathToCommitLog)
 os.chdir(currDir)

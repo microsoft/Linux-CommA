@@ -1,7 +1,10 @@
 import re
 import json
 import os
+import datetime
 from DatabaseDriver import DatabaseDriver
+from constants import *
+from datetime import datetime
 
 print("Welcome to Patch tracker!!")
 db = DatabaseDriver()
@@ -34,7 +37,7 @@ def getEachPatch( filename ):
                             if db.checkCommitPresent(commit_id):
                                 print("Commit id "+commit_id+" already present")
                             else:
-                                db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files)
+                                db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj)
                             author_name=""
                             author_id=""
                             date=""
@@ -49,9 +52,12 @@ def getEachPatch( filename ):
                         for word in range(1,len(words)-1):
                             author_name += " "+words[word]
                         author_id = words[len(words)-1]
+                        author_name = author_name.strip()
                     elif len(words) == 7 and words[0] == "Date:":
-                        for i in range(1,len(words)):
-                            date += words[i]
+                        for i in range(1,len(words)-1):
+                            date += " "+words[i]
+                        date = date.strip()
+                        datetime_obj = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
                         prev_line_date = True
                     elif prev_line_date:    #and ':' in line removed as not all subject lines have :
                         commit_sub=line
@@ -74,14 +80,15 @@ def getEachPatch( filename ):
                 print(line)
 
         if (commit_id is not None or len(commit_id) != 0) and not db.checkCommitPresent(commit_id):
-            db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files)
+            db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj)
     except IOError:
         print("[Error] Failed to read "+ filename)
     finally:
         f.closed
-commitLogPath = "../commit-log"
-for root, dirs, files in os.walk(commitLogPath):
-    for filename in files:
-        print("----------------------"+filename+"-----------------------------")
-        getEachPatch(commitLogPath+"/"+filename)
+# commitLogPath = "../commit-log"
+getEachPatch(PathToCommitLog+"/log")
+# for root, dirs, files in os.walk(commitLogPath):
+#     for filename in files:
+#         print("----------------------"+filename+"-----------------------------")
+#         getEachPatch(commitLogPath+"/"+filename)
 
