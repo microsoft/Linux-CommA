@@ -53,6 +53,7 @@ def getEachPatch( filename ):
                             prev_line_date=False
                             diff_started=False
                             commit_msg_started=False
+                            diff_fileNames = []
                         commit_id=words[1]
                     elif len(words) >= 3 and words[0] == "Author:":
                         for word in range(1,len(words)-1):
@@ -82,6 +83,9 @@ def getEachPatch( filename ):
                             continue
                         else:
                             commit_msg += line
+                    elif diff_started and line.startswith('diff --git'):
+                        fileN = words[2][1:]
+                        diff_fileNames.append(fileN)
                     elif diff_started:
                         diff_files += line
                     else:
