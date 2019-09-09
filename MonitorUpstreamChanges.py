@@ -1,6 +1,7 @@
 import git
 import os
 from constants import *
+from DumpUpstreamlogIntoDatabase import getEachPatch
 
 os.makedirs(os.path.dirname(PathToCommitLog), exist_ok=True)
 if os.path.exists(PathToLinux):
@@ -66,3 +67,5 @@ command = "git log -p -- "+' '.join(fileNames)+" >> ../commit-log/log"
 os.system(command)
 print("[Info] Created HyperV files git logs at "+PathToCommitLog)
 os.chdir(currDir)
+
+getEachPatch(PathToCommitLog+"/log")

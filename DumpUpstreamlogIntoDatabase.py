@@ -9,10 +9,11 @@ from datetime import datetime
 print("Welcome to Patch tracker!!")
 db = DatabaseDriver()
 
-'''
-getEachPatch will scrape each patch from git log
-'''
+
 def getEachPatch( filename ):
+    '''
+    getEachPatch will scrape each patch from git log
+    '''
     print("Starting patch scraping from files..")
     commit_id = ""
     author_name=""
