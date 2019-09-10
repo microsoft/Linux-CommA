@@ -2,20 +2,14 @@ import re
 import json
 import os
 import datetime
-from DatabaseDriver import DatabaseDriver
-from constants import *
+from DatabaseDriver.UpstreamPatch import UpstreamPatch
 from datetime import datetime
-
-print("Welcome to Patch tracker!!")
-
 
 
 def getEachPatch( filename ):
     '''
     getEachPatch will scrape each patch from git log
     '''
-    print("Starting patch scraping from files..")
-    db = DatabaseDriver()
     commit_id = ""
     author_name=""
     author_id=""
@@ -108,3 +102,7 @@ def getEachPatch( filename ):
     finally:
         print("[Info] Added new commits: "+str(count_added)+"\t Already present:"+str(count_present))
         f.closed
+
+if __name__ == '__main__':
+    print("Starting patch scraping from files..")
+    db = UpstreamPatch()

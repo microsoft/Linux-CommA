@@ -1,7 +1,7 @@
 import pyodbc
 
 
-class DatabaseDriver:
+class UpstreamPatch:
     server = ''
     database = ''
     username = ''
