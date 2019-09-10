@@ -2,6 +2,8 @@ import git
 import os
 from constants import *
 from DumpUpstreamlogIntoDatabase import getEachPatch
+import subprocess
+
 
 os.makedirs(os.path.dirname(PathToCommitLog), exist_ok=True)
 if os.path.exists(PathToLinux):
@@ -66,6 +68,14 @@ os.chdir(PathToLinux)
 command = "git log -p -- "+' '.join(fileNames)+" >> ../commit-log/log"
 os.system(command)
 print("[Info] Created HyperV files git logs at "+PathToCommitLog)
-os.chdir(currDir)
 
-getEachPatch(PathToCommitLog+"/log")
+if out.split()[0] == open(PathToLastsha).read():
+    print("[Info] No new commits found")
+else:
+    print("[Info] New commits found")
+    gitCommand = "git rev-parse origin/master >>"+PathToLastsha
+    os.system(gitCommand)
+    print("[Info] Starting commit parsing")
+    getEachPatch(PathToCommitLog+"/log")
+
+os.chdir(currDir)

@@ -7,7 +7,7 @@ from constants import *
 from datetime import datetime
 
 print("Welcome to Patch tracker!!")
-db = DatabaseDriver()
+
 
 
 def getEachPatch( filename ):
@@ -15,6 +15,7 @@ def getEachPatch( filename ):
     getEachPatch will scrape each patch from git log
     '''
     print("Starting patch scraping from files..")
+    db = DatabaseDriver()
     commit_id = ""
     author_name=""
     author_id=""
@@ -105,9 +106,5 @@ def getEachPatch( filename ):
     except IOError:
         print("[Error] Failed to read "+ filename)
     finally:
-        print("Added new commits: "+str(count_added)+"\t Already present:"+str(count_present))
+        print("[Info] Added new commits: "+str(count_added)+"\t Already present:"+str(count_present))
         f.closed
-
-getEachPatch(PathToCommitLog+"/log")
-
-
