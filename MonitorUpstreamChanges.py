@@ -69,6 +69,9 @@ command = "git log -p -- "+' '.join(fileNames)+" >> ../commit-log/log"
 os.system(command)
 print("[Info] Created HyperV files git logs at "+PathToCommitLog)
 
+
+out = subprocess.getoutput("git rev-parse origin/master")
+
 if out.split()[0] == open(PathToLastsha).read():
     print("[Info] No new commits found")
 else:
