@@ -28,6 +28,7 @@ def getEachPatch( filename ):
     diff_fileNames = []
     count_added = 0
     count_present = 0
+    skip_commit = False
     try:
         with open (filename, 'r', encoding="utf8") as f:
             try:    
@@ -38,7 +39,7 @@ def getEachPatch( filename ):
                     if len(words) == 2 and words[0] == "commit":
                         # print("Commit id: "+commit_id)
                         if commit_id is not None and len(commit_id) > 0:
-                            if db.checkCommitPresent(commit_id):
+                            if db.checkCommitPresent(commit_id) or skip_commit:
                                 # print("Commit id "+commit_id+" already present")
                                 count_present += 1
                             else:
@@ -53,8 +54,11 @@ def getEachPatch( filename ):
                             prev_line_date=False
                             diff_started=False
                             commit_msg_started=False
+                            skip_commit = False
                             diff_fileNames = []
                         commit_id=words[1]
+                    elif line.startswith("Merge: "):
+                        skip_commit = True
                     elif len(words) >= 3 and words[0] == "Author:":
                         for word in range(1,len(words)-1):
                             author_name += " "+words[word]
