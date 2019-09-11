@@ -30,3 +30,9 @@ if __name__ == '__main__':
     fileNames = sanitizeFIleNames(fileList)
     print("[Info] Preprocessed HyperV file paths")
     print(fileNames)
+    currDir = os.getcwd()
+    os.chdir(cst.PathToBionic)
+    # print(' '.join(fileNames))
+    command = "git log -p -- "+' '.join(fileNames)+" >> ../commit-log/log"
+    os.system(command)
+    print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
