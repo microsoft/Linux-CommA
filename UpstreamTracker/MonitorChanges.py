@@ -9,8 +9,6 @@ from UpstreamTracker.ParseData import getEachPatch
 import subprocess
 
 
-
-
 def parseMaintainers(PathLinux):
     '''
     This function will parse maintainers file to get hyperV filenames

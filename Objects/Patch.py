@@ -1,6 +1,7 @@
 
 class Patch:
-    def __init__(self, subject, commit_id, author_name, author_email, upstream, description, commit_date, filenames, diff):
+    def __init__(self, subject, commit_id, author_name, author_email, upstream, description, commit_date, filenames, diff, patchId=""):
+        self.patchId = patchId
         self.subject = subject
         self.commit_id = commit_id
         self.author_name = author_name
@@ -10,3 +11,4 @@ class Patch:
         self.commit_date = commit_date
         self.filenames = filenames
         self.diff = diff
+        
