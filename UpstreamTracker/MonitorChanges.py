@@ -32,7 +32,7 @@ def parseMaintainers(PathLinux):
                 break
     return  fileNames         
 
-def sanitizeFIleNames(fileNames):
+def sanitizeFileNames(fileNames):
     '''
     Remove Documentation files
     Add all the file paths in from folder path

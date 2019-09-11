@@ -27,6 +27,6 @@ if __name__ == '__main__':
     print("[Info] parsing maintainers files")
     fileList = parseMaintainers(cst.PathToBionic)
     print("[Info] Received HyperV file paths")
-    fileNames = sanitizeFIleNames(fileList)
+    fileNames = sanitizeFileNames(fileList)
     print("[Info] Preprocessed HyperV file paths")
     print(fileNames)
