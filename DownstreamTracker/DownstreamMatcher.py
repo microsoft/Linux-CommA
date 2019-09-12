@@ -20,7 +20,7 @@ class DownstreamMatcher:
         """
 
         # Define confidence weights
-        best_patch = None
+        best_patch_id = -1
         best_confidence = 0.0
         best_author_confidence = 0.0
         best_subject_confidence = 0.0
@@ -54,7 +54,7 @@ class DownstreamMatcher:
 
             confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence
             if confidence > best_confidence:
-                best_patch = patch
+                best_patch_id = patch_id
                 best_confidence = confidence
                 best_author_confidence = author_confidence
                 best_subject_confidence = subject_confidence
@@ -66,7 +66,7 @@ class DownstreamMatcher:
         if best_confidence < threshold:
             return None
 
-        return (patch_id, DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch))
+        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch_id)
 
 
 
