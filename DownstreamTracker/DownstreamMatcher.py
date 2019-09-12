@@ -16,7 +16,7 @@ class DownstreamMatcher:
     def get_matching_patch(self, downstream_patch):
         """
         downstream_patch is a Patch object to match to upstream
-        Returns: (patch_id, DistroPatchMatch), or None of no confidence match found
+        Returns: DistroPatchMatch, or None of no confidence match found
         """
 
         # Define confidence weights
