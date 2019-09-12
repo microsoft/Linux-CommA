@@ -1,7 +1,8 @@
 
 class DownstreamMatcher:
-    
-    def __init__(upstream_patches):
+    upstream_patches = {}
+
+    def __init__(self):
         """
         Creates the DownstreamMatcher.
         upstream_patches is a list of Patch objects from upstream we will check against
@@ -10,7 +11,7 @@ class DownstreamMatcher:
 
 
 
-    def get_matching_patch(downstream_patch):
+    def get_matching_patch(self, downstream_patch):
         """
         downstream_patch is a Patch object to match to upstream
         Returns: DistroPatchMatch, or None of no confidence match found

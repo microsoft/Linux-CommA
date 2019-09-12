@@ -6,7 +6,7 @@ from DatabaseDriver.UpstreamPatch import UpstreamPatch
 from datetime import datetime
 
 
-def getEachPatch( filename ):
+def getEachPatch( filename, db):
     '''
     getEachPatch will scrape each patch from git log
     '''
@@ -69,8 +69,6 @@ def getEachPatch( filename ):
                         commit_sub=line
                         prev_line_date=False
                         commit_msg_started=True
-                    elif line.startswith('Merge:'):
-                        continue
                     elif commit_msg_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
@@ -106,3 +104,4 @@ def getEachPatch( filename ):
 if __name__ == '__main__':
     print("Starting patch scraping from files..")
     db = UpstreamPatch()
+    getEachPatch(cst.PathToCommitLog+"/log",db)

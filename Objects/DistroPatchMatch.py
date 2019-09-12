@@ -14,3 +14,5 @@ class DistroPatchMatch:
         self.filename_confidence = filename_confidence
         self.confidence = confidence
         self.upstream_patch_id = upstream_patch_id
+    
+    

@@ -1,30 +1,19 @@
 import pyodbc
+from DatabaseDriver.DatabaseDriver import DatabaseDriver
 
+class UpstreamPatch(DatabaseDriver):
 
-class UpstreamPatch:
-    server = ''
-    database = ''
-    username = ''
-    password = ''
-    connection = ''
-    cursor = ''
     def __init__(self):
         '''
         Initialize database connection
         '''
-        print("Connecting to Database...")
-        self.server = 'linuxpatchtracker.database.windows.net'
-        self.database = 'linuxpatchtracker'
-        self.username = 'lsgadmin'
-        self.password = input("Enter database password")
-        self.connection = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+self.server+';DATABASE='+self.database+';UID='+self.username+';PWD='+ self.password)
-        self.cursor = self.connection.cursor()
+        super.__init__()
 
     def executeSelect(self):
         '''
         View all the data from Upstream-PatchTracker
         '''
-        rows = self.cursor.execute("select * from [Upstream-PatchTracker];").fetchall()
+        rows = self.cursor.execute("select [patchId],[patchName],[state],[commitId],[commitMessage],[author],[authorEmail] ,[commitTimestamp],[patchFiles],[commitTime],[diff_fileNames] from [Upstream-PatchTracker];").fetchall()
         for r in rows:
             print(r)
     
@@ -39,7 +28,7 @@ class UpstreamPatch:
         '''
         check if this commit is already present in Upstream
         '''
-        rows = self.cursor.execute("select * from [Upstream-PatchTracker] where commitId like ?;",commit_id).fetchall()
+        rows = self.cursor.execute("SELECT * from [Upstream-PatchTracker] where commitId like ?;",commit_id).fetchall()
         if rows is None or len(rows) == 0:
             return False
         else:

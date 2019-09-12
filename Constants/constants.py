@@ -1,5 +1,5 @@
 PathToLinux="C:/Users/ABMARATH/Documents/Work/PatchTracker/linux"
-PathToBionic="C:/Users/ABMARATH/Documents/Work/PatchTracker/linux"
+PathToBionic="C:/Users/ABMARATH/Documents/Work/PatchTracker/bionic"
 PathToClone="C:/Users/ABMARATH/Documents/Work/PatchTracker/"
 PathToCommitLog="C:/Users/ABMARATH/Documents/Work/PatchTracker/commit-log"
 PathToLastsha="C:/Users/ABMARATH/Documents/Work/PatchTracker/lastSHA"

@@ -7,6 +7,7 @@ sys.path.insert(0,parentdir)
 import Constants.constants as cst
 from UpstreamTracker.ParseData import getEachPatch
 import subprocess
+from DatabaseDriver.UpstreamPatch import UpstreamPatch
 
 
 def parseMaintainers(PathLinux):
@@ -52,6 +53,8 @@ def sanitizeFileNames(fileNames):
 
 if __name__ == '__main__':
     print("Welcome to Patch tracker!!")
+    print("Starting patch scraping from files..")
+    db = UpstreamPatch()
     os.makedirs(os.path.dirname(cst.PathToCommitLog), exist_ok=True)
     if os.path.exists(cst.PathToLinux):
         print("[Info] Path to Linux Repo exists")
@@ -68,7 +71,7 @@ if __name__ == '__main__':
     print("[Info] parsing maintainers files")
     fileList = parseMaintainers(cst.PathToLinux)
     print("[Info] Received HyperV file paths")
-    fileNames = sanitizeFIleNames(fileList)
+    fileNames = sanitizeFileNames(fileList)
     print("[Info] Preprocessed HyperV file paths")
     # print(fileNames)
     i = 0
@@ -89,6 +92,6 @@ if __name__ == '__main__':
         gitCommand = "git rev-parse origin/master >>"+cst.PathToLastsha
         os.system(gitCommand)
         print("[Info] Starting commit parsing")
-        getEachPatch(cst.PathToCommitLog+"/log")
+        getEachPatch(cst.PathToCommitLog+"/log",db)
 
     os.chdir(currDir)
