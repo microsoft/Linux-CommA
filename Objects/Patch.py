@@ -2,11 +2,10 @@
 class Patch:
     def __init__(self, subject, author_name, author_email, upstream, description, commit_date, filenames, patch_id = ""):
         self.subject = subject
-        self.commit_id = commit_id
         self.author_name = author_name
-        self.author_email = email
+        self.author_email = author_email
         self.upstream = upstream
         self.description = description
         self.commit_date = commit_date
-        self.filenames = filesnames
+        self.filenames = filenames
         self.patch_id = ""
