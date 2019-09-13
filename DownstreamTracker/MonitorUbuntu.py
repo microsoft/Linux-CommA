@@ -40,7 +40,7 @@ def get_downstream_patch( filename, db, match ):
                             else:
                                 print(patch)
                                 dict1 = match.get_matching_patch(patch)
-                                db.insertInto(dict1, "patchId","UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+                                db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
                                 count_added += 1
                             patch = Patch.blank()
                             prev_line_date=False
@@ -91,7 +91,7 @@ def get_downstream_patch( filename, db, match ):
                 print(line)
 
         if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id):
-            db.insertInto(patch.commit_id,patch.author_name,patch.author_id,patch.subject,patch.description,patch.diff,patch.upstream_date," ".join(diff_fileNames))
+            db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
             count_added += 1
 
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     print("..Ubuntu Monitoring Script..")
     if os.path.exists(cst.PathToBionic):
         print("[Info] Path to Ubuntu Bionic Repo exists")
-        repo = git.Repo(cst.PathToLinux)
+        repo = git.Repo(cst.PathToBionic)
         print("[Info] Pulling recent changes")
         repo.remotes.origin.pull()
         print("[Info] Git pull complete")
