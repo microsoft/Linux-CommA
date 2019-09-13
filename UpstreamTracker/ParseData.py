@@ -80,10 +80,13 @@ def getEachPatch( filename, db):
                         diff_started=True
                         diff_files += line
                     elif commit_msg_started:
-                        if 'Reported-by:' in line and 'Signed-off-by:' in line and 'Reviewed-by:' in line and 'Cc:' in line and 'fixes' in line:
+                        ignore_phrases = ('reported-by', 'signed-off-by', 'reviewed-by', 'acked-by', 'cc:', 'fixes:')
+                        lowercase_line = line.strip().lower()
+                        if lowercase_line.startswith(ignore_phrases):
                             continue
                         else:
                             commit_msg += line
+                        
                     elif diff_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
