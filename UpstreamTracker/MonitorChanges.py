@@ -7,7 +7,7 @@ sys.path.insert(0,parentdir)
 import Constants.constants as cst
 from UpstreamTracker.ParseData import getEachPatch
 import subprocess
-from DatabaseDriver.UpstreamPatch import UpstreamPatch
+from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 
 
 def parseMaintainers(PathLinux):
@@ -54,7 +54,7 @@ def sanitizeFileNames(fileNames):
 if __name__ == '__main__':
     print("Welcome to Patch tracker!!")
     print("Starting patch scraping from files..")
-    db = UpstreamPatch()
+    db = UpstreamPatchTable()
     os.makedirs(os.path.dirname(cst.PathToCommitLog), exist_ok=True)
     if os.path.exists(cst.PathToLinux):
         print("[Info] Path to Linux Repo exists")

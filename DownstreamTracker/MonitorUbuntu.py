@@ -9,11 +9,12 @@ from Objects.Patch import Patch
 from Objects.DistroPatchMatch import DistroPatchMatch
 from datetime import datetime
 from DatabaseDriver.DistroMatch import DistroMatch
+from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
+from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 
-
-def getDownStreamPatch( filename, db ):
+def get_downstream_patch( filename, db, match ):
     '''
-    getEachPatch will scrape each patch from git log
+    Get each patch and match it with upstream. Store matching commits
     '''
     patch = Patch.blank()
     prev_line_date=False
@@ -38,11 +39,8 @@ def getDownStreamPatch( filename, db ):
                                 count_present += 1
                             else:
                                 print(patch)
-                                # call distropatchmatch
-                                # get best match
-                                match = DistroPatchMatch("","","","","","")
-                                dict1 = match.matcher(patch)
-                                db.insertInto(match, dict1["patchId"],"UB18.04",patch.commit_id,patch.upstream_date)
+                                dict1 = match.get_matching_patch(patch)
+                                db.insertInto(dict1, "patchId","UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
                                 count_added += 1
                             patch = Patch.blank()
                             prev_line_date=False
@@ -76,7 +74,7 @@ def getDownStreamPatch( filename, db ):
                         diff_started=True
                         patch.diff += line
                     elif commit_msg_started:
-                        if 'Reported-by:' in line and 'Signed-off-by:' in line and 'Reviewed-by:' in line and 'Cc:' in line and 'fixes' in line:
+                        if 'Reported-by:' in line or 'Signed-off-by:' in line or 'Reviewed-by:' in line or 'Cc:' in line or 'fixes' in line:    # match case insensitive
                             continue
                         else:
                             patch.description += line
@@ -92,10 +90,11 @@ def getDownStreamPatch( filename, db ):
                 print("[Error] "+str(e))
                 print(line)
 
-        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkCommitPresent(patch.commit_id):
-            print(patch)
-            db.insertIntoUpstream(patch.commit_id,patch.author_name,patch.author_id,patch.subject,patch.description,patch.diff,patch.upstream_date," ".join(diff_fileNames))
+        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id):
+            db.insertInto(patch.commit_id,patch.author_name,patch.author_id,patch.subject,patch.description,patch.diff,patch.upstream_date," ".join(diff_fileNames))
             count_added += 1
+
+
     except IOError:
         print("[Error] Failed to read "+ filename)
     finally:
@@ -105,6 +104,8 @@ def getDownStreamPatch( filename, db ):
 
 if __name__ == '__main__':
     print("Welcome to Patch tracker!!")
+
+    # make sure that Kernel is present
     os.makedirs(os.path.dirname(cst.PathToCommitLog), exist_ok=True)
     print("..Ubuntu Monitoring Script..")
     if os.path.exists(cst.PathToBionic):
@@ -119,16 +120,22 @@ if __name__ == '__main__':
         git.Git(cst.PathToClone).clone("git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/bionic")
         print("[Info] Cloning Complete")
 
+
+    #parse maintainers file to get hyperV files
     print("[Info] parsing maintainers files")
     fileList = parseMaintainers(cst.PathToBionic)
     print("[Info] Received HyperV file paths")
     fileNames = sanitizeFileNames(fileList)
+
+
+    # Collecting git logs for HyperV files
     print("[Info] Preprocessed HyperV file paths")
-    print(fileNames)
     currDir = os.getcwd()
     os.chdir(cst.PathToBionic)
-    # print(' '.join(fileNames))
     command = "git log -p -- "+' '.join(fileNames)+" >> "+cst.PathToCommitLog+"/bionicLog"
     os.system(command)
-    print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
-    getDownStreamPatch(cst.PathToCommitLog+"/bionicLog", DistroMatch())
+    print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/bionicLog")
+
+    # Parse git log and dump data into database
+    match = DownstreamMatcher(UpstreamPatchTable())
+    get_downstream_patch(cst.PathToCommitLog+"/bionicLog", DistroMatch(), match)

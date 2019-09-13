@@ -1,20 +1,20 @@
 import pyodbc
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 
-class DistroMatch(DatabaseDriver):
+class DistroMatch():
     
     def __init__(self):
-        '''Initializa database connection'''
-        super.__init__()
+        """Initializa database connection"""
+        self.cursor = DatabaseDriver.get_instance().cursor
     
     def insertInto(self,DistroPatchMatch, patchId, distroId, commitId, date):
-        '''
+        """
         Insert data into upstream_patchtracker
-        '''
+        """
         conx = self.cursor.execute("insert into [dbo].[DistributionPatches]\
             ([patchId],[distroId],[commitId],[bugReportLink],[datetimeAdded],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence])\
-                values(?,?,?,?,?,?,?,?)",\
-                    patchId,distroId,commitId, "",date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,DistroPatchMatch.filename_confidence,DistroPatchMatch.confidence)
+                values(?,?,?,?,?,?,?,?,?,?,?)",\
+                    patchId,distroId,commitId, "",date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,0,DistroPatchMatch.filenames_confidence,DistroPatchMatch.confidence)
         conx.commit()
     
     def checkIfPresent(self, commit_id):

@@ -1,8 +1,12 @@
 import re
 import json
-import os
+import os,sys,inspect
 import datetime
-from DatabaseDriver.UpstreamPatch import UpstreamPatch
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+import Constants.constants as cst
+from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 from datetime import datetime
 
 
@@ -34,11 +38,11 @@ def getEachPatch( filename, db):
                     if len(words) == 2 and words[0] == "commit":
                         # print("Commit id: "+commit_id)
                         if commit_id is not None and len(commit_id) > 0:
-                            if db.checkCommitPresent(commit_id) or skip_commit:
+                            if db.check_commit_present(commit_id) or skip_commit:
                                 # print("Commit id "+commit_id+" already present")
                                 count_present += 1
                             else:
-                                db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj," ".join(diff_fileNames))
+                                db.insert_Upstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj," ".join(diff_fileNames))
                                 count_added += 1
                             author_name=""
                             author_id=""
@@ -92,8 +96,8 @@ def getEachPatch( filename, db):
                 print("[Error] Something gone wrong at line")
                 print(line)
 
-        if (commit_id is not None or len(commit_id) != 0) and not db.checkCommitPresent(commit_id):
-            db.insertIntoUpstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj," ".join(diff_fileNames))
+        if (commit_id is not None or len(commit_id) != 0) and not db.check_commit_present(commit_id):
+            db.insert_Upstream(commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj," ".join(diff_fileNames))
             count_added += 1
     except IOError:
         print("[Error] Failed to read "+ filename)
@@ -103,5 +107,5 @@ def getEachPatch( filename, db):
 
 if __name__ == '__main__':
     print("Starting patch scraping from files..")
-    db = UpstreamPatch()
+    db = UpstreamPatchTable()
     getEachPatch(cst.PathToCommitLog+"/log",db)

@@ -11,14 +11,14 @@ class Patch:
         self._description = description
         self._filenames = filenames
         self._diff = diff
-    
-    def __str__(self):
-        return " "+self.subject+" "+self.commit_id+" "+str(self.commit_date)+" "
 
     @classmethod
     def blank(cls):
-        return cls("","","","",datetime.now(),"","","","")
+        return cls("","","","",datetime.now(),"","","")
     
+    def __str__(self):
+        return " "+self.subject+" "+self.commit_id+" "+str(self.upstream_date)+" "
+
     @property
     def subject(self):
         """ subject of the patch """
@@ -90,3 +90,4 @@ class Patch:
     @diff.setter
     def diff(self, value : str):
         self._diff = value
+

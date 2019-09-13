@@ -1,15 +1,17 @@
 import pyodbc
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
+from Objects.UpstreamPatch import UpstreamPatch
+from datetime import datetime
 
-class UpstreamPatch(DatabaseDriver):
+class UpstreamPatchTable():
 
     def __init__(self):
         '''
         Initialize database connection
         '''
-        super.__init__()
+        self.cursor = DatabaseDriver.get_instance().cursor
 
-    def executeSelect(self):
+    def execute_select(self):
         '''
         View all the data from Upstream-PatchTracker
         '''
@@ -17,14 +19,14 @@ class UpstreamPatch(DatabaseDriver):
         for r in rows:
             print(r)
     
-    def insertDataTest(self):
+    def insert_data_test(self):
         '''
         Insert data into Upstream-PatchTracker
         '''
         conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[commitTime],[patchFiles]) values(?,?,?,?,?,?,?,?)","TESTPATCH3","complete","fakeID", "This is a dummy msg","AM","fakemail@dummy.org","2019-05-07 13:33:31","file")
         conx.commit()
     
-    def checkCommitPresent(self, commit_id):
+    def check_commit_present(self, commit_id):
         '''
         check if this commit is already present in Upstream
         '''
@@ -34,7 +36,7 @@ class UpstreamPatch(DatabaseDriver):
         else:
             return True
     
-    def insertIntoUpstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj,diff_fNames):
+    def insert_Upstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,datetime_obj,diff_fNames):
         '''
         dump data into Upstream 
         '''
@@ -44,7 +46,13 @@ class UpstreamPatch(DatabaseDriver):
         except pyodbc.Error as Error:
             print("[ERROR] Pyodbc error")
             print(Error)
+
+    def get_upstream_patch(self):
+        rows = self.cursor.execute("select [patchId],[patchName],[state],[commitId],[author],[authorEmail],[commitTime],[commitMessage],[diff_fileNames],[patchFiles] from [Upstream-PatchTracker];").fetchall()
+        upstream_patch_list = []
+        for r in rows:
+            upstream_patch_list.append(UpstreamPatch(r[0],r[1],r[3],r[4],r[5],r[6],r[7],r[8],r[9]))
+        
+        return upstream_patch_list
     
-    def __del__(self):
-        self.connection.close()
     
