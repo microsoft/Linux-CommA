@@ -30,13 +30,13 @@ class DownstreamMatcher:
         best_filenames_confidence = 0.0
 
         # Confidence weights
-        author_weight = 0.3
-        subject_weight = 0.3
+        author_weight = 0.2
+        subject_weight = 0.5
         description_weight = 0.1
-        filenames_weight = 0.3
+        filenames_weight = 0.2
 
         # Threshold that we must hit to return a match
-        threshold = 0.6
+        threshold = 0.8
 
         for upstream_patch in self.upstream_patches:
             # Calculate confidence that our downstream patch matches this upstream patch
@@ -46,11 +46,12 @@ class DownstreamMatcher:
                 filenames_confidence = 0.0
             else:
                 num_filenames_match = 0
-                upstream_filenames = tuple(" ".split(upstream_patch.filenames))
+                upstream_patch_filenames = " ".split(upstream_patch.filenames)
+                upstream_patch_filenames_tuple = tuple(upstream_patch_filenames)
                 for downstream_filename in " ".split(downstream_patch.filenames):
-                    if (downstream_filename.endswith(upstream_filenames)):
+                    if (downstream_filename.endswith(upstream_patch_filenames_tuple)):
                         num_filenames_match += 1
-                filenames_confidence = float(num_filenames_match) / len(upstream_patch.filenames)
+                filenames_confidence = float(num_filenames_match) / len(upstream_patch_filenames)
 
             author_confidence = fuzz.token_set_ratio(upstream_patch.author_name, downstream_patch.author_name) / 100.0
             subject_confidence = fuzz.partial_ratio(upstream_patch.subject, downstream_patch.subject) / 100.0

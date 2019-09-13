@@ -41,8 +41,9 @@ def get_downstream_patch( filename, db, match ):
                                 patch.filenames = " ".join(diff_fileNames)
                                 print(patch)
                                 dict1 = match.get_matching_patch(patch)
-                                db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
-                                count_added += 1
+                                if (dict1):
+                                    db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+                                    count_added += 1
                             patch = Patch.blank()
                             prev_line_date=False
                             diff_started=False
@@ -75,7 +76,9 @@ def get_downstream_patch( filename, db, match ):
                         diff_started=True
                         patch.diff += line
                     elif commit_msg_started:
-                        if 'Reported-by:' in line or 'Signed-off-by:' in line or 'Reviewed-by:' in line or 'Cc:' in line or 'fixes' in line:    # match case insensitive
+                        ignore_phrases = ('reported-by', 'signed-off-by', 'reviewed-by', 'acked-by', 'cc:', 'fixes')
+                        lowercase_line = line.strip().lower()
+                        if lowercase_line.startswith(ignore_phrases):
                             continue
                         else:
                             patch.description += line
@@ -91,7 +94,7 @@ def get_downstream_patch( filename, db, match ):
                 print("[Error] "+str(e))
                 print(line)
 
-        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id):
+        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id) and dict1:
             db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
             count_added += 1
 
