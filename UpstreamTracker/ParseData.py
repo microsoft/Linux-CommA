@@ -80,7 +80,7 @@ def getEachPatch( filename, db):
                         diff_started=True
                         diff_files += line
                     elif commit_msg_started:
-                        ignore_phrases = ('reported-by', 'signed-off-by', 'reviewed-by', 'acked-by', 'cc:', 'fixes:')
+                        ignore_phrases = ('reported-by:', 'signed-off-by:', 'reviewed-by:', 'acked-by:', 'cc:')
                         lowercase_line = line.strip().lower()
                         if lowercase_line.startswith(ignore_phrases):
                             continue
