@@ -38,9 +38,11 @@ def get_downstream_patch( filename, db, match ):
                                 print("Commit id "+patch.commit_id+" already present")
                                 count_present += 1
                             else:
+                                patch.filenames = " ".join(diff_fileNames)
                                 print(patch)
                                 dict1 = match.get_matching_patch(patch)
-                                db.insertInto(dict1, "patchId","UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+                                if dict1:
+                                    db.insertInto(dict1, "patchId","UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
                                 count_added += 1
                             patch = Patch.blank()
                             prev_line_date=False
@@ -49,6 +51,8 @@ def get_downstream_patch( filename, db, match ):
                             skip_commit = False
                             diff_fileNames = []
                         patch.commit_id=words[1]
+                        if patch.commit_id == '6fb4fa584a474b05461d922d2e3fd2201ffe68c2':
+                            print('bruh')
                     elif line.startswith("Merge: "):
                         skip_commit = True
                     elif len(words) >= 3 and words[0] == "Author:":
@@ -91,7 +95,7 @@ def get_downstream_patch( filename, db, match ):
                 print(line)
 
         if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id):
-            db.insertInto(patch.commit_id,patch.author_name,patch.author_id,patch.subject,patch.description,patch.diff,patch.upstream_date," ".join(diff_fileNames))
+            db.insertInto(patch.commit_id,patch.author_name,patch.author_name,patch.subject,patch.description,patch.diff,patch.upstream_date," ".join(diff_fileNames))
             count_added += 1
 
 
@@ -110,7 +114,7 @@ if __name__ == '__main__':
     print("..Ubuntu Monitoring Script..")
     if os.path.exists(cst.PathToBionic):
         print("[Info] Path to Ubuntu Bionic Repo exists")
-        repo = git.Repo(cst.PathToLinux)
+        repo = git.Repo(cst.PathToBionic)
         print("[Info] Pulling recent changes")
         repo.remotes.origin.pull()
         print("[Info] Git pull complete")
