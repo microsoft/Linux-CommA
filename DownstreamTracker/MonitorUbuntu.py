@@ -50,8 +50,6 @@ def get_downstream_patch( filename, db, match ):
                             skip_commit = False
                             diff_fileNames = []
                         patch.commit_id=words[1]
-                        if patch.commit_id == '6fb4fa584a474b05461d922d2e3fd2201ffe68c2':
-                            print('bruh')
                     elif line.startswith("Merge: "):
                         skip_commit = True
                     elif len(words) >= 3 and words[0] == "Author:":
