@@ -41,8 +41,12 @@ def get_downstream_patch( filename, db, match ):
                                 patch.filenames = " ".join(diff_fileNames)
                                 print(patch)
                                 dict1 = match.get_matching_patch(patch)
+<<<<<<< HEAD
                                 if dict1:
                                     db.insertInto(dict1, "patchId","UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+=======
+                                db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+>>>>>>> 24712da7098b39171bd8460b603959f4df17d530
                                 count_added += 1
                             patch = Patch.blank()
                             prev_line_date=False
@@ -95,7 +99,7 @@ def get_downstream_patch( filename, db, match ):
                 print(line)
 
         if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id):
-            db.insertInto(patch.commit_id,patch.author_name,patch.author_name,patch.subject,patch.description,patch.diff,patch.upstream_date," ".join(diff_fileNames))
+            db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
             count_added += 1
 
 
