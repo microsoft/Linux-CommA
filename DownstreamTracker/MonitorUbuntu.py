@@ -136,7 +136,7 @@ if __name__ == '__main__':
     print("[Info] Preprocessed HyperV file paths")
     currDir = os.getcwd()
     os.chdir(cst.PathToBionic)
-    command = "git log -p -- "+' '.join(fileNames)+" >> "+cst.PathToCommitLog+"/bionicLog"
+    command = "git log -p -- "+' '.join(fileNames)+" > "+cst.PathToCommitLog+"/bionicLog"
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/bionicLog")
 
