@@ -70,7 +70,7 @@ def getEachPatch( filename, db):
                         datetime_obj = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
                         prev_line_date = True
                     elif prev_line_date:
-                        commit_sub=line
+                        commit_sub=line.strip()
                         prev_line_date=False
                         commit_msg_started=True
                     elif commit_msg_started and line.startswith('diff --git'):
