@@ -36,7 +36,7 @@ class DownstreamMatcher:
         filenames_weight = 0.2
 
         # Threshold that we must hit to return a match
-        threshold = 0.0
+        threshold = 0.75
 
         for upstream_patch in self.upstream_patches:
             # Calculate confidence that our downstream patch matches this upstream patch
