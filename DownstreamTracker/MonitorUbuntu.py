@@ -94,8 +94,12 @@ def get_downstream_patch( filename, db, match ):
                 print("[Error] "+str(e))
                 print(line)
 
-        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id) and dict1:
-            db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.checkIfPresent(patch.commit_id):
+            patch.filenames = " ".join(diff_fileNames)
+            print(patch)
+            dict1 = match.get_matching_patch(patch)
+            if dict1:
+                db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
             count_added += 1
 
 
@@ -136,7 +140,7 @@ if __name__ == '__main__':
     print("[Info] Preprocessed HyperV file paths")
     currDir = os.getcwd()
     os.chdir(cst.PathToBionic)
-    command = "git log -p -- "+' '.join(fileNames)+" >> "+cst.PathToCommitLog+"/bionicLog"
+    command = "git log -p -- "+' '.join(fileNames)+" > "+cst.PathToCommitLog+"/bionicLog"
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/bionicLog")
 
