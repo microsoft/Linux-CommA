@@ -2,7 +2,7 @@ import pyodbc
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from Objects.Distro import Distro
 
-class DistroMatch():
+class DistroTable():
     
     def __init__(self):
         """Initializa database connection"""
