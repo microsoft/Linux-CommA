@@ -58,7 +58,11 @@ class DownstreamMatcher:
             author_confidence = fuzz.token_set_ratio(upstream_patch.author_name, downstream_patch.author_name) / 100.0
             subject_confidence = fuzz.partial_ratio(upstream_patch.subject, downstream_patch.subject) / 100.0
             # Temporarily for description only checking exact string is in
-            description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
+            if (upstream_patch.description == ""):
+                description_confidence = 1.0 if downstream_patch.description == "" else 0.0
+            else:
+                description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
+                
 
             confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence
             if confidence > best_confidence and confidence >= threshold:
