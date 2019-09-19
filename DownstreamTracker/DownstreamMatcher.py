@@ -73,23 +73,3 @@ class DownstreamMatcher:
             return None
 
         return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch_id)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

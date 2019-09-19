@@ -5,18 +5,19 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 import Constants.constants as cst
 from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
-from Objects.Patch import Patch
+from Objects.UpstreamPatch import UpstreamPatch
 from Objects.DistroPatchMatch import DistroPatchMatch
 from datetime import datetime
 from DatabaseDriver.DistroMatch import DistroMatch
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
+from DatabaseDriver.DistroTable import DistroTable
 
 def get_downstream_patch( filename, db, match ):
     '''
     Get each patch and match it with upstream. Store matching commits
     '''
-    patch = Patch.blank()
+    patch = UpstreamPatch("","","","",datetime.now(),"","","","")
     prev_line_date=False
     diff_started=False
     commit_msg_started=False
@@ -42,9 +43,9 @@ def get_downstream_patch( filename, db, match ):
                                 print(patch)
                                 dict1 = match.get_matching_patch(patch)
                                 if (dict1):
-                                    db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+                                    db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date, patch.buglink)   # get dirstroId from db table
                                     count_added += 1
-                            patch = Patch.blank()
+                            patch = UpstreamPatch("","","","",datetime.now(),"","","","")
                             prev_line_date=False
                             diff_started=False
                             commit_msg_started=False
@@ -66,27 +67,29 @@ def get_downstream_patch( filename, db, match ):
                         patch.upstream_date = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
                         prev_line_date = True
                     elif prev_line_date:
-                        patch.subject=line
+                        patch.subject=line.strip()
                         prev_line_date=False
                         commit_msg_started=True
+                    elif commit_msg_started and words[0] == 'BugLink:':
+                        patch.buglink = words[1]
                     elif commit_msg_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
                         commit_msg_started = False
                         diff_started=True
-                        patch.diff += line
+                        patch.diff += line.strip()
                     elif commit_msg_started:
                         ignore_phrases = ('reported-by:', 'signed-off-by:', 'reviewed-by:', 'acked-by:', 'cc:')
                         lowercase_line = line.strip().lower()
                         if lowercase_line.startswith(ignore_phrases):
                             continue
                         else:
-                            patch.description += line
+                            patch.description += line.strip()
                     elif diff_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
                     elif diff_started:
-                        patch.diff += line
+                        patch.diff += line.strip()
                     else:
                         print("[Warning] No parsing done for the following line..")
                         print(line)
@@ -99,7 +102,7 @@ def get_downstream_patch( filename, db, match ):
             print(patch)
             dict1 = match.get_matching_patch(patch)
             if dict1:
-                db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date)   # get dirstroId from db table
+                db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date,patch.buglink)   # get dirstroId from db table
             count_added += 1
 
 
@@ -113,6 +116,11 @@ def get_downstream_patch( filename, db, match ):
 if __name__ == '__main__':
     print("Welcome to Patch tracker!!")
 
+    # connect to DB read all entries in Distro table
+    # Distro_table = DistroTable()
+    # distro_list = Distro_table.get_distro_list()
+    # for every distro run next
+
     # make sure that Kernel is present
     os.makedirs(os.path.dirname(cst.PathToCommitLog), exist_ok=True)
     print("..Ubuntu Monitoring Script..")
@@ -125,7 +133,7 @@ if __name__ == '__main__':
     else:
         print("[Info] Path to Ubuntu Bionic does not exists")
         print("[Info] Cloning Ubuntu Bionic repo")
-        git.Git(cst.PathToClone).clone("git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/bionic")
+        git.Git(cst.PathToClone).clone("git://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic")
         print("[Info] Cloning Complete")
 
 
