@@ -42,13 +42,15 @@ class DownstreamMatcher:
             # Calculate confidence that our downstream patch matches this upstream patch
 
             # Calculate filenames confidence, which is the percentage of files upstream that are present in the downstream patch
+
             if (downstream_patch.filenames == ""):
                 filenames_confidence = 0.0
             else:
                 num_filenames_match = 0
-                upstream_patch_filenames = " ".split(upstream_patch.filenames)
+                upstream_patch_filenames = " ".split(upstream_patch.filenames) if " " in upstream_patch.filenames else [upstream_patch.filenames]
                 upstream_patch_filenames_tuple = tuple(upstream_patch_filenames)
-                for downstream_filename in " ".split(downstream_patch.filenames):
+                downstream_patch_filenames = " ".split(downstream_patch.filenames) if " " in downstream_patch.filenames else [downstream_patch.filenames]
+                for downstream_filename in downstream_patch_filenames:
                     if (downstream_filename.endswith(upstream_patch_filenames_tuple)):
                         num_filenames_match += 1
                 filenames_confidence = float(num_filenames_match) / len(upstream_patch_filenames)
