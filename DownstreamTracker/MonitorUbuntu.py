@@ -106,11 +106,10 @@ def get_downstream_patch( filename, db, match, distro ):
                 db.insertInto(dict1,"UB18.04",patch.commit_id,patch.upstream_date,patch.buglink)   # get dirstroId from db table
             count_added += 1
 
-
     except IOError:
         print("[Error] Failed to read "+ filename)
     finally:
-        print("[Info] Added new commits: "+str(count_added)+"\t Already present:"+str(count_present))
+        print("[Info] Added new commits: "+str(count_added)+"\t Skipped patches:"+str(count_present))
         f.closed
 
 def monitor_distro(distro):
