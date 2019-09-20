@@ -47,11 +47,10 @@ class DownstreamMatcher:
                 filenames_confidence = 0.0
             else:
                 num_filenames_match = 0
-                upstream_patch_filenames = upstream_patch.filenames.split(" ")
-                upstream_patch_filenames_tuple = tuple(upstream_patch_filenames)
+                upstream_filenames = upstream_patch.filenames.split(" ")
                 downstream_patch_filenames = downstream_patch.filenames.split(" ")
-                for downstream_filename in downstream_patch_filenames:
-                    if (downstream_filename.endswith(upstream_patch_filenames_tuple)):
+                for upstream_filename in upstream_patch_filenames:
+                    if (upstream_filename in downstream_filenames):
                         num_filenames_match += 1
                 filenames_confidence = float(num_filenames_match) / len(upstream_patch_filenames)
 
