@@ -9,12 +9,29 @@ import Constants.constants as cst
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 from datetime import datetime
 from Objects.UpstreamPatch import UpstreamPatch
+from Objects.UbuntuPatch import Ubuntu_Patch
 
-def getEachPatch( filename, db):
+def get_patch_object(indicator):
+    if indicator == "Upstream":
+        return UpstreamPatch("","","","","",datetime.now(),"","","")
+    elif indicator.startswith("Ub"):
+        return Ubuntu_Patch("","","","",datetime.now(),"","","","")
+    else:
+        print("Exception")
+
+def insert_patch(db,match,distro,patch, indicator):
+    if indicator == "Upstream":
+        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.upstream_date,patch.filenames)
+    elif indicator.startswith("Ub"):
+        dict1 = match.get_matching_patch(patch)
+        if (dict1):
+            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.upstream_date, patch.buglink)   # get dirstroId from db table
+
+def parse_log( filename, db, match, distro, indicator):
     '''
-    getEachPatch will scrape each patch from git log
+    parse_log will scrape each patch from git log
     '''
-    patch = UpstreamPatch("","","","","",datetime.now(),"","","")
+    patch = get_patch_object(indicator)
     prev_line_date=False
     diff_started=False
     commit_msg_started=False
@@ -33,13 +50,14 @@ def getEachPatch( filename, db):
                         # print("Commit id: "+commit_id)
                         if patch.commit_id is not None and len(patch.commit_id) > 0:
                             if db.check_commit_present(patch.commit_id) or skip_commit:
-                                # print("Commit id "+commit_id+" already present")
+                                print("Commit id "+patch.commit_id+" already present")
                                 count_present += 1
                             else:
                                 patch.filenames = " ".join(diff_fileNames)
-                                db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.upstream_date,patch.filenames)
+                                
+                                insert_patch(db,match,distro,patch,indicator)
                                 count_added += 1
-                            patch = UpstreamPatch("","","","","",datetime.now(),"","","")
+                            patch = get_patch_object(indicator)
                             prev_line_date=False
                             diff_started=False
                             commit_msg_started=False
@@ -64,6 +82,8 @@ def getEachPatch( filename, db):
                         patch.subject=line.strip()
                         prev_line_date=False
                         commit_msg_started=True
+                    elif (commit_msg_started and indicator.startswith("Ub")) and words[0] == 'BugLink:':
+                        patch.buglink = words[1]
                     elif commit_msg_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
@@ -91,8 +111,10 @@ def getEachPatch( filename, db):
 
         if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.check_commit_present(patch.commit_id):
             patch.filenames = " ".join(diff_fileNames)
-            db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.upstream_date,patch.filenames)
+
+            insert_patch(db,match,distro,patch,indicator)
             count_added += 1
+            
     except IOError:
         print("[Error] Failed to read "+ filename)
     finally:
@@ -102,4 +124,4 @@ def getEachPatch( filename, db):
 if __name__ == '__main__':
     print("Starting patch scraping from files..")
     db = UpstreamPatchTable()
-    getEachPatch(cst.PathToCommitLog+"/log",db)
+    parse_log(cst.PathToCommitLog+"/log",db,"","","Upstream")

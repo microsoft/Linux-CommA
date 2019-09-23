@@ -17,7 +17,7 @@ class DistroMatch():
                     DistroPatchMatch.upstream_patch_id,distroId,commitId, buglink,date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,0,DistroPatchMatch.filenames_confidence,DistroPatchMatch.confidence)
         conx.commit()
     
-    def checkIfPresent(self, commit_id):
+    def check_commit_present(self, commit_id):
         """
         Check if commit is already present in database
         """

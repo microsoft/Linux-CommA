@@ -16,7 +16,7 @@ class DistroTable():
                     distro_object.distro_id,distro_object.repo_link,distro_object.kernel_version,distro_object.commit_link)
         conx.commit()
     
-    def checkIfPresent(self, distro_id):
+    def check_commit_present(self, distro_id):
         """
         Check if distro is already present in database
         """
