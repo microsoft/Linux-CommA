@@ -43,17 +43,19 @@ class DownstreamMatcher:
 
             # Calculate filenames confidence, which is the percentage of files upstream that are present in the downstream patch
 
-            if (downstream_patch.filenames == ""):
+            if (downstream_patch.filenames == "" or upstream_patch.filenames == ""):
                 filenames_confidence = 0.0
             else:
                 num_filenames_match = 0
-                upstream_patch_filenames = upstream_patch.filenames.split(" ")
-                upstream_patch_filenames_tuple = tuple(upstream_patch_filenames)
-                downstream_patch_filenames = downstream_patch.filenames.split(" ")
-                for downstream_filename in downstream_patch_filenames:
-                    if (downstream_filename.endswith(upstream_patch_filenames_tuple)):
-                        num_filenames_match += 1
-                filenames_confidence = float(num_filenames_match) / len(upstream_patch_filenames)
+                upstream_filenames = upstream_patch.filenames.split(" ")
+                downstream_filenames = downstream_patch.filenames.split(" ")
+                for upstream_filename in upstream_filenames:
+                    for downstream_filename in downstream_filenames:
+                        if downstream_filename.endswith(upstream_filename):
+                            num_filenames_match += 1
+                            break
+
+                filenames_confidence = float(num_filenames_match) / len(upstream_filenames)
 
             author_confidence = fuzz.token_set_ratio(upstream_patch.author_name, downstream_patch.author_name) / 100.0
             subject_confidence = fuzz.partial_ratio(upstream_patch.subject, downstream_patch.subject) / 100.0
