@@ -17,11 +17,11 @@ class DistroMatch():
                     DistroPatchMatch.upstream_patch_id,distroId,commitId, buglink,date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,0,DistroPatchMatch.filenames_confidence,DistroPatchMatch.confidence)
         conx.commit()
     
-    def check_commit_present(self, commit_id, distro_id):
+    def check_commit_present(self, commit_id, distro):
         """
         Check if commit is already present in database
         """
-        rows = self.cursor.execute("SELECT * from [DistributionPatches] where commitId like ? and distroId like ? ;",commit_id,distro_id).fetchall()
+        rows = self.cursor.execute("SELECT * from [DistributionPatches] where commitId like ? and distroId like ? ;",commit_id,distro.distro_id).fetchall()
         if rows is None or len(rows) == 0:
             return False
         else:

@@ -26,7 +26,7 @@ class UpstreamPatchTable():
         conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[commitTime],[patchFiles]) values(?,?,?,?,?,?,?,?)","TESTPATCH3","complete","fakeID", "This is a dummy msg","AM","fakemail@dummy.org","2019-05-07 13:33:31","file")
         conx.commit()
     
-    def check_commit_present(self, commit_id):
+    def check_commit_present(self, commit_id, distro):
         '''
         check if this commit is already present in Upstream
         '''
