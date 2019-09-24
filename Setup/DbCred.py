@@ -17,12 +17,11 @@ class DatabaseCredentials:
             print("[Info] Cloning Secrets repo")
             git.Git(cst.PathToClone).clone("https://anything:<redacted>@<redacted>")
             print("[Info] Cloning Complete")
-        tree = ET.parse(cst.PathToSecret+"/AzureSecretsDevTest.xml")
+        tree = ET.parse(cst.PathToSecret+"/PatchTrackerSecrets.xml")
         root = tree.getroot()
-        PT = root.find("PatchTracker")
-        self.database_server = PT.find("DatabaseServer").text
-        self.database_name = PT.find("DatabaseName").text
-        self.database_user = PT.find("DatabaseUser").text
-        self.database_password = PT.find("DatabasePassword").text
+        self.database_server = root.find("DatabaseServer").text
+        self.database_name = root.find("DatabaseName").text
+        self.database_user = root.find("DatabaseUser").text
+        self.database_password = root.find("DatabasePassword").text
 
 
