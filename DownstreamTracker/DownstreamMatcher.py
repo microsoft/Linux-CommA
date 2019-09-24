@@ -13,8 +13,6 @@ class DownstreamMatcher:
         """
         self.upstream_patches = up_db.get_upstream_patch()
 
-
-
     def get_matching_patch(self, downstream_patch):
         """
         downstream_patch is a Patch object to match to upstream
@@ -38,24 +36,36 @@ class DownstreamMatcher:
         # Threshold that we must hit to return a match
         threshold = 0.75
 
+        # Preprocessing for matching filenames
+        downstream_filepaths = downstream_patch.filenames.split(" ")
+        downstream_file_components = [_get_filepath_components(filepath) for filepath in downstream_filepaths]
+
         for upstream_patch in self.upstream_patches:
             # Calculate confidence that our downstream patch matches this upstream patch
 
-            # Calculate filenames confidence, which is the percentage of files upstream that are present in the downstream patch
-
+            # Calculate filenames confidence, which is roughly the percent of upstream filepaths present downstream
             if (downstream_patch.filenames == "" or upstream_patch.filenames == ""):
-                filenames_confidence = 0.0
+                filenames_confidence = 1.0 if (downstream_patch.filenames == upstream_patch.filenames) else 0.0
             else:
-                num_filenames_match = 0
-                upstream_filenames = upstream_patch.filenames.split(" ")
-                downstream_filenames = downstream_patch.filenames.split(" ")
-                for upstream_filename in upstream_filenames:
-                    for downstream_filename in downstream_filenames:
-                        if downstream_filename.endswith(upstream_filename):
-                            num_filenames_match += 1
-                            break
+                total_filepaths_match = 0
+                upstream_filepaths = upstream_patch.filenames.split(" ")
+                upstream_file_components = [_get_filepath_components(filepath) for filepath in upstream_filepaths]
 
-                filenames_confidence = float(num_filenames_match) / len(upstream_filenames)
+                for (upstream_path, upstream_name) in upstream_file_components:
+                    max_match = 0.0
+                    # Find best matching downstream filepath
+                    for (downstream_path, downstream_name) in downstream_file_components:
+                        if (upstream_name == downstream_name):
+                            # 0.5 for matching filename, the paths are fuzzymatched scaled 0.0-0.5 for remaining match
+                            match = 0.5 + (fuzz.partial_ratio(upstream_path, downstream_path) / 200.0)
+                        else:
+                            match = 0.0
+
+                        if match > max_match:
+                            max_match = match
+                    total_filepaths_match += max_match
+
+                filenames_confidence = float(total_filepaths_match) / len(upstream_filepaths)
 
             author_confidence = fuzz.token_set_ratio(upstream_patch.author_name, downstream_patch.author_name) / 100.0
             subject_confidence = fuzz.partial_ratio(upstream_patch.subject, downstream_patch.subject) / 100.0
@@ -64,7 +74,6 @@ class DownstreamMatcher:
                 description_confidence = 1.0 if downstream_patch.description == "" else 0.0
             else:
                 description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
-                
 
             confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence
             if confidence > best_confidence and confidence >= threshold:
@@ -81,3 +90,12 @@ class DownstreamMatcher:
             return None
 
         return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch_id)
+
+def _get_filepath_components(filepath):
+    """
+    Splits filepath to return (path, filename)
+    """
+    components = filepath.rsplit('/', 1)
+    if (len(components) == 1):
+        return (None, components[0])
+    return (components[0], components[1])
