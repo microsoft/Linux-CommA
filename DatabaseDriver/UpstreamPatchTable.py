@@ -30,7 +30,7 @@ class UpstreamPatchTable():
         '''
         check if this commit is already present in Upstream
         '''
-        rows = self.cursor.execute("SELECT * from [Upstream-PatchTracker] where commitId like ?;",commit_id).fetchall()
+        rows = self.cursor.execute("SELECT * from [Upstream-PatchTracker] where commitId like ? ;",commit_id).fetchall()
         if rows is None or len(rows) == 0:
             return False
         else:

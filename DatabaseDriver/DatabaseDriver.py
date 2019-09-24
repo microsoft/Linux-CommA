@@ -1,4 +1,6 @@
 import pyodbc
+from Setup.DbCred import DatabaseCredentials as DbCred
+
 
 class DatabaseDriver:
     """
@@ -10,11 +12,9 @@ class DatabaseDriver:
         Initialize Database connection
         """
         print("Connecting to Database...")
-        self.server = 'linuxpatchtracker.database.windows.net'
-        self.database = 'linuxpatchtracker'
-        self.username = 'lsgadmin'
-        self.password = input("Enter database password")
-        self.connection = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+self.server+';DATABASE='+self.database+';UID='+self.username+';PWD='+ self.password)
+        # Get Database credentials
+        dbCred = DbCred()
+        self.connection = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};SERVER='+dbCred.database_server+';DATABASE='+dbCred.database_name+';UID='+dbCred.database_user+';PWD='+ dbCred.database_password)
         self.cursor = self.connection.cursor()
     
     @staticmethod
