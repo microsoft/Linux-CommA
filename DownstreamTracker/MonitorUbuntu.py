@@ -20,16 +20,15 @@ def monitor_distro(distro):
         # make sure that Kernel is present
         print(distro.distro_id+" Monitoring Script..")
         folder_name = distro.repo_link.rsplit('/', 1)[-1]
-        print(folder_name)
         if os.path.exists(cst.PathToClone+folder_name):
-            print("[Info] Path to Ubuntu Bionic Repo exists")
+            print("[Info] Path to "+folder_name+" Repo exists")
             repo = git.Repo(cst.PathToClone+folder_name)
             print("[Info] Pulling recent changes")
             repo.remotes.origin.pull()
             print("[Info] Git pull complete")
         else:
-            print("[Info] Path to Ubuntu Bionic does not exists")
-            print("[Info] Cloning Ubuntu Bionic repo")
+            print("[Info] Path to "+folder_name+" does not exists")
+            print("[Info] Cloning "+folder_name+" repo")
             # clone single branch
             #git.Git(cst.PathToClone).clone(distro.repo_link)
             git.Repo.clone_from(distro.repo_link,cst.PathToClone+folder_name,branch='master')
