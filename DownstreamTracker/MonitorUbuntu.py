@@ -15,18 +15,13 @@ from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from DatabaseDriver.DistroTable import DistroTable
 from UpstreamTracker.ParseData import parse_log
 
-def monitor_distro(distro):
+def monitor_distro(distro, kernel_list):
+    currDir = os.getcwd()
     try:
         # make sure that Kernel is present
         print(distro.distro_id+" Monitoring Script..")
         folder_name = distro.repo_link.rsplit('/', 1)[-1]
-        if os.path.exists(cst.PathToClone+folder_name):
-            print("[Info] Path to "+folder_name+" Repo exists")
-            repo = git.Repo(cst.PathToClone+folder_name)
-            print("[Info] Pulling recent changes")
-            repo.remotes.origin.pull()
-            print("[Info] Git pull complete")
-        else:
+        if not os.path.exists(cst.PathToClone+folder_name):
             print("[Info] Path to "+folder_name+" does not exists")
             print("[Info] Cloning "+folder_name+" repo")
             # clone single branch
@@ -34,6 +29,33 @@ def monitor_distro(distro):
             git.Repo.clone_from(distro.repo_link,cst.PathToClone+folder_name,branch='master')
             print("[Info] Cloning Complete")
 
+        repo = git.Repo(cst.PathToClone+folder_name)
+        print("[Info] Pulling recent changes")
+        repo.remotes.origin.pull()
+        print("[Info] Git pull complete")
+        # get all the tags in the repo
+        currDir = os.getcwd()
+        os.chdir(cst.PathToClone+folder_name)
+        new_kernels = []
+        for tag in reversed(repo.tags):
+            if tag.name not in kernel_list:
+                print("[Info] Found new kernel version "+tag.name+" in distro "+distro.distro_id)
+                new_kernels.append(tag.name)
+                command = "git checkout "+tag.name
+                os.system(command)
+                distro.kernel_version = tag.name
+                get_logs(folder_name, distro)
+        
+        return new_kernels
+
+    except Exception:
+        print("[Error] Exception occured "+str(Exception))
+    finally:
+        os.chdir(currDir)
+        print("[Info] End of parsing for "+distro.distro_id)
+
+def get_logs(folder_name,distro):
+    try:
 
         #parse maintainers file to get hyperV files
         print("[Info] parsing maintainers files")
@@ -41,11 +63,8 @@ def monitor_distro(distro):
         print("[Info] Received HyperV file paths")
         fileNames = sanitizeFileNames(fileList)
 
-
         # Collecting git logs for HyperV files
         print("[Info] Preprocessed HyperV file paths")
-        currDir = os.getcwd()
-        os.chdir(cst.PathToClone+folder_name)
         command = "git log -p -- "+' '.join(fileNames)+" > "+cst.PathToCommitLog+"/"+folder_name+"Log"
         os.system(command)
         print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/"+folder_name+"Log")
@@ -53,9 +72,9 @@ def monitor_distro(distro):
         # Parse git log and dump data into database
         match = DownstreamMatcher(UpstreamPatchTable())
         parse_log(cst.PathToCommitLog+"/"+folder_name+"Log", DistroMatch(), match, distro, distro.distro_id)
-        os.chdir(currDir)
+
     except Exception:
-        print("[Error] Exception occured "+Exception)
+        print("[Error] Exception occured "+str(Exception))
     finally:
         print("[Info] End of parsing for "+distro.distro_id)
 
@@ -70,7 +89,9 @@ if __name__ == '__main__':
 
     # for every distro run next
     for distro in distro_list:
-        monitor_distro(distro)
+        new_kernels = monitor_distro(distro, Distro_table.get_kernel_list(distro.distro_id))
+        #insert new Kernels
+        Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
 
 
     
