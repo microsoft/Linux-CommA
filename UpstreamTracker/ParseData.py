@@ -25,7 +25,7 @@ def insert_patch(db,match,distro,patch, indicator):
     elif indicator.startswith("Ub"):
         dict1 = match.get_matching_patch(patch)
         if (dict1):
-            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.upstream_date, patch.buglink)   # get dirstroId from db table
+            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.upstream_date, patch.buglink, distro.kernel_version)   # get dirstroId from db table
 
 def parse_log( filename, db, match, distro, indicator):
     '''

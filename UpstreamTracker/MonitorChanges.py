@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     out = subprocess.getoutput("git rev-parse origin/master")
 
-    if out.split()[0] == open(cst.PathToLastsha).read():
+    if os.path.exists(cst.PathToLastsha) and out.split()[0] == open(cst.PathToLastsha).read():
         print("[Info] No new commits found")
     else:
         print("[Info] New commits found")
