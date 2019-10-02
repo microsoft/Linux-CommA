@@ -78,7 +78,7 @@ def parse_log( filename, db, match, distro, indicator):
                         date = date.strip()
                         patch.author_time = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
                     elif len(words) >= 3 and words[0] == "Commit:":
-                        # Skip
+                        continue
                     elif len(words) == 7 and words[0] == "CommitDate:":
                         date=""
                         for i in range(1,len(words)-1):
