@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     currDir = os.getcwd()
     os.chdir(cst.PathToLinux)
-    command = "git log -p -- "+' '.join(fileNames)+" > ../commit-log/log"
+    command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" > ../commit-log/log"
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
 

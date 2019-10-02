@@ -2,22 +2,23 @@ from datetime import datetime
 
 class Patch:
     
-    def __init__(self, subject, commit_id, author_name, author_email, upstream_date : datetime, description, filenames, diff):
+    def __init__(self, subject, commit_id, author_name, author_email, commit_time : datetime, description, filenames, diff, author_time : datetime):
         self._subject = subject
         self._commit_id = commit_id
         self._author_name = author_name
         self._author_email = author_email
-        self._upstream_date = upstream_date
+        self.commit_time = commit_time
         self._description = description
         self._filenames = filenames
         self._diff = diff
+        self._author_time = author_time
 
     @classmethod
     def blank(cls):
-        return cls("","","","",datetime.now(),"","","")
+        return cls("","","","",datetime.now(),"","","",datetime.now())
     
     def __str__(self):
-        return " "+self.subject+" "+self.commit_id+" "+str(self.upstream_date)+" "
+        return " "+self.subject+" "+self.commit_id+" "+str(self.commit_time)+" "
 
     @property
     def subject(self):
@@ -56,13 +57,13 @@ class Patch:
         self._author_email = value
     
     @property
-    def upstream_date(self):
-        """ upstream_date of the patch """
-        return self._upstream_date
+    def commit_time(self):
+        """ commit_time of the patch """
+        return self._commit_time
     
-    @upstream_date.setter
-    def upstream_date(self, value : datetime):
-        self._upstream_date = value
+    @commit_time.setter
+    def commit_time(self, value : datetime):
+        self._commit_time = value
 
     @property
     def description(self):
@@ -90,4 +91,12 @@ class Patch:
     @diff.setter
     def diff(self, value : str):
         self._diff = value
+
+    @property
+    def author_time(self):
+        return self._author_time
+    
+    @author_time.setter
+    def author_time(self, value : str):
+        self._author_time = value
 
