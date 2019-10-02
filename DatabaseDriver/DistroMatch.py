@@ -12,7 +12,7 @@ class DistroMatch():
         Insert data into DistributionPatches
         """
         conx = self.cursor.execute("insert into [dbo].[DistributionPatches]\
-            ([patchId],[distroId],[commitId],[bugReportLink],[datetimeAdded],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence],[kernelVersion],[authorTime])\
+            ([patchId],[distroId],[commitId],[bugReportLink],[commitTime],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence],[kernelVersion],[authorTime])\
                 values(?,?,?,?,?,?,?,?,?,?,?,?,?)",\
                     DistroPatchMatch.upstream_patch_id,distroId,commitId, buglink,date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,0,DistroPatchMatch.filenames_confidence,DistroPatchMatch.confidence,kernel_version, author_time)
         conx.commit()
