@@ -92,6 +92,11 @@ if __name__ == '__main__':
         new_kernels = monitor_distro(distro, Distro_table.get_kernel_list(distro.distro_id))
         #insert new Kernels
         Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
+        print("[Info] resetting git head for repo "+distro.distro_id)
+        command = "git checkout master"
+        os.system(command)
+    
+    print("Patch Tracker finishing up")
 
 
     
