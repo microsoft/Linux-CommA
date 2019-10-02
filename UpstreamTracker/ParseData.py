@@ -13,19 +13,19 @@ from Objects.UbuntuPatch import Ubuntu_Patch
 
 def get_patch_object(indicator):
     if indicator == "Upstream":
-        return UpstreamPatch("","","","","",datetime.now(),"","","")
+        return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now())
     elif indicator.startswith("Ub"):
-        return Ubuntu_Patch("","","","",datetime.now(),"","","","")
+        return Ubuntu_Patch("","","","",datetime.now(),"","","","",datetime.now())
     else:
         print("Exception")
 
 def insert_patch(db,match,distro,patch, indicator):
     if indicator == "Upstream":
-        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.upstream_date,patch.filenames)
+        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time)
     elif indicator.startswith("Ub"):
         dict1 = match.get_matching_patch(patch)
         if (dict1):
-            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.upstream_date, patch.buglink)   # get dirstroId from db table
+            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, patch.author_time)   # get dirstroId from db table
 
 def parse_log( filename, db, match, distro, indicator):
     '''
@@ -71,12 +71,20 @@ def parse_log( filename, db, match, distro, indicator):
                             patch.author_name += " "+words[word]
                         patch.author_email = words[len(words)-1]
                         patch.author_name = patch.author_name.strip()
-                    elif len(words) == 7 and words[0] == "Date:":
+                    elif len(words) == 7 and words[0] == "AuthorDate:":
                         date=""
                         for i in range(1,len(words)-1):
                             date += " "+words[i]
                         date = date.strip()
-                        patch.upstream_date = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
+                        patch.author_time = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
+                    elif len(words) >= 3 and words[0] == "Commit:":
+                        # Skip
+                    elif len(words) == 7 and words[0] == "CommitDate:":
+                        date=""
+                        for i in range(1,len(words)-1):
+                            date += " "+words[i]
+                        date = date.strip()
+                        patch.commit_time = datetime.strptime(date, '%a %b %d %H:%M:%S %Y')
                         prev_line_date = True
                     elif prev_line_date:
                         patch.subject=line.strip()

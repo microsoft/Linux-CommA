@@ -46,7 +46,7 @@ def monitor_distro(distro):
         print("[Info] Preprocessed HyperV file paths")
         currDir = os.getcwd()
         os.chdir(cst.PathToClone+folder_name)
-        command = "git log -p -- "+' '.join(fileNames)+" > "+cst.PathToCommitLog+"/"+folder_name+"Log"
+        command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" > "+cst.PathToCommitLog+"/"+folder_name+"Log"
         os.system(command)
         print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/"+folder_name+"Log")
 

@@ -7,14 +7,14 @@ class DistroMatch():
         """Initializa database connection"""
         self.cursor = DatabaseDriver.get_instance().cursor
     
-    def insertInto(self,DistroPatchMatch, distroId, commitId, date, buglink):
+    def insertInto(self,DistroPatchMatch, distroId, commitId, date, buglink, author_time):
         """
-        Insert data into upstream_patchtracker
+        Insert data into DistributionPatches
         """
         conx = self.cursor.execute("insert into [dbo].[DistributionPatches]\
-            ([patchId],[distroId],[commitId],[bugReportLink],[datetimeAdded],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence])\
+            ([patchId],[distroId],[commitId],[bugReportLink],[commitTime],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence],[authorTime])\
                 values(?,?,?,?,?,?,?,?,?,?,?)",\
-                    DistroPatchMatch.upstream_patch_id,distroId,commitId, buglink,date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,0,DistroPatchMatch.filenames_confidence,DistroPatchMatch.confidence)
+                    DistroPatchMatch.upstream_patch_id,distroId,commitId,buglink,date,DistroPatchMatch.author_confidence,DistroPatchMatch.subject_confidence,DistroPatchMatch.description_confidence,0,DistroPatchMatch.filenames_confidence,DistroPatchMatch.confidence, author_time)
         conx.commit()
     
     def check_commit_present(self, commit_id, distro):

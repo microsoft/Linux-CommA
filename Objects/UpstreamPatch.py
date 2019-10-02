@@ -3,6 +3,6 @@ from datetime import datetime
 
 class UpstreamPatch(Patch):
 
-    def __init__(self, patch_id, subject, commit_id, author_name, author_email, upstream_date : datetime, description, filenames, diff):
-        super().__init__(subject, commit_id, author_name, author_email, upstream_date, description, filenames, diff)
+    def __init__(self, patch_id, subject, commit_id, author_name, author_email, commit_time : datetime, description, filenames, diff, author_time : datetime):
+        super().__init__(subject, commit_id, author_name, author_email, commit_time, description, filenames, diff, author_time)
         self.patch_id = patch_id
