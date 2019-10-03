@@ -21,7 +21,7 @@ class DistroMatch():
         """
         Check if commit is already present in database
         """
-        rows = self.cursor.execute("SELECT * from [DistributionPatches] where commitId like ? and distroId like ? ;",commit_id,distro.distro_id).fetchall()
+        rows = self.cursor.execute("SELECT * from [DistributionPatches] where commitId like ? and distroId like ? and kernelVersion like ? ;",commit_id,distro.distro_id,distro.kernel_version).fetchall()
         if rows is None or len(rows) == 0:
             return False
         else:
