@@ -51,7 +51,6 @@ def monitor_distro(distro, kernel_list):
     except Exception:
         print("[Error] Exception occured "+str(Exception))
     finally:
-        os.chdir(currDir)
         print("[Info] End of parsing for "+distro.distro_id)
 
 def get_logs(folder_name,distro):
@@ -93,6 +92,10 @@ if __name__ == '__main__':
         #insert new Kernels
         Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
         print("[Info] resetting git head for repo "+distro.distro_id)
+        command = "git clean -dxf"
+        os.system(command)
+        command = "git reset --hard HEAD"
+        os.system(command)
         command = "git checkout master"
         os.system(command)
     
