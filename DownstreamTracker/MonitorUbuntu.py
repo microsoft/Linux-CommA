@@ -51,7 +51,6 @@ def monitor_distro(distro, kernel_list):
     except Exception:
         print("[Error] Exception occured "+str(Exception))
     finally:
-        os.chdir(currDir)
         print("[Info] End of parsing for "+distro.distro_id)
 
 def get_logs(folder_name,distro):
