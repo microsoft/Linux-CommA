@@ -91,7 +91,7 @@ if __name__ == '__main__':
         new_kernels = monitor_distro(distro, Distro_table.get_kernel_list(distro.distro_id))
         #insert new Kernels
         Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
-        if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd):
+        if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd()):
             print("[Info] resetting git head for repo "+distro.distro_id)
             command = "git clean -dxf"
             os.system(command)
