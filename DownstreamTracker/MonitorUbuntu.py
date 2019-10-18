@@ -50,6 +50,14 @@ def monitor_distro(distro, kernel_list):
 
     except Exception:
         print("[Error] Exception occured "+str(Exception))
+        if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd()):
+            print("[Info] resetting git head for repo "+distro.distro_id)
+            command = "git clean -dxf"
+            os.system(command)
+            command = "git reset --hard HEAD"
+            os.system(command)
+            command = "git checkout master"
+            os.system(command)
     finally:
         print("[Info] End of parsing for "+distro.distro_id)
 
@@ -96,6 +104,8 @@ if __name__ == '__main__':
             command = "git clean -dxf"
             os.system(command)
             command = "git reset --hard HEAD"
+            os.system(command)
+            command = "git fetch origin"
             os.system(command)
             command = "git checkout master"
             os.system(command)
