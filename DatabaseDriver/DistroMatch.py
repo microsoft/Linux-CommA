@@ -13,7 +13,7 @@ class DistroMatch():
         """
         #check if commitId is already present
         rows = self.cursor.execute("SELECT [kernelVersions] from [DistributionPatches] where commitId like ? and distroId like ? ;",commitId,distroId).fetchall()
-        if rows is None or len(rows) == 0:
+        if rows is None:
             #get list of kernel_versions
             conx = self.cursor.execute("insert into [dbo].[DistributionPatches]\
                 ([patchId],[distroId],[commitId],[bugReportLink],[commitTime],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence],[kernelVersions],[authorTime])\
