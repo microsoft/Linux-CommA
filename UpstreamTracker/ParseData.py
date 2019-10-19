@@ -49,8 +49,11 @@ def parse_log( filename, db, match, distro, indicator):
                     if len(words) == 2 and words[0] == "commit":
                         # print("Commit id: "+commit_id)
                         if patch.commit_id is not None and len(patch.commit_id) > 0:
-                            if db.check_commit_present(patch.commit_id, distro) or skip_commit:
-                                print("Commit id "+patch.commit_id+" is skipped as either present already or a merge commit")
+                            if db.check_commit_present(patch.commit_id, distro):
+                                print("Commit id "+patch.commit_id+" is skipped as either present already")
+                                count_present += 1
+                            elif skip_commit:
+                                print("Commit id "+patch.commit_id+" is skipped as it is a merge commit")
                                 count_present += 1
                             else:
                                 patch.filenames = " ".join(diff_fileNames)

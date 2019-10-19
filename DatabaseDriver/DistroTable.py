@@ -48,5 +48,10 @@ class DistroTable():
         for kernel_version in kernel_list:
             conx = self.cursor.execute("INSERT INTO [dbo].[Distro_kernel] ([distroId],[kernelVersion]) VALUES (?,?)", distro_id,kernel_version)
             conx.commit()
+    
+    def delete_kernel_version(self, kernel_version, distro_id):
+        rows = self.cursor.execute('delete from [dbo].[Distro_kernel] where [distroId] = ? and [kernelVersion] = ?',distro_id,kernel_version)
+        print("[Info] Deleted "+rows.rowcount+" rows")
+        rows.commit()
 
     
