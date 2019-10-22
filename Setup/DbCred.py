@@ -9,7 +9,7 @@ class DatabaseCredentials:
         if os.path.exists(cst.PathToSecret):
             print("[Info] Path to Secrets Repo exists")
             repo = git.Repo(cst.PathToSecret)
-            print("[Info] Pulling recent changes")
+            print("[Info] Pulling recent changes for secrets repo")
             repo.remotes.origin.pull()
             print("[Info] Git pull complete")
         else:
