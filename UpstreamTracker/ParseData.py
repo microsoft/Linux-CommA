@@ -12,6 +12,7 @@ from Objects.UpstreamPatch import UpstreamPatch
 from Objects.UbuntuPatch import Ubuntu_Patch
 from Objects.Diff_code import Diff_code
 
+
 def get_patch_object(indicator):
     if indicator == "Upstream":
         return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now(),[])
@@ -21,8 +22,11 @@ def get_patch_object(indicator):
         print("Exception")
 
 def insert_patch(db,match,distro,patch, indicator):
+    diff=''
+    for s in patch.diff_dict:
+        diff += str(s)
     if indicator == "Upstream":
-        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time,x += [s for s in patch.diff_dict])
+        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time,diff)
     elif indicator.startswith("Ub"):
         dict1 = match.get_matching_patch(patch)
         if (dict1):

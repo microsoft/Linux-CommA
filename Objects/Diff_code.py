@@ -6,4 +6,4 @@ class Diff_code:
         self.diff_remove = diff_remove
     
     def __str__(self):
-        return ""+self.diff_filename"\n"+self.diff_add+"\n"+self.diff_remove
+        return ""+self.diff_filename+"\n"+self.diff_add+"\n"+self.diff_remove
