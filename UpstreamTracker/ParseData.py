@@ -10,10 +10,11 @@ from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 from datetime import datetime
 from Objects.UpstreamPatch import UpstreamPatch
 from Objects.UbuntuPatch import Ubuntu_Patch
+from Objects.Diff_code import Diff_code
 
 def get_patch_object(indicator):
     if indicator == "Upstream":
-        return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now())
+        return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now(),[])
     elif indicator.startswith("Ub"):
         return Ubuntu_Patch("","","","",datetime.now(),"","","","",datetime.now())
     else:
@@ -21,11 +22,11 @@ def get_patch_object(indicator):
 
 def insert_patch(db,match,distro,patch, indicator):
     if indicator == "Upstream":
-        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time)
+        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time,x += [s for s in patch.diff_dict])
     elif indicator.startswith("Ub"):
         dict1 = match.get_matching_patch(patch)
         if (dict1):
-            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, distro.kernel_version, patch.author_time)   # get dirstroId from db table
+            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, distro.kernel_version, patch.author_time, patch.diff_dict)   # get dirstroId from db table
 
 def parse_log( filename, db, match, distro, indicator):
     '''
@@ -66,6 +67,7 @@ def parse_log( filename, db, match, distro, indicator):
                             commit_msg_started=False
                             skip_commit = False
                             diff_fileNames = []
+                            diff_code = Diff_code("","","")
                         patch.commit_id=words[1]
                     elif line.startswith("Merge: "):
                         skip_commit = True
@@ -111,7 +113,14 @@ def parse_log( filename, db, match, distro, indicator):
                     elif diff_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
+                        if not diff_code.is_empty():
+                            patch.diff_dict.append(diff_code)
+                        diff_code = Diff_code(fileN,"","")
                     elif diff_started:
+                        if words[0] == '+':
+                            diff_code.diff_add += line.strip()
+                        elif words[0] == '-':
+                            diff_code.diff_remove += line.strip()
                         patch.diff += line.strip()
                     else:
                         print("[Warning] No parsing done for the following line..")
