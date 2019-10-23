@@ -6,4 +6,12 @@ class Diff_code:
         self.diff_remove = diff_remove
     
     def __str__(self):
-        return ""+self.diff_filename+"\n"+self.diff_add+"\n"+self.diff_remove
+
+        return "filename|:"+self.diff_filename+"\n add+"+self.diff_add+"\n remove-"+self.diff_remove
+
+    def is_empty(self):
+        if (self.diff_filename is None or len(self.diff_filename) == 0) and \
+        (self.diff_add is None or len(self.diff_add) == 0) and \
+        (self.diff_remove is None or len(self.diff_remove) == 0):
+            return True
+        return False
