@@ -22,9 +22,11 @@ def get_patch_object(indicator):
         print("Exception")
 
 def insert_patch(db,match,distro,patch, indicator):
-    diff=''
-    for s in patch.diff_dict:
-        diff += str(s)
+    diff = ''
+    if len(patch.diff_dict) != 0:
+        diff=str(patch.diff_dict[0])
+        for s in range (1,len(patch.diff_dict)-1):
+            diff += "|||"+str(patch.diff_dict[s])
     if indicator == "Upstream":
         db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time,diff)
     elif indicator.startswith("Ub"):
@@ -41,6 +43,7 @@ def parse_log( filename, db, match, distro, indicator):
     diff_started=False
     commit_msg_started=False
     diff_fileNames = []
+    diff_code = Diff_code("","","")
     count_added = 0
     count_present = 0
     skip_commit = False
@@ -55,13 +58,15 @@ def parse_log( filename, db, match, distro, indicator):
                         # print("Commit id: "+commit_id)
                         if patch.commit_id is not None and len(patch.commit_id) > 0:
                             if db.check_commit_present(patch.commit_id, distro):
-                                print("Commit id "+patch.commit_id+" is skipped as either present already")
+                                print("Commit id "+patch.commit_id+" is already present")
                                 count_present += 1
                             elif skip_commit:
                                 print("Commit id "+patch.commit_id+" is skipped as it is a merge commit")
                                 count_present += 1
                             else:
                                 patch.filenames = " ".join(diff_fileNames)
+                                if not diff_code.is_empty():
+                                    patch.diff_dict.append(diff_code)
                                 print(patch)
                                 insert_patch(db,match,distro,patch,indicator)
                                 count_added += 1
@@ -106,6 +111,9 @@ def parse_log( filename, db, match, distro, indicator):
                         diff_fileNames.append(fileN)
                         commit_msg_started = False
                         diff_started=True
+                        if not diff_code.is_empty():
+                            patch.diff_dict.append(diff_code)
+                        diff_code = Diff_code(fileN,"","")
                         patch.diff += line.strip()
                     elif commit_msg_started:
                         ignore_phrases = ('reported-by:', 'signed-off-by:', 'reviewed-by:', 'acked-by:', 'cc:')
