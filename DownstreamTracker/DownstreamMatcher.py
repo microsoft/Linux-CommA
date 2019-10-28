@@ -32,7 +32,7 @@ class DownstreamMatcher:
         subject_weight = 0.49
         description_weight = 0.1
         filenames_weight = 0.2
-        author_date_weight = 0.01 # This addresses some edge cases of identical other fields
+        commit_date_weight = 0.01 # This addresses some edge cases of identical other fields
 
         # Threshold that we must hit to return a match
         threshold = 0.75
@@ -75,9 +75,9 @@ class DownstreamMatcher:
                 description_confidence = 1.0 if downstream_patch.description == "" else 0.0
             else:
                 description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
-            author_date_confidence = 1.0 if upstream_patch.author_time == downstream_patch.author_time else 0.0
+            commit_date_confidence = 1.0 if upstream_patch.commit_time == downstream_patch.commit_time else 0.0
 
-            confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence + author_date_confidence*author_date_weight
+            confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence + commit_date_confidence*commit_date_weight
             if confidence > best_confidence and confidence >= threshold:
                 best_patch_id = upstream_patch.patch_id
                 best_confidence = confidence
