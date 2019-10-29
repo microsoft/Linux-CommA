@@ -15,3 +15,13 @@ class Diff_code:
         (self.diff_remove is None or len(self.diff_remove) == 0):
             return True
         return False
+
+    def __eq__(self, other):
+        if (self.diff_add == other.diff_add and self.diff_remove == other.diff_remove):
+            return True
+        return False
+
+    def __ne__(self, other):
+        if (self.diff_add == other.diff_add and self.diff_remove == other.diff_remove):
+            return False
+        return True

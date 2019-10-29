@@ -18,7 +18,7 @@ class Patch:
         return cls("","","","",datetime.now(),"","","",datetime.now())
     
     def __str__(self):
-        return " "+self.subject+" "+self.commit_id+" "+str(self.commit_time)+" "
+        return " "+self.subject+" "+self.commit_id
 
     @property
     def subject(self):

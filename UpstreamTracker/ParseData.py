@@ -15,24 +15,19 @@ from Objects.Diff_code import Diff_code
 
 def get_patch_object(indicator):
     if indicator == "Upstream":
-        return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now(),[])
+        return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now())
     elif indicator.startswith("Ub"):
         return Ubuntu_Patch("","","","",datetime.now(),"","","","",datetime.now())
     else:
         print("Exception")
 
 def insert_patch(db,match,distro,patch, indicator):
-    diff = ''
-    if len(patch.diff_dict) != 0:
-        diff=str(patch.diff_dict[0])
-        for s in range (1,len(patch.diff_dict)-1):
-            diff += "|||"+str(patch.diff_dict[s])
     if indicator == "Upstream":
-        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time,diff)
+        db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time)
     elif indicator.startswith("Ub"):
         dict1 = match.get_matching_patch(patch)
         if (dict1):
-            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, distro.kernel_version, patch.author_time, patch.diff_dict)   # get dirstroId from db table
+            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, distro.kernel_version, patch.author_time)   # get dirstroId from db table
 
 def parse_log( filename, db, match, distro, indicator):
     '''
@@ -43,7 +38,6 @@ def parse_log( filename, db, match, distro, indicator):
     diff_started=False
     commit_msg_started=False
     diff_fileNames = []
-    diff_code = Diff_code("","","")
     count_added = 0
     count_present = 0
     skip_commit = False
@@ -65,8 +59,6 @@ def parse_log( filename, db, match, distro, indicator):
                                 count_present += 1
                             else:
                                 patch.filenames = " ".join(diff_fileNames)
-                                if not diff_code.is_empty():
-                                    patch.diff_dict.append(diff_code)
                                 print(patch)
                                 insert_patch(db,match,distro,patch,indicator)
                                 count_added += 1
@@ -76,7 +68,6 @@ def parse_log( filename, db, match, distro, indicator):
                             commit_msg_started=False
                             skip_commit = False
                             diff_fileNames = []
-                            diff_code = Diff_code("","","")
                         patch.commit_id=words[1]
                     elif line.startswith("Merge: "):
                         skip_commit = True
@@ -111,10 +102,7 @@ def parse_log( filename, db, match, distro, indicator):
                         diff_fileNames.append(fileN)
                         commit_msg_started = False
                         diff_started=True
-                        if not diff_code.is_empty():
-                            patch.diff_dict.append(diff_code)
-                        diff_code = Diff_code(fileN,"","")
-                        patch.diff += line.strip()
+                        patch.diff += fileN
                     elif commit_msg_started:
                         ignore_phrases = ('reported-by:', 'signed-off-by:', 'reviewed-by:', 'acked-by:', 'cc:')
                         lowercase_line = line.strip().lower()
@@ -125,15 +113,9 @@ def parse_log( filename, db, match, distro, indicator):
                     elif diff_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
                         diff_fileNames.append(fileN)
-                        if not diff_code.is_empty():
-                            patch.diff_dict.append(diff_code)
-                        diff_code = Diff_code(fileN,"","")
                     elif diff_started:
-                        if words[0] == '+':
-                            diff_code.diff_add += line.strip()
-                        elif words[0] == '-':
-                            diff_code.diff_remove += line.strip()
-                        patch.diff += line.strip()
+                        if words[0] == '+' or words[0] == '-':
+                            patch.diff += "\n"+line.strip()
                     else:
                         print("[Warning] No parsing done for the following line..")
                         print(line)

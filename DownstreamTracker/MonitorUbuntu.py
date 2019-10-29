@@ -87,7 +87,7 @@ def get_logs(folder_name,distro):
 
         # Collecting git logs for HyperV files
         print("[Info] Preprocessed HyperV file paths")
-        command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" >> "+cst.PathToCommitLog+"/"+folder_name+"Log"
+        command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp+" "+cst.PathToCommitLog+"/"+folder_name+"Log"
         os.system(command)
         print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/"+folder_name+"Log")
 

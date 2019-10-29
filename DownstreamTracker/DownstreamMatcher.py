@@ -1,6 +1,7 @@
 
 from fuzzywuzzy import fuzz
 from Objects.DistroPatchMatch import DistroPatchMatch
+from Objects.Diff_code import Diff_code
 
 class DownstreamMatcher:
     upstream_patches = {}
@@ -68,6 +69,8 @@ class DownstreamMatcher:
 
                 filenames_confidence = float(total_filepaths_match) / len(upstream_filepaths)
 
+            #code_match_confidence = _get_code_matching(upstream_patch,downstream_patch)
+
             author_confidence = fuzz.token_set_ratio(upstream_patch.author_name, downstream_patch.author_name) / 100.0
             subject_confidence = fuzz.partial_ratio(upstream_patch.subject, downstream_patch.subject) / 100.0
             # Temporarily for description only checking exact string is in
@@ -101,3 +104,37 @@ def _get_filepath_components(filepath):
     if (len(components) == 1):
         return (None, components[0])
     return (components[0], components[1])
+
+'''
+
+'''
+def _get_code_matching(upstream, downstream):
+    upstream_file_changes = _get_diff_code(upstream.diff)
+    downstream_file_changes = _get_diff_code(downstream.diff)
+
+    num_diff_match = 0
+    for upstream_diff_code in upstream_file_changes:
+        for downstream_diff_code in downstream_file_changes:
+            if upstream_diff_code == downstream_diff_code:
+                num_diff_match += 1
+    
+    return num_diff_match/len(upstream_file_changes) if len(upstream_file_changes) != 0 else 0
+
+'''
+build array of diff_code objects from string
+'''
+def _get_diff_code(diff):
+    tokens = diff.strip().split('\n')
+    arr_diff_code = []
+    diff_code = Diff_code("","","")
+    for i in range(0,len(tokens)):
+        if tokens[i].startswith('+'):
+            diff_code.diff_add=tokens[i] if len(diff_code.diff_add)==0 else "\n"+tokens[i]
+        elif tokens[i].startswith('-'):
+            diff_code.diff_remove=tokens[i] if len(diff_code.diff_remove) == 0 else "\n"+tokens[i]
+        else:
+            if not diff_code.is_empty():
+                arr_diff_code.append(diff_code)
+            diff_code = Diff_code(tokens[i],"","")
+    return arr_diff_code
+
