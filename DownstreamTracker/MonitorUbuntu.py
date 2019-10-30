@@ -14,6 +14,7 @@ from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from DatabaseDriver.DistroTable import DistroTable
 from UpstreamTracker.ParseData import parse_log
+from Util.util import list_diff
 
 def sort_kernel_list(tags, distro):
     kernel_list = []
@@ -69,7 +70,7 @@ def monitor_distro(distro, old_kernel_list):
                 distro.kernel_version = tag
                 get_logs(folder_name, distro)
         
-        return new_kernels
+        return list_diff(new_kernels, DistroTable().get_kernel_list(distro.distro_id))
 
     except Exception as e:
         print("[Error] Exception occured "+str(e))
@@ -99,6 +100,8 @@ def get_logs(folder_name,distro):
         print("[Error] Exception occured "+str(e))
         print("[Info]Git rebase to master ")
         command = "git clean -dxf"
+        os.system(command)
+        command = "git reset --hard HEAD"
         os.system(command)
         command = "git checkout master"
         os.system(command)
