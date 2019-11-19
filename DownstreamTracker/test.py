@@ -7,7 +7,11 @@ from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
 import Constants.constants as cst
 
 #git.Git("C:/Users/ABMARATH/Documents/Work/").clone("git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/bionic",branch = "master")
-repo = git.Repo(cst.PathToBionic)
+repo = git.Repo("~/PatchTracker/SUSE12")
+latest_tags = sorted(repo.tags[:20], key=lambda t: t.commit.committed_date, reverse=True)
+for t in repo.tags:
+    print(t.commit.committed_date)
+
 
 EMPTY_TREE_SHA   = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 

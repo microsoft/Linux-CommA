@@ -6,4 +6,4 @@ PathToCommitLog="../commit-log"
 PathToLastsha="../lastSHA"
 PathToSecret="../LSG-Secret"
 NameMaintainers="MAINTAINERS"
-RedirectOp='>' if platform.system() == 'Windows' else '>>'
+RedirectOp='>>' if platform.system() == 'Windows' else '>'

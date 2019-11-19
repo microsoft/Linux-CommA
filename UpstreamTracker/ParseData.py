@@ -11,23 +11,31 @@ from datetime import datetime
 from Objects.UpstreamPatch import UpstreamPatch
 from Objects.UbuntuPatch import Ubuntu_Patch
 from Objects.Diff_code import Diff_code
+from Objects.confidence_weight import confidence_weight
 
 
 def get_patch_object(indicator):
     if indicator == "Upstream":
         return UpstreamPatch("","","","","",datetime.now(),"","","",datetime.now())
-    elif indicator.startswith("Ub"):
-        return Ubuntu_Patch("","","","",datetime.now(),"","","","",datetime.now())
+    #elif indicator.startswith("Ub"):
     else:
-        print("Exception")
+        return Ubuntu_Patch("","","","",datetime.now(),"","","","",datetime.now())
+    # else:
+    #     print("Exception")
 
 def insert_patch(db,match,distro,patch, indicator):
     if indicator == "Upstream":
         db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time)
     elif indicator.startswith("Ub"):
-        dict1 = match.get_matching_patch(patch)
+        conf = confidence_weight(0.2,0.49,0.1,0.2,0.01)
+        dict1 = match.get_matching_patch(patch,conf)
         if (dict1):
             db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, distro.kernel_version, patch.author_time)   # get dirstroId from db table
+    elif indicator.startswith("SUSE"):
+        conf = confidence_weight(0,1,0,0,0)
+        dict1 = match.get_matching_patch(patch,conf)
+        if (dict1) : #and dict1.upstream_patch_id != -1
+            db.insertInto(dict1,distro.distro_id,patch.commit_id,patch.commit_time, patch.buglink, distro.kernel_version, patch.author_time)
 
 def parse_log( filename, db, match, distro, indicator):
     '''

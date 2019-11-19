@@ -14,7 +14,7 @@ class DownstreamMatcher:
         """
         self.upstream_patches = up_db.get_upstream_patch()
 
-    def get_matching_patch(self, downstream_patch):
+    def get_matching_patch(self, downstream_patch, conf):
         """
         downstream_patch is a Patch object to match to upstream
         Returns: DistroPatchMatch, or None of no confidence match found
@@ -27,13 +27,14 @@ class DownstreamMatcher:
         best_subject_confidence = 0.0
         best_description_confidence = 0.0
         best_filenames_confidence = 0.0
+        best_code_match_confidence = 0.0
 
         # Confidence weights
-        author_weight = 0.2
-        subject_weight = 0.49
-        description_weight = 0.1
-        filenames_weight = 0.2
-        author_date_weight = 0.01 # This addresses some edge cases of identical other fields
+        # author_weight = 0.2
+        # subject_weight = 0.49
+        # description_weight = 0.1
+        # filenames_weight = 0.2
+        # author_date_weight = 0.01 # This addresses some edge cases of identical other fields
 
         # Threshold that we must hit to return a match
         threshold = 0.75
@@ -69,8 +70,6 @@ class DownstreamMatcher:
 
                 filenames_confidence = float(total_filepaths_match) / len(upstream_filepaths)
 
-            #code_match_confidence = _get_code_matching(upstream_patch,downstream_patch)
-
             author_confidence = fuzz.token_set_ratio(upstream_patch.author_name, downstream_patch.author_name) / 100.0
             subject_confidence = fuzz.partial_ratio(upstream_patch.subject, downstream_patch.subject) / 100.0
             # Temporarily for description only checking exact string is in
@@ -80,7 +79,7 @@ class DownstreamMatcher:
                 description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
             author_date_confidence = 1.0 if upstream_patch.author_time == downstream_patch.author_time else 0.0
 
-            confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence + author_date_confidence*author_date_weight
+            confidence = conf.author_weight*author_confidence + conf.subject_weight*subject_confidence + conf.description_weight*description_confidence + conf.filenames_weight*filenames_confidence + author_date_confidence*conf.author_date_weight
             if confidence > best_confidence and confidence >= threshold:
                 best_patch_id = upstream_patch.patch_id
                 best_confidence = confidence
@@ -92,9 +91,15 @@ class DownstreamMatcher:
                 print("[info] Two patches found with same confidence")
 
         if best_confidence < threshold:
-            return None
+            for upstream_patch in self.upstream_patches:
+                code_match_confidence = _get_code_matching(upstream_patch,downstream_patch)
 
-        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch_id)
+                if code_match_confidence > best_code_match_confidence:
+                    best_code_match_confidence = code_match_confidence
+                    best_patch_id = upstream_patch.patch_id
+                    best_confidence = code_match_confidence
+
+        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_code_match_confidence, best_confidence, best_patch_id)
 
 def _get_filepath_components(filepath):
     """
