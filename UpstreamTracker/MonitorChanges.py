@@ -8,6 +8,7 @@ import Constants.constants as cst
 from UpstreamTracker.ParseData import parse_log
 import subprocess
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
+from UpstreamTracker.Symbols import get_c_functions
 
 
 def parseMaintainers(PathLinux):
@@ -73,6 +74,9 @@ if __name__ == '__main__':
     print("[Info] Received HyperV file paths")
     fileNames = sanitizeFileNames(fileList)
     print("[Info] Preprocessed HyperV file paths")
+
+    #trial
+    get_c_functions(fileNames)
 
     currDir = os.getcwd()
     os.chdir(cst.PathToLinux)

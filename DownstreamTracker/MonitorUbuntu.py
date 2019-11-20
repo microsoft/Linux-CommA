@@ -80,7 +80,7 @@ def monitor_distro(distro, old_kernel_list):
             print("[Info] Cloning "+folder_name+" repo")
             # clone single branch
             #git.Git(cst.PathToClone).clone(distro.repo_link)
-            git.Repo.clone_from(distro.repo_link,cst.PathToClone+folder_name,branch='master')
+            git.Repo.clone_from(distro.repo_link,cst.PathToClone+folder_name,branch=distro.branch)
             print("[Info] Cloning Complete")
 
         repo = git.Repo(cst.PathToClone+folder_name)
