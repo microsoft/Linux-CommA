@@ -2,6 +2,7 @@ import pyodbc
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from Objects.UpstreamPatch import UpstreamPatch
 from datetime import datetime
+from Objects.Diff_code import Diff_code
 
 class UpstreamPatchTable():
 
@@ -37,5 +38,37 @@ class UpstreamPatchTable():
         
         upstream_patch_list = [UpstreamPatch(r[0],r[1],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[10]) for r in rows]
         return upstream_patch_list
+
+    def get_patch_diff(self):
+        rows = self.cursor.execute("SELECT patchId, patchFiles  from [Upstream-PatchTracker];").fetchall()
+        map = {}
+        for r in rows:
+            print("Print: "+str(r[0])+"--"+r[1]) 
+            map[r[0]]=r[1]
+        
+        return map
+        
+    def get_commits(self):
+        rows = self.cursor.execute("select commitid from [Upstream-PatchTracker] order by commitTime asc").fetchall()
+
+        commits=[]
+        for r in rows:
+            commits.append(r[0])
+        return commits
+
+    def save_patch_symbols(self, commit, patch_symbols):
+        conx = self.cursor.execute("Update [dbo].[Upstream-PatchTracker] SET [patchSymbols] = ? where commitId = ?",patch_symbols,commit)
+        conx.commit()
+
+    def get_patch_symbols(self):
+        rows  =self.cursor.execute("select patchId,patchSymbols from [Upstream-PatchTracker] where patchSymbols <> ' ' order by commitTime desc").fetchall()
+
+        map = {}
+        for r in rows:
+            map[r[0]] = r[1].split(" ")
+        
+        return map
+
+
     
     

@@ -61,10 +61,10 @@ def get_logs(folder_name,distro):
 
     except Exception as e:
         print("[Error] Exception occured "+str(e))
-        print("[Info]Git rebase to master ")
+        print("[Info]Git rebase to "+distro.branch_name)
         command = "git clean -dxf"
         os.system(command)
-        command = "git checkout master"
+        command = "git checkout "+distro.branch_name
         os.system(command)
     finally:
         print("[Info] End of parsing for "+distro.distro_id)
@@ -80,7 +80,7 @@ def monitor_distro(distro, old_kernel_list):
             print("[Info] Cloning "+folder_name+" repo")
             # clone single branch
             #git.Git(cst.PathToClone).clone(distro.repo_link)
-            git.Repo.clone_from(distro.repo_link,cst.PathToClone+folder_name,branch=distro.branch)
+            git.Repo.clone_from(distro.repo_link,cst.PathToClone+folder_name,branch=distro.branch_name)
             print("[Info] Cloning Complete")
 
         repo = git.Repo(cst.PathToClone+folder_name)
@@ -91,18 +91,23 @@ def monitor_distro(distro, old_kernel_list):
         # get all the tags in the repo
         currDir = os.getcwd()
         os.chdir(cst.PathToClone+folder_name)
-        new_kernels = sort_kernel_list(repo, distro)
-        for tag in new_kernels :
-            print("[Info] Found new kernel version "+tag+" in distro "+distro.distro_id)
-            command = "git checkout "+tag
-            os.system(command)
-            distro.kernel_version = tag
-            get_logs(folder_name, distro)
-        
-        if new_kernels is None or len(new_kernels) == 0:
-            print("[Info] No new kenrel tag found for distroId "+distro.distro_id)
+        if distro.branch_name == 'master':
+            new_kernels = sort_kernel_list(repo, distro)
+            for tag in new_kernels :
+                print("[Info] Found new kernel version "+tag+" in distro "+distro.distro_id)
+                command = "git checkout "+tag
+                os.system(command)
+                distro.kernel_version = tag
+                get_logs(folder_name, distro)
+            
+            if new_kernels is None or len(new_kernels) == 0:
+                print("[Info] No new kenrel tag found for distroId "+distro.distro_id)
 
-        return new_kernels
+            return new_kernels
+        else:
+            distro.kernel_version=""
+            get_logs(folder_name, distro)
+            return -1
     except Exception as e:
         print("[Error] Exception occured "+str(e))
     finally:
@@ -119,14 +124,15 @@ if __name__ == '__main__':
     # for every distro run next
     for distro in distro_list:
         new_kernels = monitor_distro(distro, Distro_table.get_kernel_list(distro.distro_id))
-        Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
+        if new_kernels != -1:
+            Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
         if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd()):
             print("[Info] resetting git head for repo "+distro.distro_id)
             command = "git clean -dxf"
             os.system(command)
             command = "git reset --hard HEAD"
             os.system(command)
-            command = "git checkout master"
+            command = "git checkout "+distro.branch_name
             os.system(command)
     
     print("Patch Tracker finishing up")
