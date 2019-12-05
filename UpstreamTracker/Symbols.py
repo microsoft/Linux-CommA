@@ -4,7 +4,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 import Constants.constants as cst
-from Objects.Symbol_patch import Symbol_patch
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
 from Util.util import list_diff
@@ -67,7 +66,7 @@ def symbol_checker(list_of_symbols):
         # but same symbols could only be differ with the help of header files
         if len(list_diff(symbols,list_of_symbols)) > 0:
             missing_symbol_patch.append(patchId)
-    return missing_symbol_patch
+    return sorted(missing_symbol_patch)
     
 
 if __name__ == '__main__':
