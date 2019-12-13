@@ -26,4 +26,3 @@ class DistroMatch():
             return False
         else:
             return True
-

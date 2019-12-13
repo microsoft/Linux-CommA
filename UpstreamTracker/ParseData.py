@@ -1,7 +1,6 @@
 import re
 import json
 import os,sys,inspect
-import datetime
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
@@ -41,7 +40,7 @@ def parse_log( filename, db, match, distro, indicator):
     '''
     parse_log will scrape each patch from git log
     '''
-    patch = get_patch_object(indicator)
+    patch = get_patch_object(distro.distro_id)
     prev_line_date=False
     diff_started=False
     commit_msg_started=False
@@ -68,9 +67,9 @@ def parse_log( filename, db, match, distro, indicator):
                             else:
                                 patch.filenames = " ".join(diff_fileNames)
                                 print(patch)
-                                insert_patch(db,match,distro,patch,indicator)
+                                insert_patch(db,match,distro,patch,distro.distro_id)
                                 count_added += 1
-                            patch = get_patch_object(indicator)
+                            patch = get_patch_object(distro.distro_id)
                             prev_line_date=False
                             diff_started=False
                             commit_msg_started=False
@@ -103,7 +102,7 @@ def parse_log( filename, db, match, distro, indicator):
                         patch.subject=line.strip()
                         prev_line_date=False
                         commit_msg_started=True
-                    elif (commit_msg_started and indicator.startswith("Ub")) and words[0] == 'BugLink:':
+                    elif (commit_msg_started and distro.distro_id.startswith("Ub")) and words[0] == 'BugLink:':
                         patch.buglink = words[1]
                     elif commit_msg_started and line.startswith('diff --git'):
                         fileN = words[2][1:]
@@ -134,7 +133,7 @@ def parse_log( filename, db, match, distro, indicator):
         if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.check_commit_present(patch.commit_id, distro):
             patch.filenames = " ".join(diff_fileNames)
             print(patch)
-            insert_patch(db,match,distro,patch,indicator)
+            insert_patch(db,match,distro,patch,distro.distro_id)
             count_added += 1
             
     except IOError:

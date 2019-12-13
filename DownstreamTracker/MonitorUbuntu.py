@@ -51,13 +51,13 @@ def get_logs(folder_name,distro):
 
         # Collecting git logs for HyperV files
         print("[Info] Preprocessed HyperV file paths")
-        command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp+" "+cst.PathToCommitLog+"/"+folder_name+"Log"
+        command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp+" "+cst.PathToCommitLog+"/"+folder_name+".log"
         os.system(command)
-        print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/"+folder_name+"Log")
+        print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/"+folder_name+".log")
 
         # Parse git log and dump data into database
         match = DownstreamMatcher(UpstreamPatchTable())
-        parse_log(cst.PathToCommitLog+"/"+folder_name+"Log", DistroMatch(), match, distro, distro.distro_id)
+        parse_log(cst.PathToCommitLog+"/"+folder_name+".log", DistroMatch(), match, distro, distro.distro_id)
 
     except Exception as e:
         print("[Error] Exception occured "+str(e))
