@@ -9,6 +9,7 @@ from DatabaseDriver.DistroMatch import DistroMatch
 from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
 from Objects.Distro import Distro
 from Util.util import contains_filepath
+from DownstreamTracker.MonitorUbuntu import *
 
 filenames = []
 
@@ -30,9 +31,9 @@ def check_hyperV_patch(patch_filenames):
 
 
 
-def parse_log( filename, db, match, distro, indicator):
+def parse_file_log( filename, db, match, distro, indicator):
     '''
-    parse_log will scrape each patch from git log
+    parse_file_log will scrape each patch from git log
     '''
     patch = get_patch_object("Debian")
     diff_started=False
@@ -125,7 +126,22 @@ def parse_log( filename, db, match, distro, indicator):
         print("[Info] Added new commits: "+str(count_added)+"\t skipped patches:"+str(count_present))
         f.closed
 
+def get_kernel_version(folder_name):
+    # parse changelog to get kernel version
+    return "4.9.88"
+
+def parse_upstream_kernel(distro,folder_name,kernel_version):
+    pass
+
+def monitor_debian(folder_name, distro):
+    # Get kernel Base Version
+    kernel_version = get_kernel_version(folder_name)
+    # parse upstream and store result as debian in downstream
+    parse_upstream_kernel(distro,cst.PathToLinux,kernel_version)
+    # parse debain repo
+
 if __name__ == '__main__':
     print("Starting patch scraping from files..")
-    distro = Distro("Debian","","","","")
-    parse_log(cst.PathToCommitLog+"/debian.log",DistroMatch(),"",distro,"Debain")
+    distro = Distro("DebianDebian9-backport","https://salsa.debian.org/kernel-team/linux.git","","","stretch-backports")
+    monitor_distro(distro,"")
+    #parse_file_log(cst.PathToCommitLog+"/debian.log",DistroMatch(),"",distro,"Debain")

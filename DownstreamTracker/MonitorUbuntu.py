@@ -15,6 +15,7 @@ from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from DatabaseDriver.DistroTable import DistroTable
 from UpstreamTracker.ParseData import parse_log
 from Util.util import list_diff
+from DownstreamTracker.Debian_parser import monitor_debian
 
 def sort_kernel_list(repo, distro):
     kernel_list = []
@@ -91,7 +92,11 @@ def monitor_distro(distro, old_kernel_list):
         # get all the tags in the repo
         currDir = os.getcwd()
         os.chdir(cst.PathToClone+folder_name)
-        if distro.branch_name == 'master':
+
+        # For file based repo (debian) we need separate parser
+        if distro.distro_id.startswith('Debian'):
+            monitor_debian(folder_name, distro)
+        elif distro.branch_name == 'master':
             new_kernels = sort_kernel_list(repo, distro)
             for tag in new_kernels :
                 print("[Info] Found new kernel version "+tag+" in distro "+distro.distro_id)
