@@ -25,7 +25,7 @@ def get_patch_object(indicator):
 def insert_patch(db,match,distro,patch, indicator):
     if indicator == "Upstream":
         db.insert_Upstream(patch.commit_id,patch.author_name,patch.author_email,patch.subject,patch.description,patch.diff,patch.commit_time,patch.filenames,patch.author_time)
-    elif indicator.startswith("Ub"):
+    elif indicator.startswith("Ub") or indicator.startswith("De"):
         conf = confidence_weight(0.2,0.49,0.1,0.2,0.01)
         dict1 = match.get_matching_patch(patch,conf)
         if (dict1):

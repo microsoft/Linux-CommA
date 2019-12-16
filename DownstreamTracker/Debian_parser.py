@@ -4,7 +4,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 import Constants.constants as cst
-from UpstreamTracker.ParseData import get_patch_object
+from UpstreamTracker.ParseData import get_patch_object, insert_patch
 from DatabaseDriver.DistroMatch import DistroMatch
 from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
 from Objects.Distro import Distro
@@ -18,7 +18,7 @@ def check_hyperV_patch(patch_filenames):
     global filenames
     if len(filenames) == 0:
         print("[Info] parsing maintainers files")
-        fileList = parseMaintainers(cst.PathToClone+'linux')
+        fileList = parseMaintainers(cst.PathToClone+'linux-stable')
         print("[Info] Received HyperV file paths")
         filenames = sanitizeFileNames(fileList)
 
@@ -57,7 +57,7 @@ def parse_file_log( filename, db, match, distro, indicator):
                             if check_hyperV_patch(diff_fileNames):
                                 print(" ************hyperV related patch*********************"+patch.subject)
                                 #if true then match upstream
-                                #then insert
+                                insert_patch(db,match,distro,patch,distro.distro_id)
                             print("New commit "+patch.subject)
 
                             patch = get_patch_object("debian")
@@ -115,9 +115,10 @@ def parse_file_log( filename, db, match, distro, indicator):
                 print("[Error] "+str(e))
                 print(line)
 
-        if (patch.commit_id is not None or len(patch.commit_id) != 0) and not db.check_commit_present(patch.commit_id, distro):
+        if (patch.subject is not None or len(patch.subject) != 0) and not db.check_commit_present(patch.subject, distro):
             patch.filenames = " ".join(diff_fileNames)
             print(patch)
+            insert_patch(db,match,distro,patch,distro.distro_id)
             count_added += 1
             
     except IOError:
@@ -130,18 +131,57 @@ def get_kernel_version(folder_name):
     # parse changelog to get kernel version
     return "4.9.88"
 
-def parse_upstream_kernel(distro,folder_name,kernel_version):
-    pass
+def parse_upstream_kernel(distro,folder_name):
+    if os.path.exists(cst.PathToClone+"/linux-stable"):
+        print("[Info] Path to Linux Repo exists")
+        repo = git.Repo(cst.PathToClone+"/linux-stable")
+        print("[Info] Pulling recent changes")
+        #repo.remotes.origin.pull()
+        print("[Info] Git pull complete")
+    else:
+        print("[Info] Path to Linux repo does not exists")
+        print("[Info] Cloning linux repo")
+        git.Git(cst.PathToClone).clone("git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git")
+        print("[Info] Cloning Complete")
+
+    currDir = os.getcwd()
+    os.chdir(cst.PathToClone+"/linux-stable")
+
+    print("[Info] resetting kernel version to "+distro.kernel_version)
+    # git rebase to kernel version
+    command = "git checkout tags/v"+distro.kernel_version
+    #os.system(command)
+
+    print("[Info] parsing maintainers files")
+    fileList = parseMaintainers(cst.PathToClone+"/linux-stable")
+    print("[Info] Received HyperV file paths")
+    fileNames = sanitizeFileNames(fileList)
+    print("[Info] Preprocessed HyperV file paths")
+
+    
+    command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp+" "+cst.PathToCommitLog+"/"+distro.kernel_version+".log"
+    os.system(command)
+    print("[Info] Created HyperV git logs at "+cst.PathToCommitLog)
+
+    # Parse git log and dump data into database
+    match = DownstreamMatcher(UpstreamPatchTable())
+    parse_log(cst.PathToCommitLog+"/"+distro.kernel_version+".log", DistroMatch(), match, distro, distro.distro_id)
 
 def monitor_debian(folder_name, distro):
     # Get kernel Base Version
-    kernel_version = get_kernel_version(folder_name)
+    distro.kernel_version = get_kernel_version(folder_name)
     # parse upstream and store result as debian in downstream
-    parse_upstream_kernel(distro,cst.PathToLinux,kernel_version)
+    #parse_upstream_kernel(distro,cst.PathToLinux)
     # parse debain repo
+    os.chdir(cst.PathToClone+"/"+folder_name+"/debian/patches")
+
+    command = "find . -name '*.patch' -exec cat "+cst.RedirectOp+cst.PathToCommitLog+"/"+folder_name+".log"+" {} \;"
+    os.system(command)
+    parse_file_log(cst.PathToCommitLog+"/"+folder_name+".log",DistroMatch(),"",distro,"Debain")
+
 
 if __name__ == '__main__':
     print("Starting patch scraping from files..")
-    distro = Distro("DebianDebian9-backport","https://salsa.debian.org/kernel-team/linux.git","","","stretch-backports")
+    distro = Distro("Debian9-backport","https://salsa.debian.org/kernel-team/linux.git","","","stretch-backports")
     monitor_distro(distro,"")
     #parse_file_log(cst.PathToCommitLog+"/debian.log",DistroMatch(),"",distro,"Debain")
