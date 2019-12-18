@@ -71,12 +71,12 @@ if __name__ == '__main__':
     print("[Info] parsing maintainers files")
     fileList = parseMaintainers(cst.PathToLinux)
     print("[Info] Received HyperV file paths")
-    fileNames = sanitizeFileNames(fileList)
+    filenames = sanitizeFileNames(fileList)
     print("[Info] Preprocessed HyperV file paths")
 
     currDir = os.getcwd()
     os.chdir(cst.PathToLinux)
-    command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" > ../commit-log/log"
+    command = "git log --pretty=fuller -p -- "+' '.join(filenames)+" > ../commit-log/log"
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
 
@@ -90,6 +90,6 @@ if __name__ == '__main__':
         gitCommand = "git rev-parse origin/master >"+cst.PathToLastsha
         os.system(gitCommand)
         print("[Info] Starting commit parsing")
-        parse_log(cst.PathToCommitLog+"/log",db,"","","Upstream")
+        parse_log(cst.PathToLinux, filenames, db , "", "", "Upstream")
 
     os.chdir(currDir)

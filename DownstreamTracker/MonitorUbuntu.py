@@ -93,7 +93,7 @@ def get_logs(folder_name,distro):
 
         # Parse git log and dump data into database
         match = DownstreamMatcher(UpstreamPatchTable())
-        parse_log(cst.PathToCommitLog+"/"+folder_name+"Log", DistroMatch(), match, distro, distro.distro_id)
+        parse_log(cst.PathToClone+folder_name, filenames, DistroMatch() , match, distro, distro.distro_id)
 
     except Exception as e:
         print("[Error] Exception occured "+str(e))

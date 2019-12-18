@@ -7,7 +7,7 @@ class Patch:
         self._commit_id = commit_id
         self._author_name = author_name
         self._author_email = author_email
-        self.commit_time = commit_time
+        self._commit_time = commit_time
         self._description = description
         self._filenames = filenames
         self._diff = diff

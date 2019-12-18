@@ -15,7 +15,7 @@ class UpstreamPatchTable():
         '''
         check if this commit is already present in Upstream
         '''
-        rows = self.cursor.execute("SELECT * from [Upstream-PatchTracker] where commitId like ? ;",commit_id).fetchall()
+        rows = self.cursor.execute("SELECT * from [Upstream-Dev] where commitId like ? ;",commit_id).fetchall()
         if rows is None or len(rows) == 0:
             return False
         else:
@@ -26,7 +26,7 @@ class UpstreamPatchTable():
         dump data into Upstream 
         '''
         try:
-            conx = self.cursor.execute("insert into [dbo].[Upstream-PatchTracker]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles],[commitTime],[diff_fileNames],[authorTime]) values(?,?,?,?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files,commit_time,diff_fNames,author_time)
+            conx = self.cursor.execute("insert into [dbo].[Upstream-Dev]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles],[commitTime],[diff_fileNames],[authorTime]) values(?,?,?,?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files,commit_time,diff_fNames,author_time)
             conx.commit()
         except pyodbc.Error as Error:
             print("[ERROR] Pyodbc error")
