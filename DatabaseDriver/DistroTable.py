@@ -8,7 +8,7 @@ class DistroTable():
         """Initializa database connection"""
         self.cursor = DatabaseDriver.get_instance().cursor
     
-    def insertInto(self,distro_object):
+    def insert_into(self,distro_object):
         """
         Insert data into distro
         """

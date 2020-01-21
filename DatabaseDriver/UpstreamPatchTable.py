@@ -21,12 +21,12 @@ class UpstreamPatchTable():
         else:
             return True
     
-    def insert_Upstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,commit_time,diff_fNames,author_time):
+    def insert_upstream(self, commit_id,author_name,author_id,commit_sub,commit_msg,diff_files,commit_time,diff_fNames,author_time,fixed_patches):
         '''
         dump data into Upstream 
         '''
         try:
-            conx = self.cursor.execute("insert into [dbo].[Upstream-Dev]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles],[commitTime],[diff_fileNames],[authorTime]) values(?,?,?,?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files,commit_time,diff_fNames,author_time)
+            conx = self.cursor.execute("insert into [dbo].[Upstream-Dev]([patchName],[state],[commitId],[commitMessage],[author],[authorEmail],[patchFiles],[commitTime],[diff_fileNames],[authorTime],[fixedPatches]) values(?,?,?,?,?,?,?,?,?,?,?)",commit_sub,"Upstream",commit_id, commit_msg, author_name,author_id,diff_files,commit_time,diff_fNames,author_time,fixed_patches)
             conx.commit()
         except pyodbc.Error as Error:
             print("[ERROR] Pyodbc error")
