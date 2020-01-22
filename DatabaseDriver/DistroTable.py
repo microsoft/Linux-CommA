@@ -5,7 +5,7 @@ from Objects.Distro import Distro
 class DistroTable():
     
     def __init__(self):
-        """Initializa database connection"""
+        """Initialize database connection"""
         self.cursor = DatabaseDriver.get_instance().cursor
     
     def insertInto(self,distro_object):
@@ -27,10 +27,10 @@ class DistroTable():
             return True
     
     def get_distro_list(self):
-        rows = self.cursor.execute("SELECT [distroId], [repoLink], [commitLink] FROM [dbo].[Distro];").fetchall()
+        rows = self.cursor.execute("SELECT [distroId], [repoLink], [commitLink], [branch] FROM [dbo].[Distro];").fetchall()
         distros = []
         for r in rows:
-            distros.append(Distro(r[0],r[1],'',r[2]))
+            distros.append(Distro(r[0],r[1],'',r[2],r[3]))
         
         return distros
 

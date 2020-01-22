@@ -1,6 +1,7 @@
 
 from fuzzywuzzy import fuzz
 from Objects.DistroPatchMatch import DistroPatchMatch
+from Objects.Diff_code import Diff_code
 
 class DownstreamMatcher:
     upstream_patches = {}
@@ -13,7 +14,7 @@ class DownstreamMatcher:
         """
         self.upstream_patches = up_db.get_upstream_patch()
 
-    def get_matching_patch(self, downstream_patch):
+    def get_matching_patch(self, downstream_patch, conf):
         """
         downstream_patch is a Patch object to match to upstream
         Returns: DistroPatchMatch, or None of no confidence match found
@@ -26,13 +27,14 @@ class DownstreamMatcher:
         best_subject_confidence = 0.0
         best_description_confidence = 0.0
         best_filenames_confidence = 0.0
+        best_code_match_confidence = 0.0
 
         # Confidence weights
-        author_weight = 0.2
-        subject_weight = 0.49
-        description_weight = 0.1
-        filenames_weight = 0.2
-        commit_date_weight = 0.01 # This addresses some edge cases of identical other fields
+        # author_weight = 0.2
+        # subject_weight = 0.49
+        # description_weight = 0.1
+        # filenames_weight = 0.2
+        # author_date_weight = 0.01 # This addresses some edge cases of identical other fields
 
         # Threshold that we must hit to return a match
         threshold = 0.75
@@ -75,9 +77,9 @@ class DownstreamMatcher:
                 description_confidence = 1.0 if downstream_patch.description == "" else 0.0
             else:
                 description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
-            commit_date_confidence = 1.0 if upstream_patch.commit_time == downstream_patch.commit_time else 0.0
+            author_date_confidence = 1.0 if upstream_patch.author_time == downstream_patch.author_time else 0.0
 
-            confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence + commit_date_confidence*commit_date_weight
+            confidence = conf.author_weight*author_confidence + conf.subject_weight*subject_confidence + conf.description_weight*description_confidence + conf.filenames_weight*filenames_confidence + author_date_confidence*conf.author_date_weight
             if confidence > best_confidence and confidence >= threshold:
                 best_patch_id = upstream_patch.patch_id
                 best_confidence = confidence
@@ -89,9 +91,15 @@ class DownstreamMatcher:
                 print("[info] Two patches found with same confidence")
 
         if best_confidence < threshold:
-            return None
+            for upstream_patch in self.upstream_patches:
+                code_match_confidence = _get_code_matching(upstream_patch,downstream_patch)
 
-        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch_id)
+                if code_match_confidence > best_code_match_confidence:
+                    best_code_match_confidence = code_match_confidence
+                    best_patch_id = upstream_patch.patch_id
+                    best_confidence = code_match_confidence
+
+        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_code_match_confidence, best_confidence, best_patch_id)
 
 def _get_filepath_components(filepath):
     """
@@ -101,3 +109,37 @@ def _get_filepath_components(filepath):
     if (len(components) == 1):
         return (None, components[0])
     return (components[0], components[1])
+
+'''
+
+'''
+def _get_code_matching(upstream, downstream):
+    upstream_file_changes = _get_diff_code(upstream.diff)
+    downstream_file_changes = _get_diff_code(downstream.diff)
+
+    num_diff_match = 0
+    for upstream_diff_code in upstream_file_changes:
+        for downstream_diff_code in downstream_file_changes:
+            if upstream_diff_code == downstream_diff_code:
+                num_diff_match += 1
+    
+    return num_diff_match/len(upstream_file_changes) if len(upstream_file_changes) != 0 else 0
+
+'''
+build array of diff_code objects from string
+'''
+def _get_diff_code(diff):
+    tokens = diff.strip().split('\n')
+    arr_diff_code = []
+    diff_code = Diff_code("","","")
+    for i in range(0,len(tokens)):
+        if tokens[i].startswith('+'):
+            diff_code.diff_add=tokens[i] if len(diff_code.diff_add)==0 else "\n"+tokens[i]
+        elif tokens[i].startswith('-'):
+            diff_code.diff_remove=tokens[i] if len(diff_code.diff_remove) == 0 else "\n"+tokens[i]
+        else:
+            if not diff_code.is_empty():
+                arr_diff_code.append(diff_code)
+            diff_code = Diff_code(tokens[i],"","")
+    return arr_diff_code
+

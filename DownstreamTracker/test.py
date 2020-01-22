@@ -5,17 +5,23 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
 import Constants.constants as cst
+from UpstreamTracker.ParseData import parse_log
+from Objects.Distro import Distro
+from DatabaseDriver.DistroMatch import DistroMatch
+from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
+from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
+from Util.util import contains_filepath
 
-#git.Git("C:/Users/ABMARATH/Documents/Work/").clone("git://git.launchpad.net/~ubuntu-kernel/ubuntu/+source/linux/+git/bionic",branch = "master")
-repo = git.Repo(cst.PathToBionic)
+print (contains_filepath("/tools/a/dev/driver/b.c","/tools/a/dev/drivers/a/b/b.c"))
 
-EMPTY_TREE_SHA   = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
 
 #parse maintainers file to get hyperV files
 print("[Info] parsing maintainers files")
 fileList = parseMaintainers(cst.PathToBionic)
 print("[Info] Received HyperV file paths")
 fileNames = sanitizeFileNames(fileList)
+
 
 fifty_first_commits = list(repo.iter_commits('master',paths=fileNames))
 print(len(fifty_first_commits))
