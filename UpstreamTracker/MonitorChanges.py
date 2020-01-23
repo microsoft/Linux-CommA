@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     currDir = os.getcwd()
     os.chdir(cst.PathToLinux)
-    command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp+" ../commit-log/log"
+    command = "git log --pretty=fuller -p -- "+' '.join(filenames)+" "+cst.RedirectOp+" ../commit-log/log"
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
 
@@ -92,6 +92,6 @@ if __name__ == '__main__':
         os.system(gitCommand)
         print("[Info] Starting commit parsing")
         distro = Distro("Upstream","","","","")
-        parse_log(cst.PathToCommitLog+"/log",db,"",distro,"Upstream")
+        parse_log(cst.PathToLinux, filenames, db, "", distro, "Upstream")
 
     os.chdir(currDir)

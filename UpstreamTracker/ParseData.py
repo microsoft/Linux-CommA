@@ -1,13 +1,8 @@
 import re
 import json
-<<<<<<< HEAD
 import os
 import sys
 import inspect
-import datetime
-=======
-import os,sys,inspect
->>>>>>> origin/dev
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
@@ -32,7 +27,7 @@ def get_patch_object(indicator):
 
 def insert_patch(db, match, distro, patch, indicator):
     if indicator == "Upstream":
-        db.insert_Upstream(patch.commit_id, patch.author_name, patch.author_email, patch.subject, patch.description, patch.diff, patch.commit_time, patch.filenames, patch.author_time)
+        db.insert_upstream(patch.commit_id, patch.author_name, patch.author_email, patch.subject, patch.description, patch.diff, patch.commit_time, patch.filenames, patch.author_time, patch.fixed_patches)
     elif indicator.startswith("Ub") or indicator.startswith("De"):
         conf = confidence_weight(0.2, 0.49, 0.1, 0.2, 0.01)
         dict1 = match.get_matching_patch(patch, conf)
