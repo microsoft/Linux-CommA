@@ -83,7 +83,7 @@ def parse_log(git_path, file_paths, db, match, distro, indicator):
         else:
             patch.description = ""
 
-        # Check if this patch fixes other patches. This will fill fixed_patches_concat with a string of space-separated fixed patches, e.g. "SHA1 SHA2 SHA3"
+        # Check if this patch fixes other patches. This will fill fixed_patches with a string of space-separated fixed patches, e.g. "SHA1 SHA2 SHA3"
         if indicator == "Upstream" and patch.description != "":
             fixed_patches_lines = filter(lambda x : x.strip().lower().startswith('fixes:'), list(description_lines))
             fixed_patches = []
@@ -94,7 +94,7 @@ def parse_log(git_path, file_paths, db, match, distro, indicator):
             patch.fixed_patches = " ".join(fixed_patches)
             
         if indicator.startswith("Ub"):
-            buglink_lines = filter(lambda x : x.startsWith('BugLink:'), buglink_lines)
+            buglink_lines = filter(lambda x : x.startswith('BugLink:'), buglink_lines)
             if len(buglink_lines) > 0:
                 # There will only be one buglink
                 words = buglink_lines[0].split(" ")
@@ -102,16 +102,24 @@ def parse_log(git_path, file_paths, db, match, distro, indicator):
 
         if (len(curr_commit.parents) == 0):
             # First ever commit, we don't need to store this as obviously it'll be present in any distro as it's needed
+            # TODO revisit, maybe check against set hash of first commit? Get code some other way? Unsure if first commit matters or not.
             continue
         else:
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = curr_commit.tree.diff(curr_commit.parents[0], paths=file_paths, create_patch=True)
 
         patch.filenames = " ".join([diff.a_path for diff in commit_diffs])
-        patch.diff = "\n\n".join(["Path: %s\n%s"%(diff.a_path, diff.diff) for diff in commit_diffs])
+
+        # Parse diff to only keep lines with changes (+ or - at start)
+        # diff is passed in as bytes
+        def parse_diff(diff):
+            diff_lines = diff.decode("utf-8").splitlines()
+            return "\n".join(filter(lambda line : line.startswith(("+","-")), diff_lines))
+            
+        patch.diff = "\n".join(["%s\n%s"%(diff.a_path, parse_diff(diff.diff)) for diff in commit_diffs])
 
         if db.check_commit_present(patch.commit_id, distro):
-            print("Commit id "+patch.commit_id+" is skipped as either present already")
+            print("Commit id "+patch.commit_id+" is skipped as it is present already")
             count_present += 1
         else:
             insert_patch(db, match, distro, patch, indicator)
