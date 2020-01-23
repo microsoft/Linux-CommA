@@ -8,6 +8,7 @@ import Constants.constants as cst
 from UpstreamTracker.ParseData import parse_log
 import subprocess
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
+from Objects.Distro import Distro
 
 
 def parseMaintainers(PathLinux):
@@ -76,7 +77,7 @@ if __name__ == '__main__':
 
     currDir = os.getcwd()
     os.chdir(cst.PathToLinux)
-    command = "git log --pretty=fuller -p -- "+' '.join(filenames)+" > ../commit-log/log"
+    command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp+" ../commit-log/log"
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
 
@@ -87,9 +88,10 @@ if __name__ == '__main__':
         print("[Info] No new commits found")
     else:
         print("[Info] New commits found")
-        gitCommand = "git rev-parse origin/master >"+cst.PathToLastsha
+        gitCommand = "git rev-parse origin/master "+cst.RedirectOp+cst.PathToLastsha
         os.system(gitCommand)
         print("[Info] Starting commit parsing")
-        parse_log(cst.PathToLinux, filenames, db , "", "", "Upstream")
+        distro = Distro("Upstream","","","","")
+        parse_log(cst.PathToCommitLog+"/log",db,"",distro,"Upstream")
 
     os.chdir(currDir)
