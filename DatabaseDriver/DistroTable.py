@@ -51,7 +51,7 @@ class DistroTable():
     
     def delete_kernel_version(self, kernel_version, distro_id):
         rows = self.cursor.execute('delete from [dbo].[Distro_kernel] where [distroId] = ? and [kernelVersion] = ?',distro_id,kernel_version)
-        print("[Info] Deleted "+rows.rowcount+" rows")
+        print("[Info] Deleted "+str(rows.rowcount)+" rows")
         rows.commit()
 
     
