@@ -35,7 +35,7 @@ class DistroTable():
         return distros
 
     def get_kernel_list(self, distro_id):
-        rows = self.cursor.execute("SELECT [kernelVersion] FROM [dbo].[Distro_kernel] where [distroId] = ?;",distro_id).fetchall()
+        rows = self.cursor.execute("SELECT [branch] FROM [dbo].[Distro] where [distroId] = ?;",distro_id).fetchall()
         kernel_versions = []
         for r in rows:
             kernel_versions.append(r[0])
@@ -51,7 +51,7 @@ class DistroTable():
     
     def delete_kernel_version(self, kernel_version, distro_id):
         rows = self.cursor.execute('delete from [dbo].[Distro_kernel] where [distroId] = ? and [kernelVersion] = ?',distro_id,kernel_version)
-        print("[Info] Deleted "+rows.rowcount+" rows")
+        print("[Info] Deleted "+str(rows.rowcount)+" rows")
         rows.commit()
 
     

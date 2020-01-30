@@ -35,9 +35,9 @@ class UpstreamPatchTable():
             print(Error)
 
     def get_upstream_patch(self):
-        rows = self.cursor.execute("select [patchId],[patchName],[state],[commitId],[author],[authorEmail],[commitTime],[commitMessage],[diff_fileNames],[patchFiles],[authorTime] from [Upstream-PatchTracker];").fetchall()
+        rows = self.cursor.execute("select [patchId],[patchName],[state],[commitId],[author],[authorEmail],[commitTime],[commitMessage],[diff_fileNames],[patchFiles],[authorTime],[fixedPatches] from [Upstream-PatchTracker];").fetchall()
         
-        upstream_patch_list = [UpstreamPatch(r[0],r[1],r[3],r[4],r[5],r[6],r[7],r[8],r[9],r[10]) for r in rows]
+        upstream_patch_list = [UpstreamPatch(r[0], r[1] ,r[3] ,r[4] ,r[5] ,r[6] ,r[7] ,r[8] , r[9], r[10], r[11]) for r in rows]
         return upstream_patch_list
 
     def get_patch_diff(self):
