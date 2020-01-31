@@ -88,6 +88,7 @@ class DownstreamMatcher:
                 best_description_confidence = description_confidence
                 best_filenames_confidence = filenames_confidence
             elif (confidence == best_confidence):
+                # TODO Check code matching in this case
                 print("[info] Two patches found with same confidence")
 
         if best_confidence < threshold:

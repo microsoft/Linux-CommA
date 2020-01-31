@@ -43,34 +43,29 @@ def sort_kernel_list(repo, distro):
     return list_diff(kernel_list, old_kernel_list)
 
 
-def get_logs(folder_name, distro):
-    try:
+def get_logs(distro_path, distro):
+    # try:
 
         #parse maintainers file to get hyperV files
         print("[Info] parsing maintainers files")
-        fileList = parseMaintainers(cst.PathToClone+folder_name)
+        filelist = parseMaintainers(distro_path)
         print("[Info] Received HyperV file paths")
-        fileNames = sanitizeFileNames(fileList)
-
-        # Collecting git logs for HyperV files
-        print("[Info] Preprocessed HyperV file paths")
-        command = "git log --pretty=fuller -p -- "+' '.join(fileNames)+" "+cst.RedirectOp + " " + cst.PathToCommitLog+"/"+folder_name+".log"
-        os.system(command)
-        print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog+"/"+folder_name+".log")
+        filenames = sanitizeFileNames(filelist)
 
         # Parse git log and dump data into database
-        match = DownstreamMatcher(UpstreamPatchTable())
-        parse_log(cst.PathToCommitLog+"/"+folder_name+".log", DistroMatch(), match, distro, distro.distro_id)
+        matcher = DownstreamMatcher(UpstreamPatchTable())
+        parse_log(distro_path, filenames, DistroMatch(), matcher, distro, distro.distro_id)
 
-    except Exception as e:
-        print("[Error] Exception occured "+str(e))
-        print("[Info]Git rebase to "+distro.branch_name)
-        command = "git clean -dxf"
-        os.system(command)
-        command = "git checkout "+distro.branch_name
-        os.system(command)
-    finally:
-        print("[Info] End of parsing for "+distro.distro_id)
+
+    # except Exception as e:
+    #     print("[Error] Exception occured "+str(e))
+    #     print("[Info]Git rebase to "+distro.branch_name)
+    #     command = "git clean -dxf"
+    #     os.system(command)
+    #     command = "git checkout "+distro.branch_name
+    #     os.system(command)
+    # finally:
+    #     print("[Info] End of parsing for "+distro.distro_id)
 
 
 def monitor_distro(distro, old_kernel_list):
@@ -98,23 +93,24 @@ def monitor_distro(distro, old_kernel_list):
 
         # For file based repo (debian) we need separate parser
         if distro.distro_id.startswith('Debian'):
-            monitor_debian(folder_name, distro)
+            # monitor_debian(folder_name, distro)
+            print("heyyy")
         elif distro.branch_name == 'master':
             new_kernels = sort_kernel_list(repo, distro)
             for tag in new_kernels :
                 print("[Info] Found new kernel version "+tag+" in distro "+distro.distro_id)
-                command = "git checkout "+tag
+                command = "git checkout -f "+tag
                 os.system(command)
                 distro.kernel_version = tag
-                get_logs(folder_name, distro)
+                get_logs(cst.PathToClone+folder_name, distro)
 
             if new_kernels is None or len(new_kernels) == 0:
-                print("[Info] No new kenrel tag found for distroId "+distro.distro_id)
+                print("[Info] No new kernel tag found for distroId "+distro.distro_id)
 
             return new_kernels
         else:
             distro.kernel_version = ""
-            get_logs(folder_name, distro)
+            get_logs(cst.PathToClone+folder_name, distro)
             return -1
     except Exception as e:
         print("[Error] Exception occured "+str(e))
@@ -135,13 +131,13 @@ if __name__ == '__main__':
         new_kernels = monitor_distro(distro, Distro_table.get_kernel_list(distro.distro_id))
         if new_kernels != -1:
             Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
-        if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd()):
-            print("[Info] resetting git head for repo "+distro.distro_id)
-            command = "git clean -dxf"
-            os.system(command)
-            command = "git reset --hard HEAD"
-            os.system(command)
-            command = "git checkout "+distro.branch_name
-            os.system(command)
+        # if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd()):
+        print("[Info] resetting git head for repo "+distro.distro_id)
+        command = "git clean -dxf"
+        os.system(command)
+        command = "git reset --hard HEAD"
+        os.system(command)
+        command = "git checkout "+distro.branch_name
+        os.system(command)
 
     print("Patch Tracker finishing up")

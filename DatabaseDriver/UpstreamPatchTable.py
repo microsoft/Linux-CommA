@@ -35,13 +35,13 @@ class UpstreamPatchTable():
             print(Error)
 
     def get_upstream_patch(self):
-        rows = self.cursor.execute("select [patchId],[patchName],[state],[commitId],[author],[authorEmail],[commitTime],[commitMessage],[diff_fileNames],[patchFiles],[authorTime],[fixedPatches] from [Upstream-PatchTracker];").fetchall()
+        rows = self.cursor.execute("select [patchId],[patchName],[state],[commitId],[author],[authorEmail],[commitTime],[commitMessage],[diff_fileNames],[patchFiles],[authorTime],[fixedPatches] from [Upstream-Dev];").fetchall()
         
         upstream_patch_list = [UpstreamPatch(r[0], r[1] ,r[3] ,r[4] ,r[5] ,r[6] ,r[7] ,r[8] , r[9], r[10], r[11]) for r in rows]
         return upstream_patch_list
 
     def get_patch_diff(self):
-        rows = self.cursor.execute("SELECT patchId, patchFiles  from [Upstream-PatchTracker];").fetchall()
+        rows = self.cursor.execute("SELECT patchId, patchFiles  from [Upstream-Deev];").fetchall()
         map = {}
         for r in rows:
             print("Print: "+str(r[0])+"--"+r[1]) 
@@ -50,7 +50,7 @@ class UpstreamPatchTable():
         return map
         
     def get_commits(self):
-        rows = self.cursor.execute("select commitid from [Upstream-PatchTracker] order by commitTime asc").fetchall()
+        rows = self.cursor.execute("select commitid from [Upstream-Dev] order by commitTime asc").fetchall()
 
         commits = []
         for r in rows:
@@ -58,11 +58,11 @@ class UpstreamPatchTable():
         return commits
 
     def save_patch_symbols(self, commit, patch_symbols):
-        conx = self.cursor.execute("Update [dbo].[Upstream-PatchTracker] SET [patchSymbols] = ? where commitId = ?", patch_symbols, commit)
+        conx = self.cursor.execute("Update [dbo].[Upstream-Dev] SET [patchSymbols] = ? where commitId = ?", patch_symbols, commit)
         conx.commit()
 
     def get_patch_symbols(self):
-        rows = self.cursor.execute("select patchId,patchSymbols from [Upstream-PatchTracker] where patchSymbols <> ' ' order by commitTime desc").fetchall()
+        rows = self.cursor.execute("select patchId,patchSymbols from [Upstream-Dev] where patchSymbols <> ' ' order by commitTime desc").fetchall()
 
         map = {}
         for r in rows:

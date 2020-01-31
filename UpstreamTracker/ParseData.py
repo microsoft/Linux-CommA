@@ -15,7 +15,6 @@ from Objects.Diff_code import Diff_code
 from Objects.confidence_weight import confidence_weight
 from datetime import datetime
 import git
-import git
 from datetime import datetime
 
 def get_patch_object(indicator):
@@ -94,7 +93,7 @@ def parse_log(git_path, file_paths, db, match, distro, indicator):
             patch.fixed_patches = " ".join(fixed_patches)
             
         if indicator.startswith("Ub"):
-            buglink_lines = filter(lambda x : x.startswith('BugLink:'), buglink_lines)
+            buglink_lines = list(filter(lambda x : x.startswith('BugLink:'), list(description_lines)))
             if len(buglink_lines) > 0:
                 # There will only be one buglink
                 words = buglink_lines[0].split(" ")
@@ -108,7 +107,8 @@ def parse_log(git_path, file_paths, db, match, distro, indicator):
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = curr_commit.tree.diff(curr_commit.parents[0], paths=file_paths, create_patch=True)
 
-        patch.filenames = " ".join([diff.a_path for diff in commit_diffs])
+        filenames_list = [diff.a_path for diff in commit_diffs if diff.a_path is not None]
+        patch.filenames = " ".join(filenames_list)
 
         # Parse diff to only keep lines with changes (+ or - at start)
         # diff is passed in as bytes
@@ -116,7 +116,7 @@ def parse_log(git_path, file_paths, db, match, distro, indicator):
             diff_lines = diff.decode("utf-8").splitlines()
             return "\n".join(filter(lambda line : line.startswith(("+","-")), diff_lines))
             
-        patch.diff = "\n".join(["%s\n%s"%(diff.a_path, parse_diff(diff.diff)) for diff in commit_diffs])
+        patch.diff = "\n".join(["%s\n%s"%(diff.a_path, parse_diff(diff.diff)) for diff in commit_diffs if diff.a_path is not None])
 
         if db.check_commit_present(patch.commit_id, distro):
             print("Commit id "+patch.commit_id+" is skipped as it is present already")

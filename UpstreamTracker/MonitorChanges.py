@@ -81,7 +81,6 @@ if __name__ == '__main__':
     os.system(command)
     print("[Info] Created HyperV files git logs at "+cst.PathToCommitLog)
 
-
     out = subprocess.getoutput("git rev-parse origin/master")
 
     if os.path.exists(cst.PathToLastsha) and out.split()[0] == open(cst.PathToLastsha).read():
