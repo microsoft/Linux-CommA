@@ -1,4 +1,5 @@
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
+import Constants.constants as cst
 
 
 class DistroMatch():
@@ -10,9 +11,9 @@ class DistroMatch():
     # TODO Set table name in one location rather than these many
     def insert_into(self, DistroPatchMatch, distroId, commitId, date, buglink, kernel_version, author_time):
         """
-        Insert data into UPSTREAM_TABLE_NAME
+        Insert data into DOWNSTREAM_TABLE_NAME
         """
-        conx = self.cursor.execute("insert into [dbo].[UPSTREAM_TABLE_NAME]\
+        conx = self.cursor.execute("insert into [dbo].[" + cst.DOWNSTREAM_TABLE_NAME + "]\
             ([patchId],[distroId],[commitId],[bugReportLink],[commitTime],[authorMatch],[subjectMatch],[descriptionMatch],[codeMatch],[fileNameMatch],[confidence],[kernelVersion],[authorTime])\
                 values(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 DistroPatchMatch.upstream_patch_id, distroId, commitId, buglink, date, DistroPatchMatch.author_confidence, DistroPatchMatch.subject_confidence,
@@ -24,7 +25,7 @@ class DistroMatch():
         Check if commit is already present in database
         """
         rows = self.cursor.execute(
-            "SELECT * from [UPSTREAM_TABLE_NAME] where commitId like ? and distroId like ? and kernelVersion like ?;",
+            "SELECT * from [" + cst.DOWNSTREAM_TABLE_NAME + "] where commitId like ? and distroId like ? and kernelVersion like ?;",
             commit_id, distro.distro_id, distro.kernel_version).fetchall()
         if rows is None or len(rows) == 0:
             return False
