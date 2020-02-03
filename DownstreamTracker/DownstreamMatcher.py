@@ -3,6 +3,7 @@ from fuzzywuzzy import fuzz
 from Objects.DistroPatchMatch import DistroPatchMatch
 from Objects.Diff_code import Diff_code
 
+
 class DownstreamMatcher:
     upstream_patches = {}
 
@@ -93,14 +94,16 @@ class DownstreamMatcher:
 
         if best_confidence < threshold:
             for upstream_patch in self.upstream_patches:
-                code_match_confidence = _get_code_matching(upstream_patch,downstream_patch)
+                code_match_confidence = _get_code_matching(upstream_patch, downstream_patch)
 
                 if code_match_confidence > best_code_match_confidence:
                     best_code_match_confidence = code_match_confidence
                     best_patch_id = upstream_patch.patch_id
                     best_confidence = code_match_confidence
 
-        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_code_match_confidence, best_confidence, best_patch_id)
+        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence,
+                                best_filenames_confidence, best_code_match_confidence, best_confidence, best_patch_id)
+
 
 def _get_filepath_components(filepath):
     """
@@ -111,9 +114,7 @@ def _get_filepath_components(filepath):
         return (None, components[0])
     return (components[0], components[1])
 
-'''
 
-'''
 def _get_code_matching(upstream, downstream):
     upstream_file_changes = _get_diff_code(upstream.diff)
     downstream_file_changes = _get_diff_code(downstream.diff)
@@ -123,24 +124,24 @@ def _get_code_matching(upstream, downstream):
         for downstream_diff_code in downstream_file_changes:
             if upstream_diff_code == downstream_diff_code:
                 num_diff_match += 1
-    
+
     return num_diff_match/len(upstream_file_changes) if len(upstream_file_changes) != 0 else 0
 
-'''
-build array of diff_code objects from string
-'''
+
 def _get_diff_code(diff):
+    '''
+    build array of diff_code objects from string
+    '''
     tokens = diff.strip().split('\n')
     arr_diff_code = []
-    diff_code = Diff_code("","","")
-    for i in range(0,len(tokens)):
+    diff_code = Diff_code("", "", "")
+    for i in range(0, len(tokens)):
         if tokens[i].startswith('+'):
-            diff_code.diff_add=tokens[i] if len(diff_code.diff_add)==0 else "\n"+tokens[i]
+            diff_code.diff_add = tokens[i] if len(diff_code.diff_add) == 0 else "\n" + tokens[i]
         elif tokens[i].startswith('-'):
-            diff_code.diff_remove=tokens[i] if len(diff_code.diff_remove) == 0 else "\n"+tokens[i]
+            diff_code.diff_remove = tokens[i] if len(diff_code.diff_remove) == 0 else "\n" + tokens[i]
         else:
             if not diff_code.is_empty():
                 arr_diff_code.append(diff_code)
-            diff_code = Diff_code(tokens[i],"","")
+            diff_code = Diff_code(tokens[i], "", "")
     return arr_diff_code
-

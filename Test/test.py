@@ -7,4 +7,4 @@ from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
 def test_get_code_matching():
     UpstreamPatchTable = UpstreamPatchTable()
     up_list = UpstreamPatchTable.get_upstream_patch()
-    dw_list = 
+    # dw_list = 

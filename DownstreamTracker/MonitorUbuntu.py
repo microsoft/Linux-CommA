@@ -1,26 +1,33 @@
 import git
-import os,sys,inspect
+import os
+import sys
+import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir) 
-import Constants.constants as cst
-from UpstreamTracker.MonitorChanges import parseMaintainers, sanitizeFileNames
-from Objects.UpstreamPatch import UpstreamPatch
-from Objects.DistroPatchMatch import DistroPatchMatch
-from Objects.UbuntuPatch import Ubuntu_Patch
-from datetime import datetime
-from DatabaseDriver.DistroMatch import DistroMatch
-from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
-from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from DatabaseDriver.DistroTable import DistroTable
-from UpstreamTracker.ParseData import parse_log
-from Util.util import list_diff
-from DownstreamTracker.Debian_parser import monitor_debian
+sys.path.insert(0, parentdir)
+# So many noqas due to importing after setting sys.path
+import Constants.constants as cst  # noqa E402
+from UpstreamTracker.MonitorChanges import parse_maintainers, sanitize_filenames  # noqa E402
+from Objects.UpstreamPatch import UpstreamPatch  # noqa E402
+from Objects.DistroPatchMatch import DistroPatchMatch  # noqa E402
+from Objects.UbuntuPatch import UbuntuPatch  # noqa E402
+from datetime import datetime  # noqa E402
+from DatabaseDriver.DistroMatch import DistroMatch  # noqa E402
+from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable  # noqa E402
+from DownstreamTracker.DownstreamMatcher import DownstreamMatcher  # noqa E402
+from DatabaseDriver.DistroTable import DistroTable  # noqa E402
+from UpstreamTracker.ParseData import process_commits  # noqa E402
+from Util.util import list_diff  # noqa E402
+from DownstreamTracker.Debian_parser import monitor_debian  # noqa E402
 
 
-def sort_kernel_list(repo, distro):
+def update_kernel_list(repo, distro):
+    """
+    This updates the stored two latest kernel per distro
+    """
     kernel_list = []
     if distro.distro_id.startswith('Ub'):
+        # For Ubuntu, we want the latest two tags that are NOT azure-edge
         latest_tags = sorted(repo.tags, key=lambda t: t.commit.committed_date, reverse=True)
         for tag in latest_tags:
             if len(kernel_list) == 2:
@@ -28,116 +35,82 @@ def sort_kernel_list(repo, distro):
             if not tag.name.startswith('Ubuntu-azure-edge'):
                 kernel_list.append(tag.name)
     elif distro.distro_id.startswith('SUSE'):
-        kernel_list = sorted(repo.git.tag(l=True).split('\n'))[-2:]
+        kernel_list = sorted(repo.git.tag(anything=True).split('\n'))[-2:]
     else:
         kernel_list = sorted(repo.tags, key=lambda t: t.commit.committed_date)[-2:]
-    # if old_kenrel_list contains diff elements than this one 
-    # then there is new latest kernel
-    # delete entries of old latest kernel 
+    # Update our stored latest two kernel versions if needed
     distro_table = DistroTable()
     old_kernel_list = distro_table.get_kernel_list(distro.distro_id)
     for kernel_version in list_diff(old_kernel_list, kernel_list):
-        print("[Info] Found kernel version no longer latest kernel: " + kernel_version)
+        print("[Info] Deleting old kernel version: %s" % kernel_version)
         distro_table.delete_kernel_version(kernel_version, distro.distro_id)
+    for kernel_version in list_diff(kernel_list, old_kernel_list):
+        print("[Info] Inserting new kernel version: " + kernel_version)
+        distro_table.insert_kernel_version(kernel_version, distro.distro_id)
 
-    return list_diff(kernel_list, old_kernel_list)
-
-
-def get_logs(distro_path, distro):
-    # try:
-
-        #parse maintainers file to get hyperV files
-        print("[Info] parsing maintainers files")
-        filelist = parseMaintainers(distro_path)
-        print("[Info] Received HyperV file paths")
-        filenames = sanitizeFileNames(filelist)
-
-        # Parse git log and dump data into database
-        matcher = DownstreamMatcher(UpstreamPatchTable())
-        parse_log(distro_path, filenames, DistroMatch(), matcher, distro, distro.distro_id)
+    return kernel_list
 
 
-    # except Exception as e:
-    #     print("[Error] Exception occured "+str(e))
-    #     print("[Info]Git rebase to "+distro.branch_name)
-    #     command = "git clean -dxf"
-    #     os.system(command)
-    #     command = "git checkout "+distro.branch_name
-    #     os.system(command)
-    # finally:
-    #     print("[Info] End of parsing for "+distro.distro_id)
+def process_downstream_commits(repo, distro):
+    # parse maintainers file to get hyperV files
+    print("[Info] parsing maintainers files")
+    file_list = parse_maintainers(repo, distro.get_revision())
+    print("[Info] Received HyperV file paths")
+    file_names = sanitize_filenames(file_list)
+
+    # Handle commits by parsing and matching to upstream
+    matcher = DownstreamMatcher(UpstreamPatchTable())
+    process_commits(repo, file_names, DistroMatch(), matcher, distro)
 
 
 def monitor_distro(distro, old_kernel_list):
-    currDir = os.getcwd()
-    try:
-        # make sure that Kernel is present
-        print(distro.distro_id+" Monitoring Script..")
-        folder_name = distro.distro_id  # distro.repo_link.rsplit('/', 1)[-1]
-        if not os.path.exists(cst.PathToClone+folder_name):
-            print("[Info] Path to "+folder_name+" does not exists")
-            print("[Info] Cloning "+folder_name+" repo")
-            # clone single branch
-            # git.Git(cst.PathToClone).clone(distro.repo_link)
-            git.Repo.clone_from(distro.repo_link, cst.PathToClone+folder_name, branch=distro.branch_name)
-            print("[Info] Cloning Complete")
+    # try:
+    # make sure that Kernel is present
+    print(distro.distro_id+" Monitoring Script..")
+    distro_filepath = os.path.join(cst.PATH_TO_REPOS, distro.distro_id)
+    # TODO check if repo is here rather than folder?
+    if not os.path.exists(distro_filepath):
+        print("[Info] Path to %s does not exists" % distro_filepath)
+        print("[Info] Cloning %s repo" % distro_filepath)
+        # clone repo into folder named distro.distro_id
+        git.Git(cst.PATH_TO_REPOS).clone(distro.repo_link, distro.distro_id, "--bare")
+        repo = git.Repo(distro_filepath)
+    else:
+        repo = git.Repo(distro_filepath)
+        print("[Info] Fetching recent changes")
+        repo.git.fetch()
 
-        repo = git.Repo(cst.PathToClone+folder_name)
-        print("[Info] Pulling recent changes")
-        repo.remotes.origin.pull()
-        print("[Info] Git pull complete")
-
-        # get all the tags in the repo
-        currDir = os.getcwd()
-        os.chdir(cst.PathToClone+folder_name)
-
-        # For file based repo (debian) we need separate parser
-        if distro.distro_id.startswith('Debian'):
-            # monitor_debian(folder_name, distro)
-            print("heyyy")
-        elif distro.branch_name == 'master':
-            new_kernels = sort_kernel_list(repo, distro)
-            for tag in new_kernels :
-                print("[Info] Found new kernel version "+tag+" in distro "+distro.distro_id)
-                command = "git checkout -f "+tag
-                os.system(command)
+    # For file based repo (debian) we need separate parser
+    if distro.distro_id.startswith('Debian'):
+        # TODO monitor_debian(folder_name, distro)
+        print("todotodotodotodo")
+    elif distro.distro_id.startswith('Ub'):
+        # For Ubuntu, we want to monitor latest two kernel versions
+        if (distro.distro_id.startswith('Ub')):
+            new_kernels = update_kernel_list(repo, distro)
+            for tag in new_kernels:
+                print("[Info] Monitoring kernel version %s in distro %s" % (distro.distro_id, tag))
                 distro.kernel_version = tag
-                get_logs(cst.PathToClone+folder_name, distro)
-
-            if new_kernels is None or len(new_kernels) == 0:
-                print("[Info] No new kernel tag found for distroId "+distro.distro_id)
-
-            return new_kernels
-        else:
-            distro.kernel_version = ""
-            get_logs(cst.PathToClone+folder_name, distro)
-            return -1
-    except Exception as e:
-        print("[Error] Exception occured "+str(e))
-    finally:
-        print("[Info] End of parsing for "+distro.distro_id)
+                process_downstream_commits(repo, distro)
+    elif (distro.distro_id.startswith('SUSE')):
+        process_downstream_commits(repo, distro)
+    else:
+        print("[Error] Encountered unsupported distro: %s" % distro.distro_id)
+    # except Exception as e:
+    #     print("[Error] Exception occured "+str(e))
+    # finally:
+    #     print("[Info] End of parsing for "+distro.distro_id)
 
 
 if __name__ == '__main__':
     print("Welcome to Patch tracker!!")
 
     # connect to DB read all entries in Distro table
-    Distro_table = DistroTable()
-    distro_list = Distro_table.get_distro_list()
-    os.makedirs(os.path.dirname(cst.PathToCommitLog), exist_ok=True)
+    distro_table = DistroTable()
+    distro_list = distro_table.get_distro_list()
 
     # for every distro run next
     for distro in distro_list:
-        new_kernels = monitor_distro(distro, Distro_table.get_kernel_list(distro.distro_id))
-        if new_kernels != -1:
-            Distro_table.insert_kernel_list(new_kernels, distro.distro_id)
-        # if distro.repo_link.rsplit('/', 1)[-1] == os.path.basename(os.getcwd()):
-        print("[Info] resetting git head for repo "+distro.distro_id)
-        command = "git clean -dxf"
-        os.system(command)
-        command = "git reset --hard HEAD"
-        os.system(command)
-        command = "git checkout "+distro.branch_name
-        os.system(command)
+        monitor_distro(distro, distro_table.get_kernel_list(distro.distro_id))
 
-    print("Patch Tracker finishing up")
+    print("Patch Tracker finished.")

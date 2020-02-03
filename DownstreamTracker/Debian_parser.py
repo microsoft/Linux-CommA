@@ -6,7 +6,7 @@ import os,sys,inspect
 import Constants.constants as cst
 from UpstreamTracker.ParseData import get_patch_object, insert_patch
 from DatabaseDriver.DistroMatch import DistroMatch
-from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
+from UpstreamTracker.MonitorChanges import parse_maintainers,sanitize_filenames
 from Objects.Distro import Distro
 from Util.util import contains_filepath
 # from DownstreamTracker.MonitorUbuntu import *

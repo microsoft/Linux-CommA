@@ -5,7 +5,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir) 
 import Constants.constants as cst
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
-from UpstreamTracker.MonitorChanges import parseMaintainers, sanitizeFileNames
+from UpstreamTracker.MonitorChanges import parse_maintainers, sanitize_filenames
 from Util.util import list_diff
 
 
@@ -51,9 +51,10 @@ def mapping_to_patches():
     commits = up.get_commits()
 
     print("[Info] parsing maintainers files")
-    fileList = parseMaintainers(cst.PathToLinux)
+    path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
+    fileList = parse_maintainers(path_to_linux)
     print("[Info] Received HyperV file paths")
-    fileNames = sanitizeFileNames(fileList)
+    fileNames = sanitize_filenames(fileList)
     print("[Info] Preprocessed HyperV file paths")
     map_symbols_to_patch("097c1bd5673edaf2a162724636858b71f658fdd2", commits, fileNames)
 
