@@ -6,7 +6,7 @@ import os,sys,inspect
 import Constants.constants as cst
 from UpstreamTracker.ParseData import get_patch_object, insert_patch
 from DatabaseDriver.DistroMatch import DistroMatch
-from UpstreamTracker.MonitorChanges import parse_maintainers,sanitize_filenames
+from UpstreamTracker.MonitorChanges import parse_maintainers, sanitize_filenames
 from Objects.Distro import Distro
 from Util.util import contains_filepath
 # from DownstreamTracker.MonitorUbuntu import *
@@ -37,9 +37,9 @@ def parse_file_log( filename, db, match, distro, indicator):
     count_present = 0
     skip_commit = False
     print("[Info] parsing maintainers files")
-    fileList = parseMaintainers(cst.PathToClone+'linux-stable')
+    fileList = parse_maintainers(cst.PathToClone+'linux-stable')
     print("[Info] Received HyperV file paths")
-    hv_filenames = sanitizeFileNames(fileList)
+    hv_filenames = sanitize_filenames(fileList)
     try:
         with open (filename, 'r', encoding="utf8") as f:
             try:    
@@ -88,7 +88,7 @@ def parse_file_log( filename, db, match, distro, indicator):
                     elif words[0] == "Forwarded:":
                         continue
                     elif commit_msg_started and line.startswith('--- a/'):
-                        fileN = words[1][1:]
+                        fileN = words[1][2:]
                         diff_fileNames.append(fileN)
                         commit_msg_started = False
                         diff_started = True
