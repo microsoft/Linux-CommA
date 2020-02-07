@@ -1,22 +1,14 @@
-import os,sys,inspect
-import git
+import os, sys, inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir) 
-from UpstreamTracker.MonitorChanges import parseMaintainers,sanitizeFileNames
-import Constants.constants as cst
-from UpstreamTracker.ParseData import parse_log
-from Objects.Distro import Distro
-from DatabaseDriver.DistroMatch import DistroMatch
-from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
-from Util.util import contains_filepath
+sys.path.insert(0, parentdir)
+from dotenv import load_dotenv
+load_dotenv(dotenv_path='./prod.env')
+# print (contains_filepath("/tools/a/dev/driver/b.c","/tools/a/dev/drivers/a/b/b.c"))
 
-print (contains_filepath("/tools/a/dev/driver/b.c","/tools/a/dev/drivers/a/b/b.c"))
+print(os.getenv('LSG_SECRET_DB_CRED'))
 
-
-
-#parse maintainers file to get hyperV files
+# parse maintainers file to get hyperV files
 # print("[Info] parsing maintainers files")
 # fileList = parseMaintainers(cst.PathToBionic)
 # print("[Info] Received HyperV file paths")

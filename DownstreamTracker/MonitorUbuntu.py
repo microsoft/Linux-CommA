@@ -73,18 +73,14 @@ def monitor_distro(distro, old_kernel_list):
         print("[Info] Path to %s does not exists" % distro_filepath)
         print("[Info] Cloning %s repo" % distro_filepath)
         # clone repo into folder named distro.distro_id
-        git.Git(cst.PATH_TO_REPOS).clone(distro.repo_link, distro.distro_id, "--bare")
+        git.Git(cst.PATH_TO_REPOS).clone(distro.repo_link, distro.distro_id, "--bare", branch=distro.branch_name)
         repo = git.Repo(distro_filepath)
     else:
         repo = git.Repo(distro_filepath)
         print("[Info] Fetching recent changes")
         repo.git.fetch()
 
-    # For file based repo (debian) we need separate parser
-    if distro.distro_id.startswith('Debian'):
-        # TODO monitor_debian(folder_name, distro)
-        print("todotodotodotodo")
-    elif distro.distro_id.startswith('Ub'):
+    if distro.distro_id.startswith('Ub'):
         # For Ubuntu, we want to monitor latest two kernel versions
         if (distro.distro_id.startswith('Ub')):
             new_kernels = update_kernel_list(repo, distro)
@@ -111,6 +107,10 @@ if __name__ == '__main__':
 
     # for every distro run next
     for distro in distro_list:
-        monitor_distro(distro, distro_table.get_kernel_list(distro.distro_id))
+        # For file based repo (debian) we need separate parser
+        if distro.distro_id.startswith('Debian'):
+            monitor_debian(distro)
+        else:
+            monitor_distro(distro, distro_table.get_kernel_list(distro.distro_id))
 
     print("Patch Tracker finished.")

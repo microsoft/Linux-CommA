@@ -2,6 +2,10 @@ import xml.etree.ElementTree as ET
 import Constants.constants as cst
 import os
 import git
+from dotenv import load_dotenv
+from pathlib import Path  # python3 only
+env_path = Path('.') / 'prod.env'
+load_dotenv(dotenv_path=env_path)
 
 
 class DatabaseCredentials:
@@ -17,7 +21,7 @@ class DatabaseCredentials:
             print("[Info] Path to Secrets repo does not exists")
             print("[Info] Cloning Secrets repo")
             db_cred_environ_name = 'LSG_SECRET_DB_CRED'
-            db_cred = os.environ.get(db_cred_environ_name)
+            db_cred = os.getenv(db_cred_environ_name)
             if (db_cred is None):
                 print("[Error] Please set %s environment variable as your token to access LSG-Secret repo." % db_cred_environ_name)
                 raise Exception("LSG-Secret Repo token not set in environment variale: %s" % db_cred_environ_name)
