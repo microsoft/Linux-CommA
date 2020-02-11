@@ -52,7 +52,7 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
     patch = get_patch_object("Debian")
     diff_started = False
     commit_msg_started = False
-    diff_fileNames = []
+    diff_filenames = []
     count_added = 0
     count_present = 0
     try:
@@ -66,18 +66,18 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
 
                         if len(patch.subject) > 0 and not db.check_commit_present(patch.subject, distro):
                             # check if commit already present
-                            patch.filenames = " ".join(diff_fileNames)
-                            if check_hyperV_patch(diff_fileNames, hv_filenames):
-                                print(" ************hyperV related patch*********************"+patch.subject)
+                            patch.filenames = " ".join(diff_filenames)
+                            if check_hyperV_patch(diff_filenames, hv_filenames):
+                                print(" HyperV patch:"+patch.subject)
                                 # if true then match upstream and insert
                                 insert_patch(db, match, distro, patch, distro.distro_id)
                                 count_added += 1
-                            print("New commit "+patch.subject)
+                            # print("New commit "+patch.subject)
 
                             patch = get_patch_object("debian")
                             diff_started = False
                             commit_msg_started = False
-                            diff_fileNames = []
+                            diff_filenames = []
 
                         for word in range(1, len(words)-1):
                             patch.author_name += " "+words[word]
@@ -103,7 +103,7 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
                         continue
                     elif commit_msg_started and line.startswith('--- a/'):
                         fileN = words[1][2:]
-                        diff_fileNames.append(fileN)
+                        diff_filenames.append(fileN)
                         commit_msg_started = False
                         diff_started = True
                         patch.diff += fileN
@@ -116,7 +116,7 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
                             patch.description += line.strip()
                     elif diff_started and line.startswith('--- a/'):
                         fileN = words[1][2:]
-                        diff_fileNames.append(fileN)
+                        diff_filenames.append(fileN)
                     elif diff_started:
                         if line.startswith('+') or line.startswith('-'):
                             patch.diff += "\n"+line.strip()
@@ -129,8 +129,8 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
                 print(line)
 
         if (patch.subject is not None or len(patch.subject) != 0) and not db.check_commit_present(patch.subject, distro):
-            patch.filenames = " ".join(diff_fileNames)
-            if check_hyperV_patch(diff_fileNames, hv_filenames):
+            patch.filenames = " ".join(diff_filenames)
+            if check_hyperV_patch(diff_filenames, hv_filenames):
                 print(" ************hyperV related patch*********************" + patch.subject)
                 # if true then match upstream
                 insert_patch(db, match, distro, patch, distro.distro_id)
