@@ -108,6 +108,7 @@ venv.bak/
 
 # patchtracker repos
 Repos/*
+!Repos/.gitkeep
 
 # All .envs
 *.env
