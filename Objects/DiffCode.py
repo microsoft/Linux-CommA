@@ -1,4 +1,4 @@
-class Diff_code:
+class DiffCode:
 
     def __init__(self, diff_filename, diff_add, diff_remove):
         self.diff_filename = diff_filename

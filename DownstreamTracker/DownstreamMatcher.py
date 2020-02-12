@@ -1,7 +1,7 @@
 
 from fuzzywuzzy import fuzz
 from Objects.DistroPatchMatch import DistroPatchMatch
-from Objects.Diff_code import Diff_code
+from Objects.DiffCode import DiffCode
 
 
 class DownstreamMatcher:
@@ -134,7 +134,7 @@ def _get_diff_code(diff):
     '''
     tokens = diff.strip().split('\n')
     arr_diff_code = []
-    diff_code = Diff_code("", "", "")
+    diff_code = DiffCode("", "", "")
     for i in range(0, len(tokens)):
         if tokens[i].startswith('+'):
             diff_code.diff_add = tokens[i] if len(diff_code.diff_add) == 0 else "\n" + tokens[i]
@@ -143,5 +143,5 @@ def _get_diff_code(diff):
         else:
             if not diff_code.is_empty():
                 arr_diff_code.append(diff_code)
-            diff_code = Diff_code(tokens[i], "", "")
+            diff_code = DiffCode(tokens[i], "", "")
     return arr_diff_code

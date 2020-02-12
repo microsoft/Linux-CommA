@@ -6,8 +6,8 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 # So many noqas due to importing after setting sys.path
-import Constants.constants as cst  # noqa E402
-from UpstreamTracker.MonitorChanges import parse_maintainers, sanitize_filenames  # noqa E402
+import Util.Constants as cst  # noqa E402
+from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames  # noqa E402
 from Objects.UpstreamPatch import UpstreamPatch  # noqa E402
 from Objects.DistroPatchMatch import DistroPatchMatch  # noqa E402
 from Objects.UbuntuPatch import UbuntuPatch  # noqa E402
@@ -18,7 +18,7 @@ from DownstreamTracker.DownstreamMatcher import DownstreamMatcher  # noqa E402
 from DatabaseDriver.DistroTable import DistroTable  # noqa E402
 from UpstreamTracker.ParseData import process_commits  # noqa E402
 from Util.util import list_diff  # noqa E402
-from DownstreamTracker.Debian_parser import monitor_debian  # noqa E402
+from DownstreamTracker.DebianParser import monitor_debian  # noqa E402
 
 
 def update_kernel_list(repo, distro):

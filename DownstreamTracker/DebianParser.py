@@ -3,12 +3,12 @@ import os,sys,inspect
 # currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 # parentdir = os.path.dirname(currentdir)
 # sys.path.insert(0,parentdir) 
-import Constants.constants as cst
+import Util.Constants as cst
 from UpstreamTracker.ParseData import get_patch_object, insert_patch
 from DatabaseDriver.DistroMatch import DistroMatch
-from UpstreamTracker.MonitorChanges import parse_maintainers, sanitize_filenames
+from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
 from Util.util import contains_filepath
-# from DownstreamTracker.MonitorUbuntu import *
+# from DownstreamTracker.MonitorDownstream import *
 import git
 import re
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
@@ -37,7 +37,7 @@ def get_hv_filenames(kernel_version):
         repo.git.fetch()
     else:
         print("[Info] Path to Linux repo does not exists. Cloning linux repo.")
-        git.Git(cst.PATH_TO_REPOS).clone("git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git", "--bare")
+        git.Git(cst.PATH_TO_REPOS).clone("git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git", "linux-stable", "--bare")
         repo = git.Repo(path_to_linux)
     print("[Info] parsing maintainers files")
     fileList = parse_maintainers(repo, 'v'+kernel_version)

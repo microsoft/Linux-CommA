@@ -1,7 +1,7 @@
 import pyodbc
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from Objects.UpstreamPatch import UpstreamPatch
-import Constants.constants as cst
+import Util.Constants as cst
 
 
 class UpstreamPatchTable():

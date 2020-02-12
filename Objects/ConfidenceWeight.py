@@ -1,4 +1,4 @@
-class confidence_weight:
+class ConfidenceWeight:
     def __init__(self, author_weight, subject_weight, description_weight, filenames_weight, author_date_weight):
         self.author_weight = author_weight
         self.subject_weight = subject_weight

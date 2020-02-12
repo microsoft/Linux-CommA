@@ -5,13 +5,13 @@ currentdir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-import Constants.constants as cst  # noqa E402
+import Util.Constants as cst  # noqa E402
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable  # noqa E402
 from datetime import datetime  # noqa E402
 from Objects.UpstreamPatch import UpstreamPatch  # noqa E402
 from Objects.UbuntuPatch import UbuntuPatch  # noqa E402
-from Objects.Diff_code import Diff_code  # noqa E402
-from Objects.confidence_weight import confidence_weight  # noqa E402
+from Objects.DiffCode import DiffCode  # noqa E402
+from Objects.ConfidenceWeight import ConfidenceWeight  # noqa E402
 from datetime import datetime  # noqa E402
 import git  # noqa E402
 
@@ -31,13 +31,13 @@ def insert_patch(db, match, distro, patch, indicator):
                            patch.description, patch.diff, patch.commit_time, patch.filenames,
                            patch.author_time, patch.fixed_patches)
     elif indicator.startswith("Ub") or indicator.startswith("De"):
-        conf = confidence_weight(0.2, 0.49, 0.1, 0.2, 0.01)
+        conf = ConfidenceWeight(0.2, 0.49, 0.1, 0.2, 0.01)
         distro_patch_match = match.get_matching_patch(patch, conf)
         if (distro_patch_match and distro_patch_match.upstream_patch_id != -1):
             db.insert_into(distro_patch_match, distro.distro_id, patch.commit_id, patch.commit_time, patch.buglink,
                            distro.kernel_version, patch.author_time)
     elif indicator.startswith("SUSE"):
-        conf = confidence_weight(0, 1, 0, 0, 0)
+        conf = ConfidenceWeight(0, 1, 0, 0, 0)
         distro_patch_match = match.get_matching_patch(patch, conf)
         if (distro_patch_match and distro_patch_match.upstream_patch_id != -1):
             db.insert_into(distro_patch_match, distro.distro_id, patch.commit_id, patch.commit_time, patch.buglink,

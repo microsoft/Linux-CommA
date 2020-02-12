@@ -1,5 +1,5 @@
 import platform
-PATH_TO_REPOS = "../PatchTrackerRepos"
+PATH_TO_REPOS = "./Repos"
 LINUX_REPO_NAME = "linux.git"
 SECRET_REPO_NAME = "LSG-Secret"
 MAINTAINERS_FILENAME = "MAINTAINERS"

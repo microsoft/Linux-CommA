@@ -3,9 +3,9 @@ import git
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-import Constants.constants as cst
+import Util.Constants as cst
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
-from UpstreamTracker.MonitorChanges import parse_maintainers, sanitize_filenames
+from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
 from Util.util import list_diff
 
 

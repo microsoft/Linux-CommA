@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import Constants.constants as cst
+import Util.Constants as cst
 import os
 import git
 from dotenv import load_dotenv

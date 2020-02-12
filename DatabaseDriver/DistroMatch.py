@@ -1,5 +1,5 @@
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
-import Constants.constants as cst
+import Util.Constants as cst
 
 
 class DistroMatch():

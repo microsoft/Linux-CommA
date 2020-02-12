@@ -6,7 +6,7 @@ currentdir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-import Constants.constants as cst  # noqa E402
+import Util.Constants as cst  # noqa E402
 from UpstreamTracker.ParseData import process_commits  # noqa E402
 from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable  # noqa E402
 from Objects.Distro import Distro  # noqa E402
