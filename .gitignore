@@ -108,3 +108,6 @@ venv.bak/
 
 # patchtracker repos
 Repos/
+
+# All .envs
+*.env
