@@ -107,7 +107,7 @@ venv.bak/
 .mypy_cache/
 
 # patchtracker repos
-Repos/
+Repos/*
 
 # All .envs
 *.env
