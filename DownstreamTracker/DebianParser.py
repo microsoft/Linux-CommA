@@ -12,7 +12,7 @@ from Util.util import contains_filepath
 import git
 import re
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
+from DatabaseDriver.PatchDataTable import PatchDataTable
 
 
 def check_hyperV_patch(patch_filenames, filenames):

@@ -27,7 +27,7 @@ class DatabaseCredentials:
                 raise Exception("LSG-Secret Repo token not set in environment variale: %s" % db_cred_environ_name)
             git.Git(cst.PATH_TO_REPOS).clone("https://anything:%s@<redacted>" % db_cred)
             print("[Info] Cloning Complete")
-        tree = ET.parse(secret_repo_path+"/PatchTrackerSecrets.xml")
+        tree = ET.parse(os.path.join(secret_repo_path, "PatchTrackerSecrets.xml"))
         root = tree.getroot()
         self.database_server = root.find("DatabaseServer").text
         self.database_name = root.find("DatabaseName").text

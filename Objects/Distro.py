@@ -5,16 +5,11 @@ This represents a downstream distros
 """
 
 
+# TODO rename to just include upstream... maybe MonitoringSubject to match tb?
 class Distro:
-    def __init__(self, distro_id, repo_link, commit_link, branch_name, kernel_version):
+    def __init__(self, distro_id, repo_link, commit_link, revision):
         self.distro_id = distro_id
         self.repo_link = repo_link
         self.commit_link = commit_link
-        self.branch_name = branch_name
-        self.kernel_version = kernel_version
+        self.revision = revision
 
-    def get_revision(self):
-        # TODO sort out branch vs kernel... maybe just have revision?
-        if (self.kernel_version != ""):
-            return self.kernel_version
-        return self.branch_name

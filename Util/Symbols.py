@@ -4,7 +4,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 import Util.Constants as cst
-from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable
+from DatabaseDriver.PatchDataTable import PatchDataTable
 from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
 from Util.util import list_diff
 
@@ -30,7 +30,7 @@ def map_symbols_to_patch(commits, fileNames, prev_commit="097c1bd5673edaf2a16272
     commits: SHA of all commits in database
     fileNames: hyperV files
     """
-    up = UpstreamPatchTable()
+    up = PatchDataTable()
     os.chdir(os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME))
     command = "git reset --hard "+prev_commit
     print("[Info] "+command)
@@ -62,7 +62,7 @@ def get_hyperv_patch_symbols():
     """
     This function clones upstream and gets upstream commits, hyperV files
     """
-    up = UpstreamPatchTable()
+    up = PatchDataTable()
     commits = up.get_commits()
 
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME)
@@ -91,7 +91,7 @@ def symbol_checker(symbol_file):
     """
     print("[Info] Starting Symbol Checker")
     list_of_symbols = [line.strip() for line in open(symbol_file)]
-    up = UpstreamPatchTable()
+    up = PatchDataTable()
     symbol_map = up.get_patch_symbols()
     missing_symbol_patch = []
     for patchId, symbols in symbol_map.items():

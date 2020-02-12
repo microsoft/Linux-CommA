@@ -13,7 +13,7 @@ from Objects.DistroPatchMatch import DistroPatchMatch  # noqa E402
 from Objects.UbuntuPatch import UbuntuPatch  # noqa E402
 from datetime import datetime  # noqa E402
 from DatabaseDriver.DistroMatch import DistroMatch  # noqa E402
-from DatabaseDriver.UpstreamPatchTable import UpstreamPatchTable  # noqa E402
+from DatabaseDriver.PatchDataTable import PatchDataTable  # noqa E402
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher  # noqa E402
 from DatabaseDriver.DistroTable import DistroTable  # noqa E402
 from UpstreamTracker.ParseData import process_commits  # noqa E402
@@ -59,7 +59,7 @@ def process_downstream_commits(repo, distro):
     file_names = sanitize_filenames(file_list)
 
     # Handle commits by parsing and matching to upstream
-    matcher = DownstreamMatcher(UpstreamPatchTable())
+    matcher = DownstreamMatcher(PatchDataTable())
     process_commits(repo, file_names, DistroMatch(), matcher, distro)
 
 
