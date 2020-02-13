@@ -1,39 +1,34 @@
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from Objects.Distro import Distro
+from Objects.MonitoringSubject import MonitoringSubject
+import Util.Constants as cst
 
 
-class DistroTable():
+class MonitoringSubjectDatabaseDriver():
 
     def __init__(self):
         """Initialize database connection"""
         self.cursor = DatabaseDriver.get_instance().cursor
 
-    def insert_into(self, distro_object):
-        """
-        Insert data into distro
-        """
-        conx = self.cursor.execute("INSERT INTO [dbo].[Distro] ([distroId],[repoLink],[commitLink]) VALUES (?,?,?,?)",
-                                   distro_object.distro_id, distro_object.repo_link, distro_object.commit_link)
-        conx.commit()
-
-    def check_commit_present(self, distro_id):
-        """
-        Check if distro is already present in database
-        """
-        # TODO change to count
-        rows = self.cursor.execute("SELECT * from [Distro] where distroId like ?;", distro_id).fetchall()
-        if rows is None or len(rows) == 0:
-            return False
-        else:
-            return True
-
-    def get_distro_list(self):
-        rows = self.cursor.execute("SELECT [distroId], [repoLink], [commitLink], [branch] FROM [dbo].[Distro] ;").fetchall()
-        distros = []
+    def get_monitoring_subjects(self):
+        rows = self.cursor.execute("SELECT [monitoringSubjectID], [distroID], [revision] FROM %s;"
+            % cst.MONITORING_SUBJECTS_TABLE_NAME).fetchall()
+        monitoring_subjects = []
         for r in rows:
-            distros.append(Distro(r[0], r[1], r[2], r[3], ""))
+            monitoring_subjects.append(MonitoringSubject(r[0], r[1], r[2]))
 
-        return distros
+        return monitoring_subjects
+
+    def get_repo_links(self):
+        '''
+        returns a dict mapping a distro_id to repo_link
+        '''
+        rows = self.cursor.execute("SELECT [distroID], [repoLink] FROM %s;"
+            % cst.DISTROS_TABLE_NAME).fetchall()
+        repo_links = {}
+        for row in rows:
+            repo_links[row[0]] = row[1]
+
+        return repo_links
 
     def get_kernel_list(self, distro_id):
         rows = self.cursor.execute("SELECT [kernelVersion] FROM [dbo].[Distro_kernel] where [distroId] = ?;", distro_id).fetchall()

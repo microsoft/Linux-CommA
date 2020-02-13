@@ -9,7 +9,6 @@ sys.path.insert(0, parentdir)
 import Util.Constants as cst  # noqa E402
 from UpstreamTracker.ParseData import process_commits  # noqa E402
 from DatabaseDriver.PatchDataTable import PatchDataTable  # noqa E402
-from Objects.Distro import Distro  # noqa E402
 
 
 # TODO if downstream continues to use, move this to Util.py?
@@ -20,6 +19,8 @@ def get_hyperv_filenames(repo, revision="master"):
     repo: The git repository (git.repo object) to find the maintainers file at
     revision: Revision of the git repository to look at
     '''
+
+    print("[Info] Parsing maintainers file to get relevant hyper-v filenames")
     found_hyperv_block = False
     file_names = []
     # repo is bare, so this is how we get content of maintainers file

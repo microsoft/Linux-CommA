@@ -34,11 +34,19 @@ class PatchDataTable():
             print("[ERROR] Pyodbc error")
             print(Error)
 
+    def get_patch_ids_from_commit_ids(self, commit_ids):
+        '''
+        Translates a list of commit_ids into a list of patch ids
+        '''
+        # This changes a list of A B C to ('A', 'B', 'C')
+        commit_ids_formatted = "('%s')" % "', '".join(commit_ids)
+        rows = self.cursor.execute("select patchID from [%s] where commitID in %s"
+            % (cst.UPSTREAM_TABLE_NAME, commit_ids_formatted)).fetchall()
+        return [row[0] for row in rows]
+
     def get_commits(self):
         rows = self.cursor.execute("select commitID from [%s] order by commitTime asc" % cst.UPSTREAM_TABLE_NAME).fetchall()
-
-        commits = [row[0] for row in rows]
-        return commits
+        return [row[0] for row in rows]
 
     def save_patch_symbols(self, commit, patch_symbols):
         conx = self.cursor.execute("Update [dbo].[" + cst.UPSTREAM_TABLE_NAME + "] SET [patchSymbols] = ? where commitID = ?", patch_symbols, commit)
