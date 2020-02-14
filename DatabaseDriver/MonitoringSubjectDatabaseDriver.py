@@ -1,6 +1,7 @@
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from Objects.MonitoringSubject import MonitoringSubject
 import Util.Constants as cst
+from Util.util import list_diff
 
 
 class MonitoringSubjectDatabaseDriver():
@@ -30,23 +31,35 @@ class MonitoringSubjectDatabaseDriver():
 
         return repo_links
 
-    def get_kernel_list(self, distro_id):
-        rows = self.cursor.execute("SELECT [kernelVersion] FROM [dbo].[Distro_kernel] where [distroId] = ?;", distro_id).fetchall()
-        kernel_versions = []
-        for r in rows:
-            kernel_versions.append(r[0])
+    def update_revisions_for_distro(self, distro_id, new_revisions):
+        '''
+        Updates the database with the given revisions
 
-        return kernel_versions
+        new_revisions: list of <revision>s to add under this distro_id
+        '''
+        current_revisions = self.get_revision_list(distro_id)
 
-    def insert_kernel_version(self, kernel_version, distro_id):
-        if kernel_version is None:
-            return
-        conx = self.cursor.execute("INSERT INTO [dbo].[Distro_kernel] ([distroId],[kernelVersion]) VALUES (?,?)",
-                                   distro_id, kernel_version)
-        conx.commit()
+        # Remove revisions no longer to be included
+        # TODO also remove from missing
+        revisions_to_remove = list_diff(current_revisions, new_revisions)
+        if (revisions_to_remove):
+            print("[Info] For distro: %s, deleting revisions: %s" % (distro_id, revisions_to_remove))
+            # This changes a list of A B C to the string ('A','B','C')
+            revisions_to_remove_formatted = "('%s')" % "','".join(revisions_to_remove)
+            conx = self.cursor.execute("delete from %s where distroID = '%s' and revision in %s"
+                % (cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id, revisions_to_remove_formatted))
+            conx.commit()
 
-    def delete_kernel_version(self, kernel_version, distro_id):
-        rows = self.cursor.execute('delete from [dbo].[Distro_kernel] where [distroId] = ? and [kernelVersion] = ?',
-                                   distro_id, kernel_version)
-        print("[Info] Deleted "+str(rows.rowcount)+" rows")
-        rows.commit()
+        # Add new revisions
+        revisions_to_add = list_diff(new_revisions, current_revisions)
+        if (revisions_to_add):
+            print("[Info] For distro: %s, adding revisions: %s" % (distro_id, revisions_to_add))
+            for revision in revisions_to_add:
+                conx = self.cursor.execute("insert into %s ([distroID],[revision]) values(?,?)"
+                    % cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id, revision)
+                conx.commit()
+
+    def get_revision_list(self, distro_id):
+        rows = self.cursor.execute(
+            "SELECT revision FROM %s where [distroID] = ?;" % cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id).fetchall()
+        return [row[0] for row in rows]

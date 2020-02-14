@@ -11,38 +11,44 @@ from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from DatabaseDriver.PatchDataTable import PatchDataTable
 from DatabaseDriver.MonitoringSubjectDatabaseDriver import MonitoringSubjectDatabaseDriver
 from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDriver
-from Util.util import list_diff
 # from DownstreamTracker.DebianParser import monitor_debian
 
 
-def update_kernel_list(repo, distro):
+def update_tracked_revisions(distro_id, repo):
     """
-    This updates the stored two latest kernel per distro
-    """
-    kernel_list = []
-    if distro.distro_id.startswith('Ub'):
-        # For Ubuntu, we want the latest two tags that are NOT azure-edge
-        latest_tags = sorted(repo.tags, key=lambda t: t.commit.committed_date, reverse=True)
-        for tag in latest_tags:
-            if len(kernel_list) == 2:
-                break
-            if not tag.name.startswith('Ubuntu-azure-edge'):
-                kernel_list.append(tag.name)
-    elif distro.distro_id.startswith('SUSE'):
-        kernel_list = sorted(repo.git.tag(anything=True).split('\n'))[-2:]
-    else:
-        kernel_list = sorted(repo.tags, key=lambda t: t.commit.committed_date)[-2:]
-    # Update our stored latest two kernel versions if needed
-    monitoring_subject_table = MonitoringSubjectDatabaseDriver()
-    old_kernel_list = monitoring_subject_table.get_kernel_list(distro.distro_id)
-    for kernel_version in list_diff(old_kernel_list, kernel_list):
-        print("[Info] Deleting old kernel version: %s" % kernel_version)
-        monitoring_subject_table.delete_kernel_version(kernel_version, distro.distro_id)
-    for kernel_version in list_diff(kernel_list, old_kernel_list):
-        print("[Info] Inserting new kernel version: " + kernel_version)
-        monitoring_subject_table.insert_kernel_version(kernel_version, distro.distro_id)
+    This updates the stored two latest revisions stored per distro_id.
+    This method contains distro-specific logic
 
-    return kernel_list
+    repo: the git repo object of whatever repo to check revisions in
+    """
+
+    # TODO This is WRONG it's sorting by alphabetization, 
+    # which happens to be correct currently but needs to be addressed
+    # git tag can sort by date, but can't specify remote. ls-remote can't naturally sort
+    # until git 1.2.18 - 1.2.17 is the latest version Ubuntu18.04 can get
+
+    if (distro_id.startswith("Ubuntu")):
+        latest_two_kernels = []
+        tag_lines = repo.git.ls_remote('--t', '--refs', distro_id).split("\n")
+        tag_names = [tag_line.rpartition("/")[-1] for tag_line in tag_lines]
+        # Filter out edge, and only include azure revisions
+        tag_names = list(filter(lambda x: "azure" in x and "edge" not in x, tag_names))
+        latest_two_kernels = tag_names[-2:]
+
+        monitoring_subject_db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
+
+    # For Ubuntu, we want the latest two kernel versions
+    # if (distro_id.startswith("Ubuntu")):
+    #     latest_two_kernels = []
+    #     tags = repo.git.tag('-l', '--sort=-version:refname').split("\n")
+    #     for tag in tags:
+    #         if "edge" in tag or "azure" not in tag:
+    #             continue
+    #         latest_two_kernels.append(tag)
+    #         # Currently we only want the latest two kernels for Ubuntu
+    #         if (len(latest_two_kernels) == 2):
+    #             break
+    #     monitoring_subject_db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
 
 
 def monitor_subject(monitoring_subject, repo):
@@ -72,24 +78,31 @@ if __name__ == '__main__':
 
     # connect to DB read all entries in Distro table
     monitoring_subject_db_driver = MonitoringSubjectDatabaseDriver()
-    monitoring_subjects = monitoring_subject_db_driver.get_monitoring_subjects()
     repo_links = monitoring_subject_db_driver.get_repo_links()
 
-    # This should always be present
+    # Linux repo is assumed to be present
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
     repo = git.Repo(path_to_linux)
 
     # Add repos as a remote origin if not already added
-    unique_distros = list(set([subject.distro_id for subject in monitoring_subjects]))
     current_remotes = repo.git.remote()
-    for distro_id in unique_distros:
-        if (distro_id not in current_remotes and not distro_id.startswith("Debian")):  # Debian we handle in a different way
+    for distro_id in repo_links.keys():
+        # Debian we handle differently
+        if (distro_id not in current_remotes and not distro_id.startswith("Debian")):
             print("[Info] Adding remote origin for %s from %s" % (distro_id, repo_links[distro_id]))
             repo.create_remote(distro_id, url=repo_links[distro_id])
 
-    # TODO Update ubuntu (more?) revisions
-
+    # Update all remotes, and tags of all remotes
+    print("[Info] Fetching updates to all repos and tags.")
     repo.git.fetch('--all')
+    repo.git.fetch('--all', '--tags')
+
+    print("[Info] Updating tracked revisions for each repo.")
+    # Update stored revisions for repos as appropriate
+    for distro_id in repo_links.keys():
+        update_tracked_revisions(distro_id, repo)
+
+    monitoring_subjects = monitoring_subject_db_driver.get_monitoring_subjects()
 
     for monitoring_subject in monitoring_subjects:
         if monitoring_subject.distro_id.startswith('Debian'):
