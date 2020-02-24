@@ -1,4 +1,6 @@
-from elasticsearch_dsl import Document, Text, Date
+import os
+from datetime import datetime
+from elasticsearch_dsl import connections, Document, Text, Date
 from pygit2 import Repository, discover_repository, clone_repository
 
 repo_url = "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
@@ -24,9 +26,26 @@ for d in diff.deltas:
 
 
 class Patch(Document):
-    author = Text()
+    author_name = Text()
+    author_email = Text()
     committer = Text()
     message = Text()
     tree_id = Text()
     commit_time = Date()
     patch = Text()
+
+
+# connections.create_connection(hosts=os.environ["ELASTIC_HOST"])
+
+# Patch.init()
+patch = Patch(
+    author_name=commit.author.name,
+    author_email=commit.author.email,
+    commiter=commit.committer,
+    message=commit.message,
+    tree_id=commit.tree_id,
+    commit_time=datetime.utcfromtimestamp(commit.commit_time),
+    patch=diff,
+)
+
+print(patch.commit_time)
