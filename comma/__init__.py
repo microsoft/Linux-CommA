@@ -28,10 +28,12 @@ for d in diff.deltas:
 class Patch(Document):
     author_name = Text()
     author_email = Text()
-    committer = Text()
+    author_time = Date()
+    committer_name = Text()
+    committer_email = Text()
+    commit_time = Date()
     message = Text()
     tree_id = Text()
-    commit_time = Date()
     patch = Text()
 
 
@@ -41,11 +43,13 @@ class Patch(Document):
 patch = Patch(
     author_name=commit.author.name,
     author_email=commit.author.email,
-    commiter=commit.committer,
+    author_time=datetime.utcfromtimestamp(commit.author.time),
+    committer_name=commit.committer.name,
+    committer_email=commit.committer.email,
+    commit_time=datetime.utcfromtimestamp(commit.commit_time),
     message=commit.message,
     tree_id=commit.tree_id,
-    commit_time=datetime.utcfromtimestamp(commit.commit_time),
     patch=diff,
 )
 
-print(patch.commit_time)
+print(patch.committer_name)
