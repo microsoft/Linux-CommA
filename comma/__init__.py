@@ -1,3 +1,4 @@
+from elasticsearch_dsl import Document, Text, Date
 from pygit2 import Repository, discover_repository, clone_repository
 
 repo_url = "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
@@ -17,3 +18,11 @@ repo = (
 commit = repo.get("2e90ca68b0d2f5548804f22f0dd61145516171e3")
 print(commit.tree.diff_to_tree(commit.parents[0].tree, swap=True).patch)
 
+
+class Patch(Document):
+    author = Text()
+    committer = Text()
+    message = Text()
+    tree_id = Text()
+    commit_time = Date()
+    patch = Text()
