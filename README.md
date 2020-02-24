@@ -10,7 +10,7 @@ pip3 install virtualenv virtualenvwrapper
 mkvirtualenv comma
 workon comma
 setvirtualenvproject
-pip install pygit2 elasticsearch-dsl
+pip install pygit2 elasticsearch-dsl flake8
 ```
 
 ### pygit2 ###
@@ -27,3 +27,9 @@ pip install pygit2 elasticsearch-dsl
 > It also provides an optional persistence layer for working with documents as
 > Python objects in an ORM-like fashion: defining mappings, retrieving and
 > saving documents, wrapping the document data in user-defined classes.
+
+### flymake8 ###
+
+[flymake8 documentation](https://pypi.org/project/flake8/)
+
+> the modular source code checker: pep8, pyflakes and co
