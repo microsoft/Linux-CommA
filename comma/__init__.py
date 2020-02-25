@@ -25,8 +25,8 @@ def get_patches():
             repo = clone_repository(url, path, bare=True)
 
         walker = repo.walk(repo.head.target, GIT_SORT_TOPOLOGICAL)
-        # First commit before introduction of Hyper-V code.
-        walker.hide(repo["578f2938a43f83988f6edab86cff487889b4ef58"].id)
+
+        walker.hide(repo["8834f5600cf3c8db365e18a3d5cac2c2780c81e5"].id)
         for commit in walker:
             author_time = datetime.fromtimestamp(
                 float(commit.author.time),
