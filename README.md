@@ -33,3 +33,11 @@ pip install pygit2 elasticsearch flake8
 [flymake8 documentation](https://pypi.org/project/flake8/)
 
 > the modular source code checker: pep8, pyflakes and co
+
+## Patch Info ##
+
+First commit before introduction of Hyper-V code is:
+> 578f2938a43f83988f6edab86cff487889b4ef58
+
+First commit before last missing patch is:
+> 8834f5600cf3c8db365e18a3d5cac2c2780c81e5
