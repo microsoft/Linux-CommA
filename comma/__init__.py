@@ -47,6 +47,7 @@ def get_patches():
                     "commit_id": commit.hex,
                     "patch_id": diff.patchid.hex,
                     "parent_ids": [p.hex for p in commit.parents],
+                    "merge": len(commit.parents) > 1,
                     "author": {
                         "name": commit.author.name,
                         "email": commit.author.email,
