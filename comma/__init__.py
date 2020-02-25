@@ -1,6 +1,5 @@
 from datetime import datetime, timezone, timedelta
-
-# from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch
 from pygit2 import Repository, discover_repository, clone_repository
 
 repo_url = "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
@@ -49,37 +48,6 @@ def get_patches():
     }
 
 
-# print(diff.patch)
-# for d in diff.deltas:
-#     print(d.new_file.path)
-#     print(d.old_file.path)
-
-# es = Elasticsearch(sniff_on_start=True)
-# print(es.info())
-# bulk(es, gendata())
-
-
-# class Patch(Document):
-#     author_name = Text()
-#     author_email = Text()
-#     author_time = Date()
-#     committer_name = Text()
-#     committer_email = Text()
-#     commit_time = Date()
-#     message = Text()
-#     tree_id = Text()
-#     patch = Text()
-
-
-# Patch.init()
-# patch = Patch(
-#     author_name=commit.author.name,
-#     author_email=commit.author.email,
-#     author_time=datetime.utcfromtimestamp(commit.author.time),
-#     committer_name=commit.committer.name,
-#     committer_email=commit.committer.email,
-#     commit_time=datetime.utcfromtimestamp(commit.commit_time),
-#     message=commit.message,
-#     tree_id=commit.tree_id,
-#     patch=diff,
-# )
+es = Elasticsearch(sniff_on_start=True)
+print(es.info())
+Elasticsearch.bulk(es, get_patches())

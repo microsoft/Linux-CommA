@@ -6,7 +6,7 @@ python = "^3.7"
 
 [dependencies]
 pygit2 = "^1.0"
-elasticsearch-dsl = "^7.1"
+elasticsearch = "^7.5"
 
 [dev-dependencies]
 flake8 = "^3.7"

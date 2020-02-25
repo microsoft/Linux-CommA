@@ -10,7 +10,7 @@ pip3 install virtualenv virtualenvwrapper
 mkvirtualenv comma
 workon comma
 setvirtualenvproject
-pip install pygit2 elasticsearch-dsl flake8
+pip install pygit2 elasticsearch flake8
 ```
 
 ### pygit2 ###
@@ -20,13 +20,13 @@ pip install pygit2 elasticsearch-dsl flake8
 > Pygit2 is a set of Python bindings to the libgit2 shared library, libgit2
 > implements the core of Git.
 
-### elasticsearch-dsl ###
+### elasticsearch-py ###
 
-[elasticsearch-dsl documentation](https://elasticsearch-dsl.readthedocs.io/en/latest/index.html)
+[elasticsearch-py documentation](https://elasticsearch-py.readthedocs.io/en/master/index.html)
 
-> It also provides an optional persistence layer for working with documents as
-> Python objects in an ORM-like fashion: defining mappings, retrieving and
-> saving documents, wrapping the document data in user-defined classes.
+> Official low-level client for Elasticsearch. Its goal is to provide common
+> ground for all Elasticsearch-related code in Python; because of this it tries
+> to be opinion-free and very extendable.
 
 ### flymake8 ###
 
