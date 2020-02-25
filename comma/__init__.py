@@ -41,10 +41,22 @@ def get_patches():
                     "email": commit.committer.email,
                     "time": commit_time,
                 },
-                "message": commit.message,
+                "summary": commit.message.splitlines()[0],
+                # TODO: Split out Signed-off-by etc.
+                "message": "\n".join(commit.message.splitlines()[2:]),
                 "files": files,
-                # TODO: This can be way richer.
-                "patch": diff.patch,
+                "hunks": [
+                    {
+                        "header": h.header,
+                        "lines": [
+                            l.content.strip()
+                            for l in h.lines
+                            if not l.content.isspace()
+                        ],
+                    }
+                    for d in diff
+                    for h in d.hunks
+                ],
             },
         }
 
