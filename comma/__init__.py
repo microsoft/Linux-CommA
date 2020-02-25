@@ -63,5 +63,7 @@ def get_patches():
 
 elastic = Elasticsearch(sniff_on_start=True)
 print(elastic.info())
-for success, info in helpers.parallel_bulk(elastic, get_patches()):
-    print(info)
+print("Indexing commits...")
+for success, info in helpers.parallel_bulk(elastic, get_patches(), thread_count=8):
+    if not success:
+        print(info)
