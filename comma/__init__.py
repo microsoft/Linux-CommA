@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, helpers
 from pygit2 import Repository, discover_repository, clone_repository
 
 repo_url = "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
@@ -30,20 +30,26 @@ def get_patches():
             "doc": {
                 "repo": "linux-mainline",
                 "commit_id": commit.hex,
-                "author_name": commit.author.name,
-                "author_email": commit.author.email,
-                "author_time": author_time,
-                "committer_name": commit.committer.name,
-                "committer_email": commit.committer.email,
-                "commit_time": commit_time,
+                "parent_ids": [p.hex for p in commit.parents],
+                "author": {
+                    "name": commit.author.name,
+                    "email": commit.author.email,
+                    "time": author_time,
+                },
+                "committer": {
+                    "name": commit.committer.name,
+                    "email": commit.committer.email,
+                    "time": commit_time,
+                },
                 "message": commit.message,
                 "files": files,
+                # TODO: This can be way richer.
                 "patch": diff.patch,
             },
         }
 
 
-es = Elasticsearch(sniff_on_start=True)
-print(es.info())
-Elasticsearch.bulk(es, get_patches())
-# print([p for p in get_patches()])
+elastic = Elasticsearch(sniff_on_start=True)
+print(elastic.info())
+for success, info in helpers.parallel_bulk(elastic, get_patches()):
+    print(info)
