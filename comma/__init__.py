@@ -36,7 +36,8 @@ def create_document(commit, repo, name):
 
     patchid = 0
     files = []
-    if len(commit.parents) > 0:
+    # TODO: Remove the email check to diff all commits.
+    if commit.author.email.endswith("@microsoft.com") and len(commit.parents) > 0:
         diff = repo.diff(commit.parents[0], commit)
         patchid = diff.patchid.hex
         files = [d.new_file.path for d in diff.deltas]
