@@ -34,7 +34,12 @@ def create_document(commit, repo, name):
         timezone(timedelta(minutes=commit.commit_time_offset)),
     ).isoformat()
 
-    diff = repo.diff(commit.parents[0], commit)
+    patchid = 0
+    files = []
+    if len(commit.parents) > 0:
+        diff = repo.diff(commit.parents[0], commit)
+        patchid = diff.patchid.hex
+        files = [d.new_file.path for d in diff.deltas]
 
     return {
         "_index": "commits",
@@ -43,7 +48,7 @@ def create_document(commit, repo, name):
         "doc": {
             "repo": name,
             "commit_id": commit.hex,
-            "patch_id": diff.patchid.hex,
+            "patch_id": patchid,
             "parent_ids": [p.hex for p in commit.parents],
             "merge": len(commit.parents) > 1,
             "author": {
@@ -59,7 +64,7 @@ def create_document(commit, repo, name):
             "summary": commit.message.splitlines()[0],
             # TODO: Split out Signed-off-by etc.
             "message": "\n".join(commit.message.splitlines()[2:]),
-            "files": [d.new_file.path for d in diff.deltas],
+            "files": files,
             # "hunks": [
             #     {
             #         "header": h.header,
