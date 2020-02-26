@@ -1,55 +1,48 @@
 
 from fuzzywuzzy import fuzz
-from Objects.DistroPatchMatch import DistroPatchMatch
+from Objects.PatchDiffs import PatchDiffs
+
 
 class DownstreamMatcher:
-    upstream_patches = {}
 
-    def __init__(self, up_db):
+    def __init__(self, downstream_patches):
 
         """
-        Creates the DownstreamMatcher.
-        upstream_patches is a list of UpstreamPatch class
+        downstream_patches is a list of Patch objects
         """
-        self.upstream_patches = up_db.get_upstream_patch()
+        self.downstream_patches = downstream_patches
 
-    def get_matching_patch(self, downstream_patch):
+    def exists_matching_patch(self, upstream_patch):
         """
-        downstream_patch is a Patch object to match to upstream
-        Returns: DistroPatchMatch, or None of no confidence match found
+        upstream_patch is a Patch object to match to downstream
+        Returns: True if there exists this upstream_patch equivilent in our downstream patches
         """
-
-        # Define confidence weights
-        best_patch_id = -1
-        best_confidence = 0.0
-        best_author_confidence = 0.0
-        best_subject_confidence = 0.0
-        best_description_confidence = 0.0
-        best_filenames_confidence = 0.0
 
         # Confidence weights
         author_weight = 0.2
-        subject_weight = 0.5
+        subject_weight = 0.48
         description_weight = 0.1
         filenames_weight = 0.2
+        author_date_weight = 0.01  # This addresses some edge cases of identical other fields
+        commit_date_weight = 0.01  # This addresses some edge cases of identical other fields
 
         # Threshold that we must hit to return a match
         threshold = 0.75
 
         # Preprocessing for matching filenames
-        downstream_filepaths = downstream_patch.filenames.split(" ")
-        downstream_file_components = [_get_filepath_components(filepath) for filepath in downstream_filepaths]
+        upstream_filepaths = upstream_patch.affected_filenames.split(" ")
+        upstream_file_components = [_get_filepath_components(filepath) for filepath in upstream_filepaths]
 
-        for upstream_patch in self.upstream_patches:
-            # Calculate confidence that our downstream patch matches this upstream patch
+        for downstream_patch in self.downstream_patches:
+            # Calculate confidence that our upstream patch matches this downstream patch
 
-            # Calculate filenames confidence, which is roughly the percent of upstream filepaths present downstream
-            if (downstream_patch.filenames == "" or upstream_patch.filenames == ""):
-                filenames_confidence = 1.0 if (downstream_patch.filenames == upstream_patch.filenames) else 0.0
+            # Calculate filenames confidence, which is roughly the percent of upstream filepaths present in downstream patch
+            if (downstream_patch.affected_filenames == "" or upstream_patch.affected_filenames == ""):
+                filenames_confidence = 1.0 if (downstream_patch.affected_filenames == upstream_patch.affected_filenames) else 0.0
             else:
                 total_filepaths_match = 0
-                upstream_filepaths = upstream_patch.filenames.split(" ")
-                upstream_file_components = [_get_filepath_components(filepath) for filepath in upstream_filepaths]
+                downstream_filepaths = downstream_patch.affected_filenames.split(" ")
+                downstream_file_components = [_get_filepath_components(filepath) for filepath in downstream_filepaths]
 
                 for (upstream_path, upstream_name) in upstream_file_components:
                     max_match = 0.0
@@ -74,22 +67,26 @@ class DownstreamMatcher:
                 description_confidence = 1.0 if downstream_patch.description == "" else 0.0
             else:
                 description_confidence = 1.0 if upstream_patch.description in downstream_patch.description else 0.0
+            author_date_confidence = 1.0 if upstream_patch.author_time == downstream_patch.author_time else 0.0
+            commit_date_confidence = 1.0 if upstream_patch.commit_time == downstream_patch.commit_time else 0.0
 
-            confidence = author_weight*author_confidence + subject_weight*subject_confidence + description_weight*description_confidence + filenames_weight*filenames_confidence
-            if confidence > best_confidence and confidence >= threshold:
-                best_patch_id = upstream_patch.patch_id
-                best_confidence = confidence
-                best_author_confidence = author_confidence
-                best_subject_confidence = subject_confidence
-                best_description_confidence = description_confidence
-                best_filenames_confidence = filenames_confidence
-            elif (confidence == best_confidence):
-                print("[info] Two patches found with same confidence")
+            confidence = author_weight * author_confidence + subject_weight * subject_confidence + \
+                description_weight * description_confidence + filenames_weight * filenames_confidence + \
+                author_date_confidence * author_date_weight + commit_date_confidence * commit_date_weight
+            if confidence >= threshold:
+                return True
 
-        if best_confidence < threshold:
-            return None
+        # TODO just do this part?...
+        # Check for code matching
+        upstream_diffs = PatchDiffs(upstream_patch.commit_diffs)
+        for downstream_patch in self.downstream_patches:
+            downstream_diffs = PatchDiffs(downstream_patch.commit_diffs)
+            code_match_confidence = upstream_diffs.percent_present_in(downstream_diffs)
+            if code_match_confidence > threshold:
+                return True
 
-        return DistroPatchMatch(best_author_confidence, best_subject_confidence, best_description_confidence, best_filenames_confidence, best_confidence, best_patch_id)
+        return False
+
 
 def _get_filepath_components(filepath):
     """

@@ -105,3 +105,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# patchtracker repos
+Repos/*
+!Repos/.gitkeep
+
+# All .envs
+*.env

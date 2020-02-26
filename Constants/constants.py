@@ -1,7 +1,0 @@
-PathToLinux="../linux"
-PathToBionic="../bionic"
-PathToClone="../"
-PathToCommitLog="../commit-log"
-PathToLastsha="../lastSHA"
-PathToSecret="../LSG-Secret"
-NameMaintainers="MAINTAINERS"
