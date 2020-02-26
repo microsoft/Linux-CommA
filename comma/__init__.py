@@ -92,7 +92,10 @@ def get_repo(name, branch, url, path):
 def get_patches():
     for name, branch, url, path in repos:
         repo = get_repo(name, branch, url, path)
-        walker = repo.walk(repo.lookup_branch(branch).target, GIT_SORT_TOPOLOGICAL)
+        print("Indexing repo:", name)
+        walker = repo.walk(
+            repo.branches.remote["origin/" + branch].target, GIT_SORT_TOPOLOGICAL
+        )
         # TODO: Hide fewer commits.
         walker.hide(repo["4dba490412e7f6c9f17a0afcf7b08f110817b004"].id)
         for commit in walker:
