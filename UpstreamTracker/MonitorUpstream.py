@@ -6,9 +6,9 @@ currentdir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-import Util.Constants as cst  # noqa E402
-from UpstreamTracker.ParseData import process_commits  # noqa E402
-from DatabaseDriver.PatchDataTable import PatchDataTable  # noqa E402
+import Util.Constants as cst
+from UpstreamTracker.ParseData import process_commits
+from DatabaseDriver.PatchDataDriver import PatchDataDriver
 
 
 # TODO if downstream continues to use, move this to Util.py?
@@ -44,7 +44,7 @@ def get_hyperv_filenames(repo, revision="master"):
 if __name__ == '__main__':
     print("Welcome to Patch tracker!!")
     print("Starting patch scraping from files..")
-    db = PatchDataTable()
+    db = PatchDataDriver()
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
     if os.path.exists(path_to_linux):
         print("[Info] Path to Linux Repo exists")
@@ -67,5 +67,4 @@ if __name__ == '__main__':
     # else:
     print("[Info] New commits found")
     print("[Info] Starting commit parsing")
-    # TODO make upstream not have to be a distro
     process_commits(repo, "master", filenames, db)

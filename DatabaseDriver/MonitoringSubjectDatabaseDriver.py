@@ -2,6 +2,7 @@ from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from Objects.MonitoringSubject import MonitoringSubject
 import Util.Constants as cst
 from Util.util import list_diff
+from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDriver
 
 
 class MonitoringSubjectDatabaseDriver():
@@ -40,15 +41,24 @@ class MonitoringSubjectDatabaseDriver():
         current_revisions = self.get_revision_list(distro_id)
 
         # Remove revisions no longer to be included
-        # TODO also remove from missing
         revisions_to_remove = list_diff(current_revisions, new_revisions)
         if (revisions_to_remove):
             print("[Info] For distro: %s, deleting revisions: %s" % (distro_id, revisions_to_remove))
             # This changes a list of A B C to the string ('A','B','C')
             revisions_to_remove_formatted = "('%s')" % "','".join(revisions_to_remove)
-            conx = self.cursor.execute("delete from %s where distroID = '%s' and revision in %s"
-                % (cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id, revisions_to_remove_formatted))
+
+            row = self.cursor.execute(
+                "SELECT monitoringSubjectID FROM %s where [distroID] = ? and revision ?;" %
+                cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id, revisions_to_remove_formatted).fetchone()
+            monitoring_subject_id = row[0]
+
+            conx = self.cursor.execute("delete from %s where monitoringSubjectID = ?;"
+                % cst.MONITORING_SUBJECTS_TABLE_NAME, monitoring_subject_id)
             conx.commit()
+
+            # Remove from missing patches as well
+            missing_patches_db_driver = MissingPatchesDatabaseDriver()
+            missing_patches_db_driver.remove_missing_patches_for_subject(monitoring_subject_id)
 
         # Add new revisions
         revisions_to_add = list_diff(new_revisions, current_revisions)

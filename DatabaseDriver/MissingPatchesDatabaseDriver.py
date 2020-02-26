@@ -22,6 +22,7 @@ class MissingPatchesDatabaseDriver():
 
         # Remove patches that now are NOT missing
         patches_to_remove = list_diff(old_missing_patch_ids, missing_patches)
+        print("[Info] Removing %s patches from DB that are no longer missing." % len(patches_to_remove))
         if (patches_to_remove):
             # This changes a list of A B C to the string (A, B, C)
             patches_to_remove_formatted = "(%s)" % ", ".join(str(patch_id) for patch_id in patches_to_remove)
@@ -31,8 +32,17 @@ class MissingPatchesDatabaseDriver():
 
         # Add patches which are newly missing
         new_missing_patch_ids = list_diff(missing_patches, old_missing_patch_ids)
+        print("[Info] Adding %s patches to DB that are now missing." % len(new_missing_patch_ids))
         if (new_missing_patch_ids):
             for patch_id_to_add in new_missing_patch_ids:
                 conx = self.cursor.execute("insert into %s ([monitoringSubjectID],[patchID]) values(?,?)"
                     % cst.DOWNSTREAM_TABLE_NAME, monitoring_subject_id, patch_id_to_add)
                 conx.commit()
+
+    def remove_missing_patches_for_subject(self, monitoring_subject_id):
+        """
+        Removes all data related to the given subject
+        """
+        conx = self.cursor.execute("delete from %s where monitoringSubjectID = '%d'"
+                % (cst.DOWNSTREAM_TABLE_NAME, monitoring_subject_id))
+        conx.commit()

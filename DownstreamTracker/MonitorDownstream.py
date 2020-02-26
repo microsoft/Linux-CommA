@@ -5,12 +5,13 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-# So many noqas due to importing after setting sys.path
 import Util.Constants as cst
 from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
-from DatabaseDriver.PatchDataTable import PatchDataTable
+from DatabaseDriver.PatchDataDriver import PatchDataDriver
 from DatabaseDriver.MonitoringSubjectDatabaseDriver import MonitoringSubjectDatabaseDriver
 from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDriver
+from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
+from UpstreamTracker.ParseData import process_commits
 # from DownstreamTracker.DebianParser import monitor_debian
 
 
@@ -22,7 +23,7 @@ def update_tracked_revisions(distro_id, repo):
     repo: the git repo object of whatever repo to check revisions in
     """
 
-    # TODO This is WRONG it's sorting by alphabetization, 
+    # TODO This is WRONG it's sorting by alphabetization,
     # which happens to be correct currently but needs to be addressed
     # git tag can sort by date, but can't specify remote. ls-remote can't naturally sort
     # until git 1.2.18 - 1.2.17 is the latest version Ubuntu18.04 can get
@@ -37,19 +38,6 @@ def update_tracked_revisions(distro_id, repo):
 
         monitoring_subject_db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
 
-    # For Ubuntu, we want the latest two kernel versions
-    # if (distro_id.startswith("Ubuntu")):
-    #     latest_two_kernels = []
-    #     tags = repo.git.tag('-l', '--sort=-version:refname').split("\n")
-    #     for tag in tags:
-    #         if "edge" in tag or "azure" not in tag:
-    #             continue
-    #         latest_two_kernels.append(tag)
-    #         # Currently we only want the latest two kernels for Ubuntu
-    #         if (len(latest_two_kernels) == 2):
-    #             break
-    #     monitoring_subject_db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
-
 
 def monitor_subject(monitoring_subject, repo):
     """
@@ -61,14 +49,26 @@ def monitor_subject(monitoring_subject, repo):
 
     filenames = get_hyperv_filenames(repo, monitoring_subject.revision)
 
+    # This returns patches missing in the repo with very good accuracy, but isn't perfect
+    # So, we run extra checks to confirm the missing patches.
     missing_commit_ids = repo.git.log('--no-merges', '--right-only', '--cherry-pick', '--pretty=format:%H',
         '%s...master' % monitoring_subject.revision, '--', filenames).split("\n")
 
-    # Update database to reflect latest missing patches
-    # First, we translate the commitIDs we have into patchIDs, then we update downstream database
-    patch_data_db_driver = PatchDataTable()
-    missing_patch_ids = patch_data_db_driver.get_patch_ids_from_commit_ids(missing_commit_ids)
+    # Run extra checks on these missing commits
+    patch_data_db_driver = PatchDataDriver()
+    missing_patches = patch_data_db_driver.get_patches_from_commit_ids(missing_commit_ids)
+    num_log_missing_patches = len(missing_patches)
+    # We only want to check downstream patches as old as the oldest missing patch's commit_time, as an optimization.
+    earliest_commit_date = min([patch[1].commit_time for patch in missing_patches])
+    downstream_patches = process_commits(repo, monitoring_subject.revision, filenames, since_time=earliest_commit_date)
+    downstream_matcher = DownstreamMatcher(downstream_patches)
+    # Removes patches which our algorithm say exist downstream
+    missing_patches = list(filter(lambda patch_info: not downstream_matcher.exists_matching_patch(patch_info[1]), missing_patches))
+    print("[Info] Number of patches missing from git log to our algo: %s -> %s."
+        % (num_log_missing_patches, len(missing_patches)))
 
+    missing_patch_ids = [patch_id for patch_id, _ in missing_patches]
+    # Update database to reflect latest missing patches
     missing_patches_db_driver = MissingPatchesDatabaseDriver()
     missing_patches_db_driver.update_missing_patches(monitoring_subject.monitoring_subject_id, missing_patch_ids)
 

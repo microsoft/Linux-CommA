@@ -9,19 +9,25 @@ from datetime import datetime
 from Objects.Patch import Patch
 
 
-def process_commits(repo, revision, file_paths, db):
+def process_commits(repo, revision, file_paths, db=None, since_time=None):
     """
     look at all commits in the given repo and handle based on distro
 
     repo: The git.repo object of the repository we want to parse commits of
     revision: The git revision we want to see the commits of, or None
     file_paths: list of filenames to check commits for
-    db: Database object to add commits to
+    db: Database object to add commits to, or None to return a list instead
+    since_time: If provided, will only process commits after this commit datetime
     """
-    count_added = 0
-    count_skipped = 0
+    all_patches = []
+    num_patches = 0
+    num_patches_added = 0
 
-    commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True)
+    if (since_time):
+        commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True, since=since_time.isoformat())
+    else:
+        commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True)
+
     for curr_commit in commits:
         patch = Patch.blank()
         patch.commit_id = curr_commit.hexsha
@@ -77,7 +83,10 @@ def process_commits(repo, revision, file_paths, db):
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = curr_commit.tree.diff(curr_commit.parents[0], paths=file_paths, create_patch=True)
 
-        filenames_list = [diff.a_path for diff in commit_diffs if diff.a_path is not None]
+        # Sometimes a path is in a and not b, we want all affect filenames.
+        filenames_list_a = {diff.a_path for diff in commit_diffs if diff.a_path is not None}
+        filenames_list_b = {diff.b_path for diff in commit_diffs if diff.b_path is not None}
+        filenames_list = list(filenames_list_a | filenames_list_b)
         patch.affected_filenames = " ".join(filenames_list)
 
         # Parse diff to only keep lines with changes (+ or - at start)
@@ -90,18 +99,20 @@ def process_commits(repo, revision, file_paths, db):
         patch.commit_diffs = "\n".join(["%s\n%s" % (diff.a_path, parse_diff(diff.diff))
                                 for diff in commit_diffs if diff.a_path is not None])
 
-        # TODO is this check needed if we start on only patches we haven't processed before?
-        # If we DO want to keep this check, let's move before parsing everything
-        if db.check_commit_present(patch.commit_id):
-            count_skipped += 1
+        if (db):
+            # TODO is this check needed if we start on only patches we haven't processed before?
+            # If we DO want to keep this check, let's move before parsing everything
+            if not db.check_commit_present(patch.commit_id):
+                db.insert_patch(patch)
+                num_patches_added += 1
         else:
-            db.insert_patch(patch)
-            count_added += 1
+            all_patches.append(patch)
 
+        num_patches += 1
         # Log progress
-        total_commits_processed = count_skipped + count_added
-        if (total_commits_processed % 250 == 0):
-            print("[Info] %d commits processed... %d added, %d skipped"
-                % (total_commits_processed, count_added, count_skipped))
+        if (num_patches % 250 == 0):
+            print("[Info] %d commits processed..." % num_patches)
 
-    print("[Info] Added new commits: %d\t skipped patches: %d" % (count_added, count_skipped))
+    if (db):
+        print("[Info] %s patches added to database." % num_patches_added)
+    return all_patches
