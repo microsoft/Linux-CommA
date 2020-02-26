@@ -11,10 +11,16 @@ from pygit2 import (
 repos = [
     (
         "linux-mainline",
+        "master",
         "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
         "/tmp/linux-mainline",
     ),
-    ("openSUSE", "https://github.com/openSUSE/kernel.git", "/tmp/openSUSE"),
+    (
+        "openSUSE",
+        "SLE15-SP2-AZURE",
+        "https://github.com/openSUSE/kernel.git",
+        "/tmp/openSUSE",
+    ),
 ]
 
 
@@ -68,15 +74,19 @@ def create_document(commit, repo, name):
     }
 
 
-def get_patches():
-    for name, url, path in repos:
-        if discover_repository(path):
-            repo = Repository(path)
-            repo.remotes["origin"].fetch()
-        else:
-            repo = clone_repository(url, path, bare=True)
+def get_repo(name, branch, url, path):
+    if discover_repository(path):
+        repo = Repository(path)
+        repo.remotes["origin"].fetch()
+    else:
+        repo = clone_repository(url, path, bare=True)
+    return repo
 
-        walker = repo.walk(repo.head.target, GIT_SORT_TOPOLOGICAL)
+
+def get_patches():
+    for name, branch, url, path in repos:
+        repo = get_repo(name, branch, url, path)
+        walker = repo.walk(repo.lookup_branch(branch).target, GIT_SORT_TOPOLOGICAL)
         walker.hide(repo["8834f5600cf3c8db365e18a3d5cac2c2780c81e5"].id)
         for commit in walker:
             yield create_document(commit, repo, name)
