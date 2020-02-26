@@ -41,3 +41,6 @@ First commit before introduction of Hyper-V code is:
 
 First commit before last missing patch is:
 > 8834f5600cf3c8db365e18a3d5cac2c2780c81e5
+
+Recent common ancestor of linux-mainline and openSUSE:
+> 4dba490412e7f6c9f17a0afcf7b08f110817b004 AKA v5.3

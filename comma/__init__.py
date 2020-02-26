@@ -92,7 +92,8 @@ def get_patches():
     for name, branch, url, path in repos:
         repo = get_repo(name, branch, url, path)
         walker = repo.walk(repo.lookup_branch(branch).target, GIT_SORT_TOPOLOGICAL)
-        walker.hide(repo["8834f5600cf3c8db365e18a3d5cac2c2780c81e5"].id)
+        # TODO: Hide fewer commits.
+        walker.hide(repo["4dba490412e7f6c9f17a0afcf7b08f110817b004"].id)
         for commit in walker:
             yield create_document(commit, repo, name)
 
