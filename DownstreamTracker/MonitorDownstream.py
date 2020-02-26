@@ -47,7 +47,8 @@ def monitor_subject(monitoring_subject, repo):
     repo: The git repo object pointing to relevant upstream linux repo
     """
 
-    filenames = get_hyperv_filenames(repo, monitoring_subject.revision)
+    # filenames = get_hyperv_filenames(repo, monitoring_subject.revision)
+    filenames = get_hyperv_filenames(repo)
 
     # This returns patches missing in the repo with very good accuracy, but isn't perfect
     # So, we run extra checks to confirm the missing patches.

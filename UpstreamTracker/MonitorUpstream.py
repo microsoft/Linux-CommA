@@ -11,7 +11,6 @@ from UpstreamTracker.ParseData import process_commits
 from DatabaseDriver.PatchDataDriver import PatchDataDriver
 
 
-# TODO if downstream continues to use, move this to Util.py?
 def get_hyperv_filenames(repo, revision="master"):
     '''
     This function will parse maintainers file to get hyperV filenames
