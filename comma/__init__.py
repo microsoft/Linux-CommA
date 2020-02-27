@@ -104,7 +104,29 @@ def get_patches():
 
 elastic = Elasticsearch(sniff_on_start=True)
 print(elastic.info())
+mappings = {
+    "mappings": {
+        "properties": {
+            "repo": {"type": "keyword"},
+            "commit_id": {"type": "keyword"},
+            "parent_ids": {"type": "keyword"},
+            "merge": {"type": "boolean"},
+            "present": {"type": "boolean"},
+            "bugfix": {"type": "boolean"},
+            "name": {"type": "keyword"},
+            "email": {"type": "keyword"},
+            "time": {"type": "date"},
+            "title": {"type": "text"},
+            "description": {"type": "text"},
+            "files": {"type": "keyword"},
+            # "patch": {"type": "text", "index": False},
+        }
+    }
+}
+elastic.indices.create("commits", mappings)
+
+
 print("Indexing commits...")
-for success, info in helpers.parallel_bulk(elastic, get_patches(), thread_count=8):
+for success, info in helpers.parallel_bulk(elastic, get_patches()):
     if not success:
         print(info)
