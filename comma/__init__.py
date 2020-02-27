@@ -72,20 +72,17 @@ def create_document(commit, repo, name):
     # Commits without title and description are useless
     message = commit.message.splitlines()
     if len(message) < 3:
-        # print("Skipping due to message!")
         return None
 
     diff = repo.diff(commit.parents[0], commit)
     files = [d.new_file.path for d in diff.deltas]
 
     # Limit to Microsoft relevance
-    if commit.author.email.endswith("@microsoft.com"):
-        print("Matched email!")
-    elif not set(files).isdisjoint(hyperv_files):
-        print("Matched file!")
-    elif any(f.startswith(d) for d in hyperv_dirs for f in files):
-        print("Matched directory!")
-    else:
+    if not (
+        commit.author.email.endswith("@microsoft.com")
+        or not set(files).isdisjoint(hyperv_files)
+        or any(f.startswith(d) for d in hyperv_dirs for f in files)
+    ):
         return None
 
     # Record if patch is present
@@ -96,35 +93,32 @@ def create_document(commit, repo, name):
     else:
         present = patchid in patchids
 
-    bugfix = len(["Fixes:" in l for l in message]) > 0
+    bugfix = any(["Fixes:" in l for l in message])
 
     return {
         "_index": "commits",
-        "_type": "document",
         "_id": commit.hex,
-        "doc": {
-            "repo": name,
-            "commit_id": commit.hex,
-            "parent_ids": [p.hex for p in commit.parents],
-            # "merge": len(commit.parents) > 1,
-            "present": present,
-            "bugfix": bugfix,
-            "author": {
-                "name": commit.author.name,
-                "email": commit.author.email,
-                "time": author_time,
-            },
-            "committer": {
-                "name": commit.committer.name,
-                "email": commit.committer.email,
-                "time": commit_time,
-            },
-            "title": message[0],
-            # TODO: Split out Signed-off-by etc.
-            "description": "\n".join(message[2:]),
-            "files": files,
-            # "patch": diff.patch,
+        "repo": name,
+        "commit_id": commit.hex,
+        "parent_ids": [p.hex for p in commit.parents],
+        # "merge": len(commit.parents) > 1,
+        "present": present,
+        "bugfix": bugfix,
+        "author": {
+            "name": commit.author.name,
+            "email": commit.author.email,
+            "time": author_time,
         },
+        "committer": {
+            "name": commit.committer.name,
+            "email": commit.committer.email,
+            "time": commit_time,
+        },
+        "title": message[0],
+        # TODO: Split out Signed-off-by etc.
+        "description": "\n".join(message[2:]),
+        "files": files,
+        # "patch": diff.patch,
     }
 
 
@@ -149,7 +143,6 @@ def get_patches():
         for commit in walker:
             document = create_document(commit, repo, name)
             if document:
-                print("Indexing commit:", commit.hex)
                 yield document
 
 
@@ -195,6 +188,6 @@ elastic.indices.create("commits", body)
 
 
 print("Indexing commits...")
-for success, info in helpers.parallel_bulk(elastic, get_patches()):
+for success, info in helpers.streaming_bulk(elastic, get_patches()):
     if not success:
         print(info)
