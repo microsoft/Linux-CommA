@@ -23,6 +23,33 @@ repos = [
     ),
 ]
 
+hyperv_files = {
+    "arch/x86/include/asm/mshyperv.h",
+    "arch/x86/include/asm/trace/hyperv.h",
+    "arch/x86/include/asm/hyperv-tlfs.h",
+    "arch/x86/kernel/cpu/mshyperv.c",
+    "arch/x86/hyperv",
+    "drivers/clocksource/hyperv_timer.c",
+    "drivers/hid/hid-hyperv.c",
+    "drivers/hv/",
+    "drivers/input/serio/hyperv-keyboard.c",
+    "drivers/pci/controller/pci-hyperv.c",
+    "drivers/pci/controller/pci-hyperv-intf.c",
+    "drivers/net/hyperv/",
+    "drivers/scsi/storvsc_drv.c",
+    "drivers/uio/uio_hv_generic.c",
+    "drivers/video/fbdev/hyperv_fb.c",
+    "drivers/iommu/hyperv-iommu.c",
+    "net/vmw_vsock/hyperv_transport.c",
+    "include/clocksource/hyperv_timer.h",
+    "include/linux/hyperv.h",
+    "include/uapi/linux/hyperv.h",
+    "include/asm-generic/mshyperv.h",
+    "tools/hv/",
+}
+
+patchids = set()
+
 
 def create_document(commit, repo, name):
     author_time = datetime.fromtimestamp(
@@ -34,13 +61,31 @@ def create_document(commit, repo, name):
         timezone(timedelta(minutes=commit.commit_time_offset)),
     ).isoformat()
 
-    patchid = 0
-    files = []
-    # TODO: Remove the email check to diff all commits.
-    if commit.author.email.endswith("@microsoft.com") and len(commit.parents) > 0:
-        diff = repo.diff(commit.parents[0], commit)
-        patchid = diff.patchid.hex
-        files = [d.new_file.path for d in diff.deltas]
+    # Leaf commits have no diff
+    if len(commit.parents) == 0:
+        return None
+
+    # Commits without title and description are useless
+    message = commit.message.splitlines()
+    if len(message) < 3:
+        return None
+
+    diff = repo.diff(commit.parents[0], commit)
+    files = [d.new_file.path for d in diff.deltas]
+
+    # Limit to Hyper-V files
+    if set(files).isdisjoint(hyperv_files):
+        return None
+
+    # Record if patch is present
+    patchid = diff.patchid.hex
+    present = False
+    if name == "linux-mainline":
+        patchids.add(patchid)
+    else:
+        present = patchid in patchids
+
+    bugfix = len(["Fixes:" in l for l in message]) > 0
 
     return {
         "_index": "commits",
@@ -49,9 +94,10 @@ def create_document(commit, repo, name):
         "doc": {
             "repo": name,
             "commit_id": commit.hex,
-            "patch_id": patchid,
             "parent_ids": [p.hex for p in commit.parents],
             "merge": len(commit.parents) > 1,
+            "present": present,
+            "bugfix": bugfix,
             "author": {
                 "name": commit.author.name,
                 "email": commit.author.email,
@@ -62,20 +108,11 @@ def create_document(commit, repo, name):
                 "email": commit.committer.email,
                 "time": commit_time,
             },
-            "summary": commit.message.splitlines()[0],
+            "title": message[0],
             # TODO: Split out Signed-off-by etc.
-            "message": "\n".join(commit.message.splitlines()[2:]),
+            "description": "\n".join(message[2:]),
             "files": files,
-            # "hunks": [
-            #     {
-            #         "header": h.header,
-            #         "lines": [
-            #             l.content.strip() for l in h.lines if not l.content.isspace()
-            #         ],
-            #     }
-            #     for d in diff
-            #     for h in d.hunks
-            # ],
+            # "patch": diff.patch,
         },
     }
 
@@ -99,7 +136,9 @@ def get_patches():
         # TODO: Hide fewer commits.
         walker.hide(repo["4dba490412e7f6c9f17a0afcf7b08f110817b004"].id)
         for commit in walker:
-            yield create_document(commit, repo, name)
+            document = create_document(commit, repo, name)
+            if document:
+                yield document
 
 
 elastic = Elasticsearch(sniff_on_start=True)
