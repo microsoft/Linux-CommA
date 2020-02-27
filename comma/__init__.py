@@ -87,11 +87,11 @@ def create_document(commit, repo, name):
 
     # Record if patch is present
     patchid = diff.patchid.hex
-    present = False
     if name == "linux-mainline":
+        upstream = True
         patchids.add(patchid)
     else:
-        present = patchid in patchids
+        upstream = patchid in patchids
 
     bugfix = any(["Fixes:" in l for l in message])
 
@@ -102,7 +102,7 @@ def create_document(commit, repo, name):
         "commit_id": commit.hex,
         "parent_ids": [p.hex for p in commit.parents],
         # "merge": len(commit.parents) > 1,
-        "present": present,
+        "upstream": upstream,
         "bugfix": bugfix,
         "author": {
             "name": commit.author.name,
@@ -173,7 +173,7 @@ body = {
             "commit_id": {"type": "keyword"},
             "parent_ids": {"type": "keyword"},
             # "merge": {"type": "boolean"},
-            "present": {"type": "boolean"},
+            "upstream": {"type": "boolean"},
             "bugfix": {"type": "boolean"},
             "author": signature_mapping,
             "committer": signature_mapping,
