@@ -28,14 +28,11 @@ hyperv_files = {
     "arch/x86/include/asm/trace/hyperv.h",
     "arch/x86/include/asm/hyperv-tlfs.h",
     "arch/x86/kernel/cpu/mshyperv.c",
-    "arch/x86/hyperv",
     "drivers/clocksource/hyperv_timer.c",
     "drivers/hid/hid-hyperv.c",
-    "drivers/hv/",
     "drivers/input/serio/hyperv-keyboard.c",
     "drivers/pci/controller/pci-hyperv.c",
     "drivers/pci/controller/pci-hyperv-intf.c",
-    "drivers/net/hyperv/",
     "drivers/scsi/storvsc_drv.c",
     "drivers/uio/uio_hv_generic.c",
     "drivers/video/fbdev/hyperv_fb.c",
@@ -45,6 +42,12 @@ hyperv_files = {
     "include/linux/hyperv.h",
     "include/uapi/linux/hyperv.h",
     "include/asm-generic/mshyperv.h",
+}
+
+hyperv_dirs = {
+    "arch/x86/hyperv/",
+    "drivers/hv/",
+    "drivers/net/hyperv/",
     "tools/hv/",
 }
 
@@ -61,20 +64,28 @@ def create_document(commit, repo, name):
         timezone(timedelta(minutes=commit.commit_time_offset)),
     ).isoformat()
 
-    # Leaf commits have no diff
-    if len(commit.parents) == 0:
+    # Leaf commits and merges are useless
+    if len(commit.parents) != 1:
+        # print("Skipping due to parents!")
         return None
 
     # Commits without title and description are useless
     message = commit.message.splitlines()
     if len(message) < 3:
+        # print("Skipping due to message!")
         return None
 
     diff = repo.diff(commit.parents[0], commit)
     files = [d.new_file.path for d in diff.deltas]
 
-    # Limit to Hyper-V files
-    if set(files).isdisjoint(hyperv_files):
+    # Limit to Microsoft relevance
+    if commit.author.email.endswith("@microsoft.com"):
+        print("Matched email!")
+    elif not set(files).isdisjoint(hyperv_files):
+        print("Matched file!")
+    elif any(f.startswith(d) for d in hyperv_dirs for f in files):
+        print("Matched directory!")
+    else:
         return None
 
     # Record if patch is present
@@ -95,7 +106,7 @@ def create_document(commit, repo, name):
             "repo": name,
             "commit_id": commit.hex,
             "parent_ids": [p.hex for p in commit.parents],
-            "merge": len(commit.parents) > 1,
+            # "merge": len(commit.parents) > 1,
             "present": present,
             "bugfix": bugfix,
             "author": {
@@ -138,6 +149,7 @@ def get_patches():
         for commit in walker:
             document = create_document(commit, repo, name)
             if document:
+                print("Indexing commit:", commit.hex)
                 yield document
 
 
@@ -153,10 +165,12 @@ signature_mapping = {
 body = {
     "settings": {
         "analysis": {
-            "file_path": {
-                "type": "custom",
-                "tokenizer": "path_hierarchy",
-                "filter": ["lowercase"],
+            "analyzer": {
+                "file_path": {
+                    "type": "custom",
+                    "tokenizer": "path_hierarchy",
+                    "filter": ["lowercase"],
+                }
             }
         }
     },
@@ -165,7 +179,7 @@ body = {
             "repo": {"type": "keyword"},
             "commit_id": {"type": "keyword"},
             "parent_ids": {"type": "keyword"},
-            "merge": {"type": "boolean"},
+            # "merge": {"type": "boolean"},
             "present": {"type": "boolean"},
             "bugfix": {"type": "boolean"},
             "author": signature_mapping,
