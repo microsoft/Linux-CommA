@@ -13,13 +13,13 @@ repos = [
         "linux-mainline",
         "master",
         "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
-        "/tmp/linux-mainline",
+        "/mnt/ramdisk/linux-mainline",
     ),
     (
         "openSUSE",
         "SLE15-SP2-AZURE",
         "https://github.com/openSUSE/kernel.git",
-        "/tmp/openSUSE",
+        "/mnt/ramdisk/openSUSE",
     ),
 ]
 
