@@ -143,7 +143,23 @@ def get_patches():
 
 elastic = Elasticsearch(sniff_on_start=True)
 print(elastic.info())
-mappings = {
+signature_mapping = {
+    "properties": {
+        "name": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+        "email": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+        "time": {"type": "date"},
+    }
+}
+body = {
+    "settings": {
+        "analysis": {
+            "file_path": {
+                "type": "custom",
+                "tokenizer": "path_hierarchy",
+                "filter": ["lowercase"],
+            }
+        }
+    },
     "mappings": {
         "properties": {
             "repo": {"type": "keyword"},
@@ -152,17 +168,16 @@ mappings = {
             "merge": {"type": "boolean"},
             "present": {"type": "boolean"},
             "bugfix": {"type": "boolean"},
-            "name": {"type": "keyword"},
-            "email": {"type": "keyword"},
-            "time": {"type": "date"},
+            "author": signature_mapping,
+            "committer": signature_mapping,
             "title": {"type": "text"},
-            "description": {"type": "text"},
-            "files": {"type": "keyword"},
+            "description": {"type": "text", "analyzer": "snowball"},
+            "files": {"type": "text", "analyzer": "file_path", "fielddata": True},
             # "patch": {"type": "text", "index": False},
         }
-    }
+    },
 }
-elastic.indices.create("commits", mappings)
+elastic.indices.create("commits", body)
 
 
 print("Indexing commits...")
