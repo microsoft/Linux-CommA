@@ -15,12 +15,12 @@ repos = [
         "git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
         "/mnt/ramdisk/linux-mainline",
     ),
-    (
-        "openSUSE",
-        "SLE15-SP2-AZURE",
-        "https://github.com/openSUSE/kernel.git",
-        "/mnt/ramdisk/openSUSE",
-    ),
+    # (
+    #     "openSUSE",
+    #     "SLE15-SP2-AZURE",
+    #     "https://github.com/openSUSE/kernel.git",
+    #     "/mnt/ramdisk/openSUSE",
+    # ),
 ]
 
 hyperv_files = {
@@ -51,8 +51,6 @@ hyperv_dirs = {
     "tools/hv/",
 }
 
-patchids = set()
-
 
 def create_document(commit, repo, name):
     author_time = datetime.fromtimestamp(
@@ -66,7 +64,6 @@ def create_document(commit, repo, name):
 
     # Leaf commits and merges are useless
     if len(commit.parents) != 1:
-        # print("Skipping due to parents!")
         return None
 
     # Commits without title and description are useless
@@ -85,25 +82,15 @@ def create_document(commit, repo, name):
     ):
         return None
 
-    # Record if patch is present
-    patchid = diff.patchid.hex
-    if name == "linux-mainline":
-        upstream = True
-        patchids.add(patchid)
-    else:
-        upstream = patchid in patchids
-
-    bugfix = any(["Fixes:" in l for l in message])
-
     return {
         "_index": "commits",
         "_id": commit.hex,
-        "repo": name,
+        # "repo": name,
         "commit_id": commit.hex,
+        "patch_id": diff.patchid.hex,
         "parent_ids": [p.hex for p in commit.parents],
         # "merge": len(commit.parents) > 1,
-        "upstream": upstream,
-        "bugfix": bugfix,
+        "bugfix": any(["Fixes:" in l for l in message]),
         "author": {
             "name": commit.author.name,
             "email": commit.author.email,
@@ -118,7 +105,7 @@ def create_document(commit, repo, name):
         # TODO: Split out Signed-off-by etc.
         "description": "\n".join(message[2:]),
         "files": files,
-        # "patch": diff.patch,
+        "patch": diff.patch,
     }
 
 
@@ -139,15 +126,13 @@ def get_patches():
             repo.branches.remote["origin/" + branch].target, GIT_SORT_TOPOLOGICAL
         )
         # TODO: Hide fewer commits.
-        walker.hide(repo["4dba490412e7f6c9f17a0afcf7b08f110817b004"].id)
+        walker.hide(repo["578f2938a43f83988f6edab86cff487889b4ef58"].id)
         for commit in walker:
             document = create_document(commit, repo, name)
             if document:
                 yield document
 
 
-elastic = Elasticsearch(sniff_on_start=True)
-print(elastic.info())
 signature_mapping = {
     "properties": {
         "name": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
@@ -171,23 +156,21 @@ body = {
         "properties": {
             "repo": {"type": "keyword"},
             "commit_id": {"type": "keyword"},
+            "patch_id": {"type": "keyword"},
             "parent_ids": {"type": "keyword"},
             # "merge": {"type": "boolean"},
-            "upstream": {"type": "boolean"},
             "bugfix": {"type": "boolean"},
             "author": signature_mapping,
             "committer": signature_mapping,
             "title": {"type": "text"},
             "description": {"type": "text", "analyzer": "snowball"},
             "files": {"type": "text", "analyzer": "file_path", "fielddata": True},
-            # "patch": {"type": "text", "index": False},
+            "patch": {"type": "text", "analyzer": "simple"},
         }
     },
 }
+
+elastic = Elasticsearch(sniff_on_start=True)
 elastic.indices.create("commits", body)
-
-
-print("Indexing commits...")
-for success, info in helpers.streaming_bulk(elastic, get_patches()):
-    if not success:
-        print(info)
+for success, info in helpers.parallel_bulk(elastic, get_patches()):
+    print(info)
