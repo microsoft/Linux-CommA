@@ -24,18 +24,36 @@ class PatchData(Base):
     symbols = Column(String)
     # TODO: Should this reference a patchID?
     fixedPatches = Column(String)
+    # TODO: If this 1-1, why isn't `priority` just a column on `PatchData`?
+    metaData = relationship("PatchDataMeta", uselist=False, back_populates="patch")
+    # TODO: If this 1-1, why isn't `status` just a column on `PatchData`?
+    upstreamStatus = relationship(
+        "UpstreamPatchStatuses", uselist=False, back_populates="patch"
+    )
+    monitoringSubject = relationship(
+        "MonitoringSubjectsMissingPatches", back_populates="patches"
+    )
 
 
 class PatchDataMeta(Base):
     __tablename__ = "PatchDataMeta"
     patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
     priority = Column(Integer)
+    patch = relationship("PatchData", uselist=False, back_populates="metaData")
+
+
+class UpstreamPatchStatuses(Base):
+    __tablename__ = "UpstreamPatchStatuses"
+    patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
+    status = Column(String)
+    patch = relationship("PatchData", uselist=False, back_populates="upstreamStatus")
 
 
 class Distros(Base):
     __tablename__ = "Distros"
     distroID = Column(String, primary_key=True)
     repoLink = Column(String)
+    monitoringSubject = relationship("MonitoringSubjects", back_populates="distro")
 
 
 class MonitoringSubjects(Base):
@@ -43,6 +61,10 @@ class MonitoringSubjects(Base):
     monitoringSubjectID = Column(Integer, primary_key=True)
     distroID = Column(String, ForeignKey("Distros.distroID"))
     revision = Column(String)
+    distro = relationship("Distros", back_populates="monitoringSubject")
+    missingPatch = relationship(
+        "MonitoringSubjectsMissingPatches", back_populates="monitoringSubject"
+    )
 
 
 class MonitoringSubjectsMissingPatches(Base):
@@ -50,13 +72,12 @@ class MonitoringSubjectsMissingPatches(Base):
     monitoringSubjectID = Column(
         Integer, ForeignKey("MonitoringSubjects.monitoringSubjectID"), primary_key=True
     )
+    monitoringSubject = relationship(
+        "MonitoringSubjects", back_populates="missingPatch"
+    )
     patchID = Column(Integer, ForeignKey("PatchData.patchID"))
-
-
-class UpstreamPatchStatuses(Base):
-    __tablename__ = "UpstreamPatchStatuses"
-    patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
-    status = Column(String)
+    patches = relationship("PatchData", back_populates="monitoringSubject")
 
 
 engine = create_engine("sqlite:///:memory:", echo=True)
+Base.metadata.create_all(engine)
