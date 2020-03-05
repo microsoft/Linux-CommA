@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "comma"
+version = "0.1.0"
+description = "Linux Commit Analyzer"
+authors = [
+  "Ryan Feldman <ryfeldma@microsoft.com>",
+  "Abhishek Marathe <abmarath@microsoft.com>",
+  "Andrew Schwartzmeyer <andrew@schwartzmeyer.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+gitpython = "^3.1.0"
+pyodbc = "^4.0.30"
+python-Levenshtein = "^0.12.0"
+fuzzywuzzy = "^0.18.0"
+python-dotenv = "^0.12.0"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.7.9"
+black = "^19.10b0"
+
+[tool.black]
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
