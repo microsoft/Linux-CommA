@@ -1,7 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
 
 Base = declarative_base()
 
@@ -77,7 +76,3 @@ class MonitoringSubjectsMissingPatches(Base):
     )
     patchID = Column(Integer, ForeignKey("PatchData.patchID"))
     patches = relationship("PatchData", back_populates="monitoringSubject")
-
-
-engine = create_engine("sqlite:///:memory:", echo=True)
-Base.metadata.create_all(engine)
