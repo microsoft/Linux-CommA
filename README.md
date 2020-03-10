@@ -8,7 +8,7 @@ Install [poetry](https://python-poetry.org/docs/).
 Install required Ubuntu package:
 
 ```sh
-apt install unixodbc-dev
+apt install mssql-tools unixodbc unixodbc-dev
 ```
 
 Install Python packages via `poetry`:
