@@ -74,5 +74,5 @@ class MonitoringSubjectsMissingPatches(Base):
     monitoringSubject = relationship(
         "MonitoringSubjects", back_populates="missingPatch"
     )
-    patchID = Column(Integer, ForeignKey("PatchData.patchID"))
+    patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
     patches = relationship("PatchData", back_populates="monitoringSubject")
