@@ -16,3 +16,10 @@ Install Python packages via `poetry`:
 ```sh
 poetry install
 ```
+
+# Running CommA
+
+1. Enter the setup environment with `poetry shell`
+2. Run `./comma.py --upstream --downstream`
+
+This will parse the upstream and downstream repos.
