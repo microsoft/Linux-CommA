@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import Util.Config
 from UpstreamTracker.MonitorUpstream import monitor_upstream
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 
@@ -10,10 +11,14 @@ parser.add_argument(
 parser.add_argument(
     "--downstream", action="store_true", help="Monitor the downstream patches."
 )
+parser.add_argument(
+    "--dry-run", action="store_true", help="Do not connect to production database."
+)
 
 if __name__ == "__main__":
     print("Welcome to Patch tracker!")
     args = parser.parse_args()
+    Util.Config.dry_run = args.dry_run
     if args.upstream:
         monitor_upstream()
     if args.downstream:

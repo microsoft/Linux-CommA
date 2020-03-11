@@ -112,3 +112,6 @@ Repos/*
 
 # All .envs
 *.env
+
+# Local database
+comma.db
