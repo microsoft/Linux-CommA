@@ -49,8 +49,8 @@ class MonitoringSubjectDatabaseDriver():
             revisions_to_remove_formatted = "('%s')" % "','".join(revisions_to_remove)
 
             row = self.cursor.execute(
-                "SELECT monitoringSubjectID FROM %s where [distroID] = ? and revision ?;" %
-                cst.MONITORING_SUBJECTS_TABLE_NAME, (distro_id, revisions_to_remove_formatted)).fetchone()
+                "SELECT monitoringSubjectID FROM %s where [distroID] = ? and [revision] IN %s;" %
+                (cst.MONITORING_SUBJECTS_TABLE_NAME, revisions_to_remove_formatted), (distro_id,)).fetchone()
             monitoring_subject_id = row[0]
 
             self.cursor.execute("delete from %s where monitoringSubjectID = ?;"
