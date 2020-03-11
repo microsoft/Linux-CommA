@@ -40,8 +40,7 @@ def get_hyperv_filenames(repo, revision="master"):
     return file_names
 
 
-if __name__ == '__main__':
-    print("Welcome to Patch tracker!!")
+def monitor_upstream():
     print("Starting patch scraping from files..")
     db = PatchDataDriver()
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)

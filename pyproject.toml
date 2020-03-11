@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "comma"
+name = "CommA"
 version = "0.1.0"
 description = "Linux Commit Analyzer"
 authors = [

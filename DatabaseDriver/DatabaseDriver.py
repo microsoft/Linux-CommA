@@ -1,6 +1,6 @@
 import pyodbc
 import DatabaseDriver.SqlClasses as Orm
-import os
+import Util.Config
 from contextlib import contextmanager
 from Setup.DbCred import DatabaseCredentials as DbCred
 from sqlalchemy import create_engine
@@ -19,8 +19,8 @@ class DatabaseDriver:
         """
         Initialize Database connection
         """
-        print("Connecting to Database...")
-        if os.environ.get("COMMA_DEV"):
+        if Util.Config.dry_run:
+            print("[Info] Using local database...")
             # TODO: Actually use the ORM. This is to prove the
             # database interface works.
             engine = create_engine("sqlite:///comma.db", echo=True)
@@ -32,6 +32,7 @@ class DatabaseDriver:
             self.connection = engine.raw_connection()
             self.cursor = self.connection.cursor()
         else:
+            print("[Info] Connecting to database...")
             # Get Database credentials
             dbCred = DbCred()
             self.connection = pyodbc.connect(

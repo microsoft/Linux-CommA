@@ -73,9 +73,7 @@ def monitor_subject(monitoring_subject, repo):
     missing_patches_db_driver.update_missing_patches(monitoring_subject.monitoring_subject_id, missing_patch_ids)
 
 
-if __name__ == '__main__':
-    print("Welcome to Patch tracker!!")
-
+def monitor_downstream():
     # connect to DB read all entries in Distro table
     monitoring_subject_db_driver = MonitoringSubjectDatabaseDriver()
     repo_links = monitoring_subject_db_driver.get_repo_links()
