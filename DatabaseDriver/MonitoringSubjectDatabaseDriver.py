@@ -10,6 +10,7 @@ class MonitoringSubjectDatabaseDriver():
     def __init__(self):
         """Initialize database connection"""
         self.cursor = DatabaseDriver.get_instance().cursor
+        self.conx = DatabaseDriver.get_instance().connection
 
     def get_monitoring_subjects(self):
         rows = self.cursor.execute("SELECT [monitoringSubjectID], [distroID], [revision] FROM %s;"
@@ -48,13 +49,13 @@ class MonitoringSubjectDatabaseDriver():
             revisions_to_remove_formatted = "('%s')" % "','".join(revisions_to_remove)
 
             row = self.cursor.execute(
-                "SELECT monitoringSubjectID FROM %s where [distroID] = ? and revision ?;" %
-                cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id, revisions_to_remove_formatted).fetchone()
+                "SELECT monitoringSubjectID FROM %s where [distroID] = ? and [revision] IN %s;" %
+                (cst.MONITORING_SUBJECTS_TABLE_NAME, revisions_to_remove_formatted), (distro_id,)).fetchone()
             monitoring_subject_id = row[0]
 
-            conx = self.cursor.execute("delete from %s where monitoringSubjectID = ?;"
-                % cst.MONITORING_SUBJECTS_TABLE_NAME, monitoring_subject_id)
-            conx.commit()
+            self.cursor.execute("delete from %s where monitoringSubjectID = ?;"
+                % cst.MONITORING_SUBJECTS_TABLE_NAME, (monitoring_subject_id,))
+            self.conx.commit()
 
             # Remove from missing patches as well
             missing_patches_db_driver = MissingPatchesDatabaseDriver()
@@ -65,11 +66,11 @@ class MonitoringSubjectDatabaseDriver():
         if (revisions_to_add):
             print("[Info] For distro: %s, adding revisions: %s" % (distro_id, revisions_to_add))
             for revision in revisions_to_add:
-                conx = self.cursor.execute("insert into %s ([distroID],[revision]) values(?,?)"
-                    % cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id, revision)
-                conx.commit()
+                self.cursor.execute("insert into %s ([distroID],[revision]) values(?,?)"
+                    % cst.MONITORING_SUBJECTS_TABLE_NAME, (distro_id, revision))
+                self.conx.commit()
 
     def get_revision_list(self, distro_id):
         rows = self.cursor.execute(
-            "SELECT revision FROM %s where [distroID] = ?;" % cst.MONITORING_SUBJECTS_TABLE_NAME, distro_id).fetchall()
+            "SELECT revision FROM %s where [distroID] = ?;" % cst.MONITORING_SUBJECTS_TABLE_NAME, (distro_id,)).fetchall()
         return [row[0] for row in rows]
