@@ -1,4 +1,5 @@
 import platform
+
 PATH_TO_REPOS = "Repos"
 LINUX_REPO_NAME = "linux.git"
 SECRET_REPO_NAME = "LSG-Secret"
@@ -12,4 +13,4 @@ DISTROS_TABLE_NAME = "Distros"
 MONITORING_SUBJECTS_TABLE_NAME = "MonitoringSubjects"
 
 PathToSymbols = "../Symbols"
-RedirectOp = '>>' if platform.system() == 'Windows' else '>'
+RedirectOp = ">>" if platform.system() == "Windows" else ">"

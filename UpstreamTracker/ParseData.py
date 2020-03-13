@@ -1,8 +1,8 @@
 import sys
 import os
 import inspect
-currentdir = os.path.dirname(os.path.abspath(
-    inspect.getfile(inspect.currentframe())))
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 from datetime import datetime
@@ -23,8 +23,10 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
     num_patches = 0
     num_patches_added = 0
 
-    if (since_time):
-        commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True, since=since_time.isoformat())
+    if since_time:
+        commits = repo.iter_commits(
+            rev=revision, paths=file_paths, no_merges=True, since=since_time.isoformat()
+        )
     else:
         commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True)
 
@@ -40,11 +42,17 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
         # Especially with the checking of phrases starting in lines, we don't have to do separately.
 
         # Remove extra whitespace while splitting commit message
-        split_message = [line.strip() for line in curr_commit.message.split('\n')]
+        split_message = [line.strip() for line in curr_commit.message.split("\n")]
         patch.subject = split_message[0]
 
         # Filter description by removing blank and unwanted lines
-        ignore_phrases = ('reported-by:', 'signed-off-by:', 'reviewed-by:', 'acked-by:', 'cc:')
+        ignore_phrases = (
+            "reported-by:",
+            "signed-off-by:",
+            "reviewed-by:",
+            "acked-by:",
+            "cc:",
+        )
 
         def should_keep_line(line):
             simplified_line = line.lower()
@@ -53,6 +61,7 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
             if simplified_line.startswith(ignore_phrases):
                 return False
             return True
+
         description_lines = []
         # Check for blank description
         if len(split_message) > 1:
@@ -65,7 +74,10 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
         # fixed_patches with a string of space-separated fixed patches
         # e.g. "SHA1 SHA2 SHA3"
         if patch.description != "":
-            fixed_patches_lines = filter(lambda x: x.strip().lower().startswith('fixes:'), list(description_lines))
+            fixed_patches_lines = filter(
+                lambda x: x.strip().lower().startswith("fixes:"),
+                list(description_lines),
+            )
             fixed_patches = []
             for line in fixed_patches_lines:
                 words = line.split(" ")
@@ -73,7 +85,7 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
                     fixed_patches.append(words[1])
             patch.fixed_patches = " ".join(fixed_patches)
 
-        if (len(curr_commit.parents) == 0):
+        if len(curr_commit.parents) == 0:
             # First ever commit, we don't need to store this as
             # it'll be present in any distro as it's needed
             # TODO revisit, maybe check against set hash of first commit?
@@ -81,11 +93,17 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
             continue
         else:
             # We are ignoring merges so all commits should have a single parent
-            commit_diffs = curr_commit.tree.diff(curr_commit.parents[0], paths=file_paths, create_patch=True)
+            commit_diffs = curr_commit.tree.diff(
+                curr_commit.parents[0], paths=file_paths, create_patch=True
+            )
 
         # Sometimes a path is in a and not b, we want all affect filenames.
-        filenames_list_a = {diff.a_path for diff in commit_diffs if diff.a_path is not None}
-        filenames_list_b = {diff.b_path for diff in commit_diffs if diff.b_path is not None}
+        filenames_list_a = {
+            diff.a_path for diff in commit_diffs if diff.a_path is not None
+        }
+        filenames_list_b = {
+            diff.b_path for diff in commit_diffs if diff.b_path is not None
+        }
         filenames_list = list(filenames_list_a | filenames_list_b)
         patch.affected_filenames = " ".join(filenames_list)
 
@@ -93,13 +111,20 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
         # diff is passed in as bytes
         def parse_diff(diff):
             diff_lines = diff.decode("utf-8").splitlines()
-            return "\n".join(filter(lambda line: line.startswith(("+", "-")), diff_lines))
+            return "\n".join(
+                filter(lambda line: line.startswith(("+", "-")), diff_lines)
+            )
 
         # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
-        patch.commit_diffs = "\n".join(["%s\n%s" % (diff.a_path, parse_diff(diff.diff))
-                                for diff in commit_diffs if diff.a_path is not None])
+        patch.commit_diffs = "\n".join(
+            [
+                "%s\n%s" % (diff.a_path, parse_diff(diff.diff))
+                for diff in commit_diffs
+                if diff.a_path is not None
+            ]
+        )
 
-        if (db):
+        if db:
             # TODO is this check needed if we start on only patches we haven't processed before?
             # If we DO want to keep this check, let's move before parsing everything
             if not db.check_commit_present(patch.commit_id):
@@ -110,9 +135,9 @@ def process_commits(repo, revision, file_paths, db=None, since_time=None):
 
         num_patches += 1
         # Log progress
-        if (num_patches % 250 == 0):
+        if num_patches % 250 == 0:
             print("[Info] %d commits processed..." % num_patches)
 
-    if (db):
+    if db:
         print("[Info] %s patches added to database." % num_patches_added)
     return all_patches

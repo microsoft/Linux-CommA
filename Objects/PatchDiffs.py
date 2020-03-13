@@ -1,6 +1,4 @@
-
 class PatchDiffs:
-
     def __init__(self, git_diff):
         """
         PatchDiffs represents all code changes a patch introduces
@@ -17,18 +15,18 @@ class PatchDiffs:
         remove_lines = set()
         for line in git_diff.split("\n"):
             self.num_total_lines += 1
-            if (line.startswith("-")):
+            if line.startswith("-"):
                 remove_lines.add(line)
-            elif (line.startswith("+")):
+            elif line.startswith("+"):
                 add_lines.add(line)
             else:
-                if (filename != ""):
+                if filename != "":
                     self.diffs[filename] = (add_lines, remove_lines)
                     add_lines = set()
                     remove_lines = set()
                 filename = line
 
-        if (filename != ""):
+        if filename != "":
             self.diffs[filename] = (add_lines, remove_lines)
             add_lines = set()
             remove_lines = set()
@@ -37,7 +35,7 @@ class PatchDiffs:
         """
         This will give the percent of diff lines present in other_patch_diffs.
         """
-        if (self.num_total_lines == 0):
+        if self.num_total_lines == 0:
             return 0.0
 
         num_missing_lines = 0
@@ -48,6 +46,6 @@ class PatchDiffs:
                 num_missing_lines += len(add_lines - other_add_lines)
                 num_missing_lines += len(remove_lines - other_remove_lines)
             else:
-                num_missing_lines += (len(add_lines) + len(remove_lines))
+                num_missing_lines += len(add_lines) + len(remove_lines)
 
         return 1.0 - (num_missing_lines / self.num_total_lines)

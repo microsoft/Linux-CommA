@@ -2,8 +2,19 @@ from datetime import datetime
 
 
 class Patch:
-
-    def __init__(self, subject, commit_id, description, author_name, author_email, author_time: datetime, commit_time: datetime, affected_filenames, commit_diffs, fixed_patches=""):
+    def __init__(
+        self,
+        subject,
+        commit_id,
+        description,
+        author_name,
+        author_email,
+        author_time: datetime,
+        commit_time: datetime,
+        affected_filenames,
+        commit_diffs,
+        fixed_patches="",
+    ):
         self.subject = subject
         self.commit_id = commit_id
         self.description = description
