@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 
 import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import Distros
+from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
 from Util.Symbols import print_missing_symbols
@@ -16,10 +17,7 @@ parser.add_argument(
     help="Do not connect to production database.",
 )
 parser.add_argument(
-    "-v",
-    "--verbose",
-    action="store_true",
-    help="Print verbose information, such as queries.",
+    "-v", "--verbose", action="count", default=0, help="increase output verbosity",
 )
 
 subparsers = parser.add_subparsers(title="subcommands")
@@ -61,6 +59,7 @@ symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
 def add_distro(args):
     with DatabaseDriver.get_session() as s:
         s.add(Distros(distroID=args.name, repoLink=args.url))
+    logging.info("Successfully added\tDistro:" + args.name)
 
 
 distro_parser = subparsers.add_parser(
@@ -81,9 +80,50 @@ distro_parser.add_argument(
 distro_parser.set_defaults(func=add_distro)
 
 
+def add_kernel(args):
+    with DatabaseDriver.get_session() as s:
+        s.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
+    logging.info(
+        "Successfully added\t Distro:" + args.name + " revision:" + args.revision
+    )
+
+
+kernel_parser = subparsers.add_parser(
+    "add-kernel", help="Add new kernel/revision to track"
+)
+kernel_parser.add_argument(
+    "-n",
+    "--name",
+    required=True,
+    help="Database name (ID) for distro, e.g. 'Ubuntu18.04'",
+)
+kernel_parser.add_argument(
+    "-r",
+    "--revision",
+    required=True,
+    help="Repository revision to track, e.g. 'master'",
+)
+kernel_parser.set_defaults(func=add_kernel)
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s %(name)-5s %(levelname)-7s %(message)s",
+    datefmt="%m-%d %H:%M",
+)
+
+
 if __name__ == "__main__":
-    print("Welcome to Patch tracker!")
     args = parser.parse_args()
-    Util.Config.dry_run = args.dry_run
     Util.Config.verbose = args.verbose
+    logging_level = (
+        logging.WARNING
+        if Util.Config.verbose == 0
+        else logging.INFO
+        if Util.Config.verbose == 1
+        else logging.DEBUG
+    )
+    logging.getLogger().setLevel(logging_level)
+    Util.Config.dry_run = args.dry_run
+    logging.info("Welcome to Commit Analyzer!")
     args.func(args)
+    logging.info("Commit Analyzer completed!")

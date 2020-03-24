@@ -1,3 +1,5 @@
+import logging
+
 from fuzzywuzzy import fuzz
 
 from Objects.PatchDiffs import PatchDiffs
@@ -38,6 +40,7 @@ class DownstreamMatcher:
             _get_filepath_components(filepath) for filepath in upstream_filepaths
         ]
 
+        logging.debug("Upstream missing patch %s" % upstream_patch.commitID)
         for downstream_patch in self.downstream_patches:
             # Calculate confidence that our upstream patch matches this downstream patch
 

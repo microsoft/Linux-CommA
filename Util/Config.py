@@ -1,7 +1,7 @@
 from DatabaseDriver.SqlClasses import Distros
 
 dry_run = False
-verbose = False
+verbose = 0
 default_distros = [
     Distros(
         distroID="Ubuntu16.04",
@@ -25,3 +25,12 @@ default_distros = [
     ),
     Distros(distroID="SUSE12", repoLink="https://github.com/openSUSE/kernel",),
 ]
+
+"""
+Guildelines:
+    * Follow linux file path convention
+    * File path should be given from root directory
+    * e.g. arch/x86/include/asm/mshyperv.h
+    * please refer to Hyper-V block under MAINTAINERS file to avoid duplicates.
+"""
+filepaths_to_track = []

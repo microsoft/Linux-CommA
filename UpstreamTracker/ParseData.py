@@ -1,4 +1,5 @@
 import inspect
+import logging
 import os
 import sys
 from datetime import datetime
@@ -32,6 +33,7 @@ def process_commits(repo, revision, file_paths, add_to_database=False, since_tim
     else:
         commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True)
 
+    logging.info("Starting commit processing..")
     for commit in commits:
         patch = PatchData(
             commitID=commit.hexsha,
@@ -144,8 +146,8 @@ def process_commits(repo, revision, file_paths, add_to_database=False, since_tim
         num_patches += 1
         # Log progress
         if num_patches % 250 == 0:
-            print("[Info] %d commits processed..." % num_patches)
+            logging.debug(" %d commits processed..." % num_patches)
 
     if add_to_database:
-        print("[Info] %s patches added to database." % num_patches_added)
+        logging.info("%s patches added to database." % num_patches_added)
     return all_patches
