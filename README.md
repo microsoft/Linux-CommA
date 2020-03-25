@@ -29,7 +29,8 @@ Setup [Microsoft SQL
 repos](https://docs.microsoft.com/en-us/sql/linux/quickstart-install-connect-ubuntu?view=sql-server-ver15#tools)
 (this is for `mssql-tools`):
 
-> Caution: these commands use `sudo` and add a package repository.
+> Caution: these commands use `sudo` and add a package repository. Change the
+> Ubuntu version to your version (`cat /etc/os-release` for the number).
 
 ```sh
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -52,6 +53,8 @@ poetry install
 ## Running CommA
 
 1. Enter the setup environment with `poetry shell`
-2. Run `./CommA.py --upstream --downstream`
+2. Set your personal access token like `export LSG_SECRET_DB_CRED=<PAT>` for the
+   LSG-Secrets repo.
+3. Run `./CommA.py --upstream --downstream`
 
 This will parse the upstream and downstream repos.
