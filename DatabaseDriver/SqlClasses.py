@@ -49,6 +49,7 @@ class UpstreamPatchStatuses(Base):
 
 
 class Distros(Base):
+    # TODO: Rename this class and table to "Distro"
     __tablename__ = "Distros"
     distroID = Column(String, primary_key=True)
     repoLink = Column(String)
