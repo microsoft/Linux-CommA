@@ -19,7 +19,7 @@ from UpstreamTracker.ParseData import process_commits
 # from DownstreamTracker.DebianParser import monitor_debian
 
 
-def update_tracked_revisions(distro_id, repo):
+def update_tracked_revisions(distro_id, repo, db_driver):
     """
     This updates the stored two latest revisions stored per distro_id.
     This method contains distro-specific logic
@@ -40,9 +40,7 @@ def update_tracked_revisions(distro_id, repo):
         tag_names = list(filter(lambda x: "azure" in x and "edge" not in x, tag_names))
         latest_two_kernels = tag_names[-2:]
 
-        monitoring_subject_db_driver.update_revisions_for_distro(
-            distro_id, latest_two_kernels
-        )
+        db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
 
 
 def monitor_subject(monitoring_subject, repo):
@@ -129,7 +127,7 @@ def monitor_downstream():
     print("[Info] Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
     for distro_id in repo_links.keys():
-        update_tracked_revisions(distro_id, repo)
+        update_tracked_revisions(distro_id, repo, monitoring_subject_db_driver)
 
     monitoring_subjects = monitoring_subject_db_driver.get_monitoring_subjects()
 
