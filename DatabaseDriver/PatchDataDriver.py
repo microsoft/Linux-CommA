@@ -29,7 +29,7 @@ class PatchDataDriver:
         """
         try:
             self.cursor.execute(
-                "insert into [dbo].["
+                "insert into ["
                 + cst.UPSTREAM_TABLE_NAME
                 + "] \
                 ([subject],[commitID],[description],[author],[authorEmail],[authorTime],[commitTime], \
@@ -91,7 +91,7 @@ class PatchDataDriver:
 
     def save_patch_symbols(self, commit, patch_symbols):
         self.cursor.execute(
-            "Update [dbo].["
+            "Update ["
             + cst.UPSTREAM_TABLE_NAME
             + "] SET [patchSymbols] = ? where commitID = ?",
             (patch_symbols, commit),
