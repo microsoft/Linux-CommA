@@ -52,36 +52,6 @@ class PatchDataDriver:
             print("[ERROR] Pyodbc error")
             print(Error)
 
-    def get_patches_from_commit_ids(self, commit_ids):
-        """
-        Translates a list of commit_ids into a list of (patch id, patch)
-        """
-        # This changes a list of A B C to ('A', 'B', 'C')
-        commit_ids_formatted = "('%s')" % "', '".join(commit_ids)
-        rows = self.cursor.execute(
-            "select [subject],[commitID],[description],[author],[authorEmail],[authorTime],[commitTime], \
-                [affectedFilenames],[commitDiffs],[fixedPatches],[patchID] from [%s] where commitID in %s"
-            % (cst.UPSTREAM_TABLE_NAME, commit_ids_formatted)
-        ).fetchall()
-        return [
-            (
-                row[10],
-                Patch(
-                    row[0],
-                    row[1],
-                    row[2],
-                    row[3],
-                    row[4],
-                    row[5],
-                    row[6],
-                    row[7],
-                    row[8],
-                    row[9],
-                ),
-            )
-            for row in rows
-        ]
-
     def get_commits(self):
         rows = self.cursor.execute(
             "select commitID from [%s] order by commitTime asc"
