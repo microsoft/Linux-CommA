@@ -42,20 +42,20 @@ class DownstreamMatcher:
 
             # Calculate filenames confidence, which is roughly the percent of upstream filepaths present in downstream patch
             if (
-                downstream_patch.affected_filenames == ""
+                downstream_patch.affectedFilenames == ""
                 or upstream_patch.affectedFilenames == ""
             ):
                 filenames_confidence = (
                     1.0
                     if (
-                        downstream_patch.affected_filenames
+                        downstream_patch.affectedFilenames
                         == upstream_patch.affectedFilenames
                     )
                     else 0.0
                 )
             else:
                 total_filepaths_match = 0
-                downstream_filepaths = downstream_patch.affected_filenames.split(" ")
+                downstream_filepaths = downstream_patch.affectedFilenames.split(" ")
                 downstream_file_components = [
                     _get_filepath_components(filepath)
                     for filepath in downstream_filepaths
@@ -86,9 +86,7 @@ class DownstreamMatcher:
                 )
 
             author_confidence = (
-                fuzz.token_set_ratio(
-                    upstream_patch.author, downstream_patch.author_name
-                )
+                fuzz.token_set_ratio(upstream_patch.author, downstream_patch.author)
                 / 100.0
             )
             subject_confidence = (
@@ -107,14 +105,10 @@ class DownstreamMatcher:
                     else 0.0
                 )
             author_date_confidence = (
-                1.0
-                if upstream_patch.authorTime == downstream_patch.author_time
-                else 0.0
+                1.0 if upstream_patch.authorTime == downstream_patch.authorTime else 0.0
             )
             commit_date_confidence = (
-                1.0
-                if upstream_patch.commitTime == downstream_patch.commit_time
-                else 0.0
+                1.0 if upstream_patch.commitTime == downstream_patch.commitTime else 0.0
             )
 
             confidence = (
@@ -132,7 +126,7 @@ class DownstreamMatcher:
         # Check for code matching
         upstream_diffs = PatchDiffs(upstream_patch.commitDiffs)
         for downstream_patch in self.downstream_patches:
-            downstream_diffs = PatchDiffs(downstream_patch.commit_diffs)
+            downstream_diffs = PatchDiffs(downstream_patch.commitDiffs)
             code_match_confidence = upstream_diffs.percent_present_in(downstream_diffs)
             if code_match_confidence > threshold:
                 return True
