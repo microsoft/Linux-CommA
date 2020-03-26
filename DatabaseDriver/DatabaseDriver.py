@@ -55,6 +55,9 @@ class DatabaseDriver:
         """
         if DatabaseDriver._instance is None:
             DatabaseDriver._instance = DatabaseDriver()
+            # Populate distros locally
+            if Util.Config.dry_run:
+                add_distros()
         return DatabaseDriver._instance
 
     @contextmanager
@@ -72,3 +75,32 @@ class DatabaseDriver:
 
     def __del__(self):
         self.connection.close()
+
+
+def add_distros():
+    distros = [
+        Orm.Distros(
+            distroID="Debian9-backport",
+            repoLink="https://salsa.debian.org/kernel-team/linux.git",
+        ),
+        Orm.Distros(distroID="SUSE12", repoLink="https://github.com/openSUSE/kernel",),
+        Orm.Distros(
+            distroID="Ubuntu16.04",
+            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/xenial",
+        ),
+        Orm.Distros(
+            distroID="Ubuntu18.04",
+            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic",
+        ),
+        Orm.Distros(
+            distroID="Ubuntu19.04",
+            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/disco",
+        ),
+        Orm.Distros(
+            distroID="Ubuntu19.10",
+            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/eoan",
+        ),
+    ]
+    with DatabaseDriver.get_session() as s:
+        if s.query(Orm.Distros).first() is None:
+            s.add_all(distros)
