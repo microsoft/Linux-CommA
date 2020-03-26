@@ -7,14 +7,15 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 import Util.Constants as cst
+from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
-from DatabaseDriver.PatchDataDriver import PatchDataDriver
 from DatabaseDriver.MonitoringSubjectDatabaseDriver import (
     MonitoringSubjectDatabaseDriver,
 )
 from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDriver
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from UpstreamTracker.ParseData import process_commits
+from DatabaseDriver.SqlClasses import PatchData
 
 # from DownstreamTracker.DebianParser import monitor_debian
 
@@ -66,37 +67,39 @@ def monitor_subject(monitoring_subject, repo):
     ).split("\n")
 
     # Run extra checks on these missing commits
-    patch_data_db_driver = PatchDataDriver()
-    missing_patches = patch_data_db_driver.get_patches_from_commit_ids(
-        missing_commit_ids
-    )
-    num_log_missing_patches = len(missing_patches)
-    # We only want to check downstream patches as old as the oldest missing patch's commit_time, as an optimization.
-    earliest_commit_date = min([patch[1].commit_time for patch in missing_patches])
-    downstream_patches = process_commits(
-        repo, monitoring_subject.revision, filenames, since_time=earliest_commit_date
-    )
-    downstream_matcher = DownstreamMatcher(downstream_patches)
-    # Removes patches which our algorithm say exist downstream
-    missing_patches = list(
-        filter(
-            lambda patch_info: not downstream_matcher.exists_matching_patch(
-                patch_info[1]
-            ),
-            missing_patches,
+    with DatabaseDriver.get_session() as s:
+        missing_patches = (
+            s.query(PatchData).filter(PatchData.commitID.in_(missing_commit_ids)).all()
         )
-    )
-    print(
-        "[Info] Number of patches missing from git log to our algo: %s -> %s."
-        % (num_log_missing_patches, len(missing_patches))
-    )
+        num_log_missing_patches = len(missing_patches)
+        # We only want to check downstream patches as old as the
+        # oldest missing patch's commit_time, as an optimization.
+        earliest_commit_date = min(p.commitTime for p in missing_patches)
+        downstream_patches = process_commits(
+            repo,
+            monitoring_subject.revision,
+            filenames,
+            since_time=earliest_commit_date,
+        )
+        downstream_matcher = DownstreamMatcher(downstream_patches)
+        # Removes patches which our algorithm say exist downstream
+        missing_patches = list(
+            filter(
+                lambda p: not downstream_matcher.exists_matching_patch(p),
+                missing_patches,
+            )
+        )
+        print(
+            "[Info] Number of patches missing from git log to our algo: %s -> %s."
+            % (num_log_missing_patches, len(missing_patches))
+        )
 
-    missing_patch_ids = [patch_id for patch_id, _ in missing_patches]
-    # Update database to reflect latest missing patches
-    missing_patches_db_driver = MissingPatchesDatabaseDriver()
-    missing_patches_db_driver.update_missing_patches(
-        monitoring_subject.monitoring_subject_id, missing_patch_ids
-    )
+        missing_patch_ids = [p.patchID for p in missing_patches]
+        # Update database to reflect latest missing patches
+        missing_patches_db_driver = MissingPatchesDatabaseDriver()
+        missing_patches_db_driver.update_missing_patches(
+            monitoring_subject.monitoring_subject_id, missing_patch_ids
+        )
 
 
 def monitor_downstream():
