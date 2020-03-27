@@ -5,7 +5,8 @@ import sys
 import git
 
 import Util.Constants as cst
-from DatabaseDriver.PatchDataDriver import PatchDataDriver
+from DatabaseDriver.DatabaseDriver import DatabaseDriver
+from DatabaseDriver.SqlClasses import PatchData
 from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from Util.util import list_diff
 
@@ -39,7 +40,6 @@ def map_symbols_to_patch(
     commits: SHA of all commits in database
     fileNames: hyperV files
     """
-    up = PatchDataDriver()
     os.chdir(os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME))
     command = "git reset --hard " + prev_commit
     print("[Info] " + command)
@@ -61,7 +61,9 @@ def map_symbols_to_patch(
         print("Commit:" + commit + " -> " + "".join(diff_symbols))
 
         # save symbols into database
-        up.save_patch_symbols(commit, " ".join(diff_symbols))
+        with DatabaseDriver.get_session() as s:
+            patch = s.query(PatchData).filter_by(commitID=commit).one()
+            patch.symbols = " ".join(diff_symbols)
         before_patch_apply = after_patch_apply
 
     print("[Info] Finished symbol tracker")
@@ -71,9 +73,6 @@ def get_hyperv_patch_symbols():
     """
     This function clones upstream and gets upstream commits, hyperV files
     """
-    up = PatchDataDriver()
-    commits = up.get_commits()
-
     path_to_linux_sym = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME)
     if os.path.exists(path_to_linux_sym):
         print("[Info] Path to Linux Repo exists")
@@ -93,7 +92,14 @@ def get_hyperv_patch_symbols():
     print("[Info] parsing maintainers files")
     filenames = get_hyperv_filenames(repo)
     print("[Info] Received HyperV file paths")
-    map_symbols_to_patch(commits, filenames)
+
+    with DatabaseDriver.get_session() as s:
+        # Only annoying thing with SQLAlchemy is that this always
+        # returns tuples which we need to unwrap.
+        commits = [
+            c for c, in s.query(PatchData.commitID).order_by(PatchData.commitTime).all()
+        ]
+        map_symbols_to_patch(commits, filenames)
 
 
 def symbol_checker(symbol_file):
@@ -104,13 +110,19 @@ def symbol_checker(symbol_file):
     """
     print("[Info] Starting Symbol Checker")
     list_of_symbols = [line.strip() for line in open(symbol_file)]
-    up = PatchDataDriver()
-    symbol_map = up.get_patch_symbols()
-    missing_symbol_patch = []
-    for patchId, symbols in symbol_map.items():
-        if len(list_diff(symbols, list_of_symbols)) > 0:
-            missing_symbol_patch.append(patchId)
-    return sorted(missing_symbol_patch)
+    with DatabaseDriver.get_session() as s:
+        symbols = (
+            s.query(PatchData.patchID, PatchData.symbols)
+            .filter(PatchData.symbols != " ")
+            .order_by(PatchData.commitTime)
+            .all()
+        )
+        symbol_map = dict((p, s.split(" ")) for p, s in symbols)
+        missing_symbol_patch = []
+        for patchID, symbols in symbol_map.items():
+            if len(list_diff(symbols, list_of_symbols)) > 0:
+                missing_symbol_patch.append(patchID)
+        return sorted(missing_symbol_patch)
 
 
 def print_missing_symbols():
