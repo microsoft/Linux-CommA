@@ -8,7 +8,6 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 import Util.Constants as cst
 from UpstreamTracker.ParseData import process_commits
-from DatabaseDriver.PatchDataDriver import PatchDataDriver
 
 
 def get_hyperv_filenames(repo, revision="master"):
@@ -48,7 +47,6 @@ def get_hyperv_filenames(repo, revision="master"):
 
 def monitor_upstream():
     print("Starting patch scraping from files..")
-    db = PatchDataDriver()
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
     if os.path.exists(path_to_linux):
         print("[Info] Path to Linux Repo exists")
@@ -73,4 +71,4 @@ def monitor_upstream():
     # else:
     print("[Info] New commits found")
     print("[Info] Starting commit parsing")
-    process_commits(repo, "master", filenames, db)
+    process_commits(repo, "master", filenames, add_to_database=True)
