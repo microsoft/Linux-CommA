@@ -6,7 +6,7 @@ import git
 
 import Util.Constants as cst
 from DatabaseDriver.PatchDataDriver import PatchDataDriver
-from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
+from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from Util.util import list_diff
 
 
@@ -87,10 +87,8 @@ def get_hyperv_patch_symbols():
         )
         repo = git.Repo(path_to_linux)
     print("[Info] parsing maintainers files")
-    fileList = parse_maintainers(repo)
+    filenames = get_hyperv_filenames(repo)
     print("[Info] Received HyperV file paths")
-    filenames = sanitize_filenames(fileList)
-    print("[Info] Preprocessed HyperV file paths")
     map_symbols_to_patch(commits, filenames)
 
 
