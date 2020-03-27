@@ -172,5 +172,5 @@ body = {
 
 elastic = Elasticsearch(sniff_on_start=True)
 elastic.indices.create("commits", body)
-for success, info in helpers.parallel_bulk(elastic, get_patches()):
+for _, info in helpers.parallel_bulk(elastic, get_patches()):
     print(info)

@@ -215,7 +215,7 @@ def monitor_debian(distro):
         + "/"
         + distro.distro_id
         + ".log"
-        + " {} \;"
+        + " {} \\;"
     )
     os.system(command)
     parse_file_log(
