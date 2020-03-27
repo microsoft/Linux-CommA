@@ -50,6 +50,13 @@ Install Python packages via `poetry`:
 poetry install
 ```
 
+For the symbol matcher, install `exuberant-ctags` as the default `ctags` will
+not work:
+
+```sh
+apt install exuberant-ctags
+```
+
 ## Running CommA
 
 1. Enter the setup environment with `poetry shell`
