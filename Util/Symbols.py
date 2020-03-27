@@ -18,13 +18,13 @@ def get_symbols(files):
     @return symbol_list: list of symbols generated through ctags
     """
     command = (
-        "ctags -x −−c−kinds=f -R "
+        "ctags -R -x −−c−kinds=f "
         + files
         + " | awk '{ if ($2 == \"function\") print $1 }' "
         + cst.RedirectOp
         + "../tmp.txt"
     )
-    # print("[Info] Running command: "+command)
+    print("[Info] Running command: " + command)
     os.system(command)
     symbol_list = [line.rstrip("\n") for line in open("../tmp.txt")]
     return symbol_list
