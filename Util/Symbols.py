@@ -74,17 +74,21 @@ def get_hyperv_patch_symbols():
     up = PatchDataDriver()
     commits = up.get_commits()
 
-    path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME)
-    if os.path.exists(path_to_linux):
+    path_to_linux_sym = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME)
+    if os.path.exists(path_to_linux_sym):
         print("[Info] Path to Linux Repo exists")
-        repo = git.Repo(path_to_linux)
+        repo = git.Repo(path_to_linux_sym)
         print("[Info] Fetching recent changes")
         repo.git.fetch()
     else:
         print("[Info] Path to Linux repo does not exists. Cloning linux repo.")
-        git.Git(cst.PATH_TO_REPOS).clone(
-            "https://github.com/torvalds/linux.git", cst.LINUX_SYMBOL_REPO_NAME
+        path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
+        source_repo = (
+            path_to_linux
+            if os.path.exists(path_to_linux)
+            else "https://github.com/torvalds/linux.git"
         )
+        git.Git(cst.PATH_TO_REPOS).clone(source_repo, cst.LINUX_SYMBOL_REPO_NAME)
         repo = git.Repo(path_to_linux)
     print("[Info] parsing maintainers files")
     filenames = get_hyperv_filenames(repo)
