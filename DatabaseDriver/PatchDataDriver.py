@@ -1,7 +1,6 @@
 import pyodbc
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 import Util.Constants as cst
-from Objects.Patch import Patch
 
 
 class PatchDataDriver:

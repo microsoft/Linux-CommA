@@ -1,5 +1,5 @@
 from datetime import datetime
-import os, sys, inspect
+import os
 
 # currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 # parentdir = os.path.dirname(currentdir)
@@ -13,8 +13,6 @@ from Util.util import contains_filepath
 # from DownstreamTracker.MonitorDownstream import *
 import git
 import re
-from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from DatabaseDriver.PatchDataDriver import PatchDataDriver
 
 
 def check_hyperV_patch(patch_filenames, filenames):
