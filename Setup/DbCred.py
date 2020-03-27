@@ -1,9 +1,11 @@
-import xml.etree.ElementTree as ET
-import Util.Constants as cst
 import os
+import xml.etree.ElementTree as ET
+from pathlib import Path  # python3 only
+
 import git
 from dotenv import load_dotenv
-from pathlib import Path  # python3 only
+
+import Util.Constants as cst
 
 env_path = Path(".") / "prod.env"
 load_dotenv(dotenv_path=env_path)

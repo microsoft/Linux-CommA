@@ -1,8 +1,8 @@
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from Objects.MonitoringSubject import MonitoringSubject
 import Util.Constants as cst
-from Util.util import list_diff
+from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDriver
+from Objects.MonitoringSubject import MonitoringSubject
+from Util.util import list_diff
 
 
 class MonitoringSubjectDatabaseDriver:

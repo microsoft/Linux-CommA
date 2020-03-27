@@ -1,12 +1,12 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+
 from elasticsearch import Elasticsearch, helpers
 from pygit2 import (
-    Repository,
-    discover_repository,
-    clone_repository,
     GIT_SORT_TOPOLOGICAL,
+    Repository,
+    clone_repository,
+    discover_repository,
 )
-
 
 repos = [
     (

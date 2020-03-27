@@ -1,5 +1,5 @@
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
 import Util.Constants as cst
+from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from Util.util import list_diff
 
 

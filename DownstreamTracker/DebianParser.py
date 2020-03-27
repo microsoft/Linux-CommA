@@ -1,18 +1,14 @@
-from datetime import datetime
 import os
+import re
+from datetime import datetime
 
-# currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-# parentdir = os.path.dirname(currentdir)
-# sys.path.insert(0,parentdir)
+import git
+
 import Util.Constants as cst
-from UpstreamTracker.ParseData import get_patch_object, insert_patch
 from DatabaseDriver.DistroMatch import DistroMatch
 from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
+from UpstreamTracker.ParseData import get_patch_object, insert_patch
 from Util.util import contains_filepath
-
-# from DownstreamTracker.MonitorDownstream import *
-import git
-import re
 
 
 def check_hyperV_patch(patch_filenames, filenames):

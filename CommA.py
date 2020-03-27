@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import argparse
+
 import Util.Config
-from UpstreamTracker.MonitorUpstream import monitor_upstream
 from DownstreamTracker.MonitorDownstream import monitor_downstream
+from UpstreamTracker.MonitorUpstream import monitor_upstream
 
 parser = argparse.ArgumentParser(description="Linux Commit Analyzer.")
 parser.add_argument(
