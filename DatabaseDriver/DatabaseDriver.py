@@ -1,10 +1,12 @@
 import urllib
-import DatabaseDriver.SqlClasses as Orm
-import Util.Config
 from contextlib import contextmanager
-from Setup.DbCred import DatabaseCredentials as DbCred
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+import DatabaseDriver.SqlClasses as Orm
+import Util.Config
+from Setup.DbCred import DatabaseCredentials as DbCred
 
 
 class DatabaseDriver:
@@ -67,7 +69,7 @@ class DatabaseDriver:
         try:
             yield session
             session.commit()
-        except:
+        except Exception:
             session.rollback()
             raise
         finally:

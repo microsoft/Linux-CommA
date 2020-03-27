@@ -1,13 +1,14 @@
-import sys
-import os
 import inspect
+import os
+import sys
+from datetime import datetime
+
+from DatabaseDriver.DatabaseDriver import DatabaseDriver
+from DatabaseDriver.SqlClasses import PatchData
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-from datetime import datetime
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import PatchData
 
 
 def process_commits(repo, revision, file_paths, add_to_database=False, since_time=None):

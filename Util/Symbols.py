@@ -1,13 +1,17 @@
-import os, sys, inspect
+import inspect
+import os
+import sys
+
 import git
 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
 import Util.Constants as cst
 from DatabaseDriver.PatchDataDriver import PatchDataDriver
 from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
 from Util.util import list_diff
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
 
 
 def get_symbols(files):

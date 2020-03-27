@@ -1,4 +1,5 @@
 from fuzzywuzzy import fuzz
+
 from Objects.PatchDiffs import PatchDiffs
 
 

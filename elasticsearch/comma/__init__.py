@@ -1,12 +1,12 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+
 from elasticsearch import Elasticsearch, helpers
 from pygit2 import (
-    Repository,
-    discover_repository,
-    clone_repository,
     GIT_SORT_TOPOLOGICAL,
+    Repository,
+    clone_repository,
+    discover_repository,
 )
-
 
 repos = [
     (
@@ -172,5 +172,5 @@ body = {
 
 elastic = Elasticsearch(sniff_on_start=True)
 elastic.indices.create("commits", body)
-for success, info in helpers.parallel_bulk(elastic, get_patches()):
+for _, info in helpers.parallel_bulk(elastic, get_patches()):
     print(info)

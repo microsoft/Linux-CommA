@@ -1,5 +1,5 @@
 """
-This represents a match of a downstream distro commit to an upstream patch. 
+This represents a match of a downstream distro commit to an upstream patch.
 'confidence' is a stat ranging from 0..1 on how likely they are to be the same (with 1 being exactly the same)
 
 """
