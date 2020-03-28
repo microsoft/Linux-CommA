@@ -48,3 +48,8 @@ jobs:
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run run --downstream
     displayName: 'CommA: Monitor Downstream'
+
+  - script: |
+      source $HOME/.poetry/env
+      poetry run ./CommA.py --dry-run run --print-missing-symbols
+    displayName: 'CommA: Print Missing Symbols'
