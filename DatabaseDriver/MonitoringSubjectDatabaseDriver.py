@@ -1,7 +1,9 @@
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDriver
-from Objects.MonitoringSubject import MonitoringSubject
+from DatabaseDriver.SqlClasses import (
+    MonitoringSubjects,
+    MonitoringSubjectsMissingPatches,
+)
 from Util.util import list_diff
 
 
@@ -41,7 +43,13 @@ class MonitoringSubjectDatabaseDriver:
 
         new_revisions: list of <revision>s to add under this distro_id
         """
-        current_revisions = self.get_revision_list(distro_id)
+        with DatabaseDriver.get_session() as s:
+            current_revisions = [
+                r
+                for r, in s.query(MonitoringSubjects.revision)
+                .filter_by(distroID=distro_id)
+                .all()
+            ]
 
         # Remove revisions no longer to be included
         revisions_to_remove = list_diff(current_revisions, new_revisions)
@@ -68,10 +76,10 @@ class MonitoringSubjectDatabaseDriver:
             self.conx.commit()
 
             # Remove from missing patches as well
-            missing_patches_db_driver = MissingPatchesDatabaseDriver()
-            missing_patches_db_driver.remove_missing_patches_for_subject(
-                monitoring_subject_id
-            )
+            with DatabaseDriver.get_session() as s:
+                s.query(MonitoringSubjectsMissingPatches).filter_by(
+                    monitoringSubjectID=monitoring_subject_id
+                ).delete()
 
         # Add new revisions
         revisions_to_add = list_diff(new_revisions, current_revisions)
