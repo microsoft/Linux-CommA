@@ -13,30 +13,6 @@ class MonitoringSubjectDatabaseDriver:
         self.cursor = DatabaseDriver.get_instance().cursor
         self.conx = DatabaseDriver.get_instance().connection
 
-    def get_monitoring_subjects(self):
-        rows = self.cursor.execute(
-            "SELECT [monitoringSubjectID], [distroID], [revision] FROM %s;"
-            % cst.MONITORING_SUBJECTS_TABLE_NAME
-        ).fetchall()
-        monitoring_subjects = []
-        for r in rows:
-            monitoring_subjects.append(MonitoringSubject(r[0], r[1], r[2]))
-
-        return monitoring_subjects
-
-    def get_repo_links(self):
-        """
-        returns a dict mapping a distro_id to repo_link
-        """
-        rows = self.cursor.execute(
-            "SELECT [distroID], [repoLink] FROM %s;" % cst.DISTROS_TABLE_NAME
-        ).fetchall()
-        repo_links = {}
-        for row in rows:
-            repo_links[row[0]] = row[1]
-
-        return repo_links
-
     def update_revisions_for_distro(self, distro_id, new_revisions):
         """
         Updates the database with the given revisions
