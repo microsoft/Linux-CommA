@@ -15,11 +15,15 @@ parser.add_argument(
 parser.add_argument(
     "--dry-run", action="store_true", help="Do not connect to production database."
 )
+parser.add_argument(
+    "--verbose", action="store_true", help="Print verbose information, such as queries."
+)
 
 if __name__ == "__main__":
     print("Welcome to Patch tracker!")
     args = parser.parse_args()
     Util.Config.dry_run = args.dry_run
+    Util.Config.verbose = args.verbose
     if args.upstream:
         monitor_upstream()
     if args.downstream:

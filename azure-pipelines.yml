@@ -1,0 +1,56 @@
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-18.04'
+strategy:
+  matrix:
+    # TODO: Test more versions if we care to do so.
+    Python36:
+      python.version: '3.6'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+  displayName: 'Use Python $(python.version)'
+
+- script: |
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+    curl -sSL https://packages.microsoft.com/config/ubuntu/18.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+    sudo apt-get update
+    sudo apt-get install mssql-tools unixodbc-dev exuberant-ctags
+  displayName: 'Install system dependencies'
+
+- script: |
+    source $HOME/.poetry/env
+    poetry install
+  displayName: 'Install Python packages'
+
+- script: |
+    source $HOME/.poetry/env
+    poetry run flake8
+  displayName: 'flake8: semantic analysis'
+
+- script: |
+    source $HOME/.poetry/env
+    poetry run isort --check-only
+  displayName: 'isort: import checker'
+
+- script: |
+    source $HOME/.poetry/env
+    poetry run black --check .
+  displayName: 'black: formatting'
+
+- script: |
+    source $HOME/.poetry/env
+    poetry run ./CommA.py --dry-run --upstream
+  displayName: 'CommA Monitor Upstream'
+
+- script: |
+    source $HOME/.poetry/env
+    poetry run ./CommA.py --dry-run --downstream
+  displayName: 'CommA Monitor Downstream'

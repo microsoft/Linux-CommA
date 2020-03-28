@@ -23,7 +23,7 @@ class DatabaseDriver:
         """
         if Util.Config.dry_run:
             print("[Info] Using local database...")
-            engine = create_engine("sqlite:///comma.db", echo=True)
+            engine = create_engine("sqlite:///comma.db", echo=Util.Config.verbose)
         else:
             print("[Info] Connecting to database...")
             # Get Database credentials
@@ -38,7 +38,7 @@ class DatabaseDriver:
                 )
             )
             engine = create_engine(
-                "mssql+pyodbc:///?odbc_connect=%s" % params, echo=True
+                "mssql+pyodbc:///?odbc_connect=%s" % params, echo=Util.Config.verbose
             )
         # TODO: Actually use the ORM. This is to prove the database
         # interface works.
