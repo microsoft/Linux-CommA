@@ -4,8 +4,8 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import DatabaseDriver.SqlClasses as Orm
 import Util.Config
+from DatabaseDriver.SqlClasses import Base
 from Setup.DbCred import DatabaseCredentials as DbCred
 
 
@@ -40,10 +40,8 @@ class DatabaseDriver:
             engine = create_engine(
                 "mssql+pyodbc:///?odbc_connect=%s" % params, echo=Util.Config.verbose
             )
-        # TODO: Actually use the ORM. This is to prove the database
-        # interface works.
-        Orm.Base.metadata.bind = engine
-        Orm.Base.metadata.create_all(engine)
+        Base.metadata.bind = engine
+        Base.metadata.create_all(engine)
         self._Session = sessionmaker(bind=engine)
         # TODO: Remove these when raw database calls are no longer
         # being made.
@@ -57,9 +55,6 @@ class DatabaseDriver:
         """
         if DatabaseDriver._instance is None:
             DatabaseDriver._instance = DatabaseDriver()
-            # Populate distros locally
-            if Util.Config.dry_run:
-                add_distros()
         return DatabaseDriver._instance
 
     @contextmanager
@@ -77,32 +72,3 @@ class DatabaseDriver:
 
     def __del__(self):
         self.connection.close()
-
-
-def add_distros():
-    distros = [
-        Orm.Distros(
-            distroID="Debian9-backport",
-            repoLink="https://salsa.debian.org/kernel-team/linux.git",
-        ),
-        Orm.Distros(distroID="SUSE12", repoLink="https://github.com/openSUSE/kernel",),
-        Orm.Distros(
-            distroID="Ubuntu16.04",
-            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/xenial",
-        ),
-        Orm.Distros(
-            distroID="Ubuntu18.04",
-            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic",
-        ),
-        Orm.Distros(
-            distroID="Ubuntu19.04",
-            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/disco",
-        ),
-        Orm.Distros(
-            distroID="Ubuntu19.10",
-            repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/eoan",
-        ),
-    ]
-    with DatabaseDriver.get_session() as s:
-        if s.query(Orm.Distros).first() is None:
-            s.add_all(distros)
