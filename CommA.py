@@ -6,6 +6,7 @@ from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import Distros
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
+from Util.Symbols import print_missing_symbols
 
 parser = argparse.ArgumentParser(description="Linux Commit Analyzer.")
 parser.add_argument(
@@ -33,6 +34,8 @@ def run(args):
         monitor_upstream()
     if args.downstream:
         monitor_downstream()
+    if args.print_missing_symbols:
+        print_missing_symbols()
 
 
 run_parser = subparsers.add_parser("run", help="Analyze commits in Linux repos.")
@@ -41,6 +44,9 @@ run_parser.add_argument(
 )
 run_parser.add_argument(
     "-d", "--downstream", action="store_true", help="Monitor the downstream patches."
+)
+run_parser.add_argument(
+    "-s", "--print-missing-symbols", action="store_true", help="Print missing symbols."
 )
 run_parser.set_defaults(func=run)
 

@@ -9,10 +9,6 @@ from DatabaseDriver.PatchDataDriver import PatchDataDriver
 from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
 from Util.util import list_diff
 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
-
 
 def get_symbols(files):
     """
@@ -115,7 +111,13 @@ def symbol_checker(symbol_file):
     return sorted(missing_symbol_patch)
 
 
-if __name__ == "__main__":
+def print_missing_symbols():
+    currentdir = os.path.dirname(
+        os.path.abspath(inspect.getfile(inspect.currentframe()))
+    )
+    parentdir = os.path.dirname(currentdir)
+    sys.path.insert(0, parentdir)
+
     print("[Info] Starting Symbol matcher")
     get_hyperv_patch_symbols()
     missing_symbols = symbol_checker("../syms.txt")
