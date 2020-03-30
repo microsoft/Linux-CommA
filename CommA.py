@@ -35,7 +35,7 @@ def run(args):
     if args.downstream:
         monitor_downstream()
     if args.print_missing_symbols:
-        print_missing_symbols()
+        print_missing_symbols(args.symbol_file)
 
 
 run_parser = subparsers.add_parser("run", help="Analyze commits in Linux repos.")
@@ -47,6 +47,13 @@ run_parser.add_argument(
 )
 run_parser.add_argument(
     "-s", "--print-missing-symbols", action="store_true", help="Print missing symbols."
+)
+run_parser.add_argument(
+    "-f",
+    "--symbol-file",
+    type=argparse.FileType("r"),
+    default="symbols.txt",
+    help="File with symbols to check.",
 )
 run_parser.set_defaults(func=run)
 

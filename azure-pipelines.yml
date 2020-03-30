@@ -51,5 +51,6 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
+      touch symbols.txt
       poetry run ./CommA.py --dry-run run --print-missing-symbols
     displayName: 'CommA: Print Missing Symbols'

@@ -109,7 +109,8 @@ def symbol_checker(symbol_file):
     return missing_symbols_patch: list of missing symbols from given list
     """
     print("[Info] Starting Symbol Checker")
-    list_of_symbols = [line.strip() for line in open(symbol_file)]
+    list_of_symbols = [line.strip() for line in symbol_file]
+    symbol_file.close()
     with DatabaseDriver.get_session() as s:
         symbols = (
             s.query(PatchData.patchID, PatchData.symbols)
@@ -125,15 +126,9 @@ def symbol_checker(symbol_file):
         return sorted(missing_symbol_patch)
 
 
-def print_missing_symbols():
-    currentdir = os.path.dirname(
-        os.path.abspath(inspect.getfile(inspect.currentframe()))
-    )
-    parentdir = os.path.dirname(currentdir)
-    sys.path.insert(0, parentdir)
-
+def print_missing_symbols(symbol_file):
     print("[Info] Starting Symbol matcher")
     get_hyperv_patch_symbols()
-    missing_symbols = symbol_checker("../syms.txt")
+    missing_symbols = symbol_checker(symbol_file)
     print("Missing symbols")
     print(*missing_symbols)
