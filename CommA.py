@@ -34,8 +34,6 @@ def run(args):
         monitor_upstream()
     if args.downstream:
         monitor_downstream()
-    if args.print_missing_symbols:
-        print_missing_symbols(args.symbol_file)
 
 
 run_parser = subparsers.add_parser("run", help="Analyze commits in Linux repos.")
@@ -45,17 +43,19 @@ run_parser.add_argument(
 run_parser.add_argument(
     "-d", "--downstream", action="store_true", help="Monitor the downstream patches."
 )
-run_parser.add_argument(
-    "-s", "--print-missing-symbols", action="store_true", help="Print missing symbols."
+run_parser.set_defaults(func=run)
+
+symbol_parser = subparsers.add_parser(
+    "print-symbols", help="Compare symbols against patches."
 )
-run_parser.add_argument(
+symbol_parser.add_argument(
     "-f",
-    "--symbol-file",
+    "--file",
     type=argparse.FileType("r"),
     default="symbols.txt",
-    help="File with symbols to check.",
+    help="File with symbols to compare against.",
 )
-run_parser.set_defaults(func=run)
+symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
 
 
 def add_distro(args):
