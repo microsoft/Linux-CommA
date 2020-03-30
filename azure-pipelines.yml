@@ -36,10 +36,15 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --upstream
-    displayName: 'CommA Monitor Upstream'
+      poetry run ./CommA.py --dry-run --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic'
+    displayName: 'CommA: Add single downstream distro'
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --downstream
-    displayName: 'CommA Monitor Downstream'
+      poetry run ./CommA.py --dry-run run --upstream
+    displayName: 'CommA: Monitor Upstream'
+
+  - script: |
+      source $HOME/.poetry/env
+      poetry run ./CommA.py --dry-run run --downstream
+    displayName: 'CommA: Monitor Downstream'
