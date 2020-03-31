@@ -21,7 +21,13 @@ def get_symbols(repo_dir, files):
     )
     # print("[Info] Running command: " + command)
     process = subprocess.run(
-        command, capture_output=True, shell=True, cwd=repo_dir, check=True, text=True
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+        cwd=repo_dir,
+        check=True,
+        universal_newlines=True,
     )
     symbol_list = process.stdout.splitlines()
     return symbol_list
