@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import subprocess
 
 import git
@@ -68,18 +68,18 @@ def get_hyperv_patch_symbols():
     """
     This function clones upstream and gets upstream commits, hyperV files
     """
-    path_to_linux_sym = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME)
-    if os.path.exists(path_to_linux_sym):
+    path_to_linux_sym = Path(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME).resolve()
+    if path_to_linux_sym.exists():
         print("[Info] Path to Linux Symbol repo exists")
         repo = git.Repo(path_to_linux_sym)
         print("[Info] Fetching recent changes")
         repo.git.fetch()
     else:
         print("[Info] Path to Linux repo does not exists. Cloning linux repo.")
-        path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
+        path_to_linux = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
         source_repo = (
             path_to_linux
-            if os.path.exists(path_to_linux)
+            if path_to_linux.exists()
             else "https://github.com/torvalds/linux.git"
         )
         git.Git(cst.PATH_TO_REPOS).clone(source_repo, cst.LINUX_SYMBOL_REPO_NAME)
