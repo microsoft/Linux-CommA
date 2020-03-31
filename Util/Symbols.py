@@ -75,7 +75,7 @@ def get_hyperv_patch_symbols():
     """
     path_to_linux_sym = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME)
     if os.path.exists(path_to_linux_sym):
-        print("[Info] Path to Linux Repo exists")
+        print("[Info] Path to Linux Symbol repo exists")
         repo = git.Repo(path_to_linux_sym)
         print("[Info] Fetching recent changes")
         repo.git.fetch()
@@ -88,9 +88,11 @@ def get_hyperv_patch_symbols():
             else "https://github.com/torvalds/linux.git"
         )
         git.Git(cst.PATH_TO_REPOS).clone(source_repo, cst.LINUX_SYMBOL_REPO_NAME)
-        repo = git.Repo(path_to_linux)
+        repo = git.Repo(path_to_linux_sym)
+
     print("[Info] parsing maintainers files")
-    filenames = get_hyperv_filenames(repo)
+    filenames = get_hyperv_filenames(repo, "origin/master")
+    assert filenames is not None
     print("[Info] Received HyperV file paths")
 
     with DatabaseDriver.get_session() as s:
