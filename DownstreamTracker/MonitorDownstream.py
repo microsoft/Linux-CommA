@@ -8,7 +8,7 @@ from DatabaseDriver.MissingPatchesDatabaseDriver import MissingPatchesDatabaseDr
 from DatabaseDriver.MonitoringSubjectDatabaseDriver import (
     MonitoringSubjectDatabaseDriver,
 )
-from DatabaseDriver.SqlClasses import PatchData
+from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects, PatchData
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from UpstreamTracker.ParseData import process_commits
@@ -16,7 +16,7 @@ from UpstreamTracker.ParseData import process_commits
 # from DownstreamTracker.DebianParser import monitor_debian
 
 
-def update_tracked_revisions(distro_id, repo, db_driver):
+def update_tracked_revisions(distro_id, repo):
     """
     This updates the stored two latest revisions stored per distro_id.
     This method contains distro-specific logic
@@ -36,7 +36,7 @@ def update_tracked_revisions(distro_id, repo, db_driver):
         # Filter out edge, and only include azure revisions
         tag_names = list(filter(lambda x: "azure" in x and "edge" not in x, tag_names))
         latest_two_kernels = tag_names[-2:]
-
+        db_driver = MonitoringSubjectDatabaseDriver()
         db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
 
 
@@ -94,29 +94,25 @@ def monitor_subject(monitoring_subject, repo):
         # Update database to reflect latest missing patches
         missing_patches_db_driver = MissingPatchesDatabaseDriver()
         missing_patches_db_driver.update_missing_patches(
-            monitoring_subject.monitoring_subject_id, missing_patch_ids
+            monitoring_subject.monitoringSubjectID, missing_patch_ids
         )
 
 
 def monitor_downstream():
-    # connect to DB read all entries in Distro table
-    monitoring_subject_db_driver = MonitoringSubjectDatabaseDriver()
-    repo_links = monitoring_subject_db_driver.get_repo_links()
-
     # Linux repo is assumed to be present
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
     repo = git.Repo(path_to_linux)
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()
-    for distro_id in repo_links.keys():
-        # Debian we handle differently
-        if distro_id not in current_remotes and not distro_id.startswith("Debian"):
-            print(
-                "[Info] Adding remote origin for %s from %s"
-                % (distro_id, repo_links[distro_id])
-            )
-            repo.create_remote(distro_id, url=repo_links[distro_id])
+    with DatabaseDriver.get_session() as s:
+        for distroID, repoLink in s.query(Distros.distroID, Distros.repoLink).all():
+            # Debian we handle differently
+            if distroID not in current_remotes and not distroID.startswith("Debian"):
+                print(
+                    "[Info] Adding remote origin for %s from %s" % (distroID, repoLink)
+                )
+                repo.create_remote(distroID, url=repoLink)
 
     # Update all remotes, and tags of all remotes
     print("[Info] Fetching updates to all repos and tags.")
@@ -125,20 +121,20 @@ def monitor_downstream():
 
     print("[Info] Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
-    for distro_id in repo_links.keys():
-        update_tracked_revisions(distro_id, repo, monitoring_subject_db_driver)
+    with DatabaseDriver.get_session() as s:
+        for (distroID,) in s.query(Distros.distroID).all():
+            update_tracked_revisions(distroID, repo)
 
-    monitoring_subjects = monitoring_subject_db_driver.get_monitoring_subjects()
-
-    for monitoring_subject in monitoring_subjects:
-        if monitoring_subject.distro_id.startswith("Debian"):
-            # TODO don't skip debian
-            print("skipping debian")
-        else:
-            print(
-                "[Info] Monitoring Script starting for Distro: %s, revision: %s.."
-                % (monitoring_subject.distro_id, monitoring_subject.revision)
-            )
-            monitor_subject(monitoring_subject, repo)
+    with DatabaseDriver.get_session() as s:
+        for subject in s.query(MonitoringSubjects).all():
+            if subject.distroID.startswith("Debian"):
+                # TODO don't skip debian
+                print("skipping debian")
+            else:
+                print(
+                    "[Info] Monitoring Script starting for Distro: %s, revision: %s.."
+                    % (subject.distroID, subject.revision)
+                )
+                monitor_subject(subject, repo)
 
     print("Patch Tracker finished.")

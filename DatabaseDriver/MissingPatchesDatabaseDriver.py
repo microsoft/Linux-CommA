@@ -54,13 +54,3 @@ class MissingPatchesDatabaseDriver:
                     (monitoring_subject_id, patch_id_to_add),
                 )
                 self.conx.commit()
-
-    def remove_missing_patches_for_subject(self, monitoring_subject_id):
-        """
-        Removes all data related to the given subject
-        """
-        self.cursor.execute(
-            "delete from %s where monitoringSubjectID = '%d'"
-            % (cst.DOWNSTREAM_TABLE_NAME, monitoring_subject_id)
-        )
-        self.conx.commit()
