@@ -115,3 +115,6 @@ Repos/*
 
 # Local database
 comma.db
+
+# Symbol file
+/symbols.txt

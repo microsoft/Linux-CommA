@@ -1,6 +1,4 @@
-import inspect
 import os
-import sys
 
 import git
 
@@ -14,10 +12,6 @@ from DatabaseDriver.SqlClasses import PatchData
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from UpstreamTracker.ParseData import process_commits
-
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
 
 # from DownstreamTracker.DebianParser import monitor_debian
 

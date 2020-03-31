@@ -6,6 +6,7 @@ from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import Distros
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
+from Util.Symbols import print_missing_symbols
 
 parser = argparse.ArgumentParser(description="Linux Commit Analyzer.")
 parser.add_argument(
@@ -43,6 +44,18 @@ run_parser.add_argument(
     "-d", "--downstream", action="store_true", help="Monitor the downstream patches."
 )
 run_parser.set_defaults(func=run)
+
+symbol_parser = subparsers.add_parser(
+    "print-symbols", help="Compare symbols against patches."
+)
+symbol_parser.add_argument(
+    "-f",
+    "--file",
+    type=argparse.FileType("r"),
+    default="symbols.txt",
+    help="File with symbols to compare against.",
+)
+symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
 
 
 def add_distro(args):
