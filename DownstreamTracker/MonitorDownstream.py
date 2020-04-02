@@ -160,8 +160,8 @@ def monitor_downstream():
 
     # Update all remotes, and tags of all remotes
     print("[Info] Fetching updates to all repos and tags.")
-    repo.git.fetch("--all")
     repo.git.fetch("--all", "--tags")
+    print("[Info] Fetched!")
 
     print("[Info] Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
