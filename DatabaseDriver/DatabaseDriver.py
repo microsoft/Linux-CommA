@@ -43,10 +43,6 @@ class DatabaseDriver:
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)
         self._Session = sessionmaker(bind=engine)
-        # TODO: Remove these when raw database calls are no longer
-        # being made.
-        self.connection = engine.raw_connection()
-        self.cursor = self.connection.cursor()
 
     @staticmethod
     def get_instance():
@@ -69,6 +65,3 @@ class DatabaseDriver:
             raise
         finally:
             session.close()
-
-    def __del__(self):
-        self.connection.close()
