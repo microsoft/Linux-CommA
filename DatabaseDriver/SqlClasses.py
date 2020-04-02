@@ -68,6 +68,7 @@ class MonitoringSubjects(Base):
 
 
 class MonitoringSubjectsMissingPatches(Base):
+    # TODO: Rename this table.
     __tablename__ = "MonitoringSubjectsMissingPatches"
     monitoringSubjectID = Column(
         Integer, ForeignKey("MonitoringSubjects.monitoringSubjectID"), primary_key=True
