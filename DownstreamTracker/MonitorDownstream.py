@@ -4,9 +4,6 @@ import git
 
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.MonitoringSubjectDatabaseDriver import (
-    MonitoringSubjectDatabaseDriver,
-)
 from DatabaseDriver.SqlClasses import (
     Distros,
     MonitoringSubjects,
@@ -18,6 +15,39 @@ from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from UpstreamTracker.ParseData import process_commits
 
 # from DownstreamTracker.DebianParser import monitor_debian
+
+
+def update_revisions_for_distro(distro_id, revs):
+    """
+    Updates the database with the given revisions
+
+    new_revisions: list of <revision>s to add under this distro_id
+    """
+    with DatabaseDriver.get_session() as s:
+        revs_to_delete = (
+            s.query(MonitoringSubjects)
+            .filter_by(distroID=distro_id)
+            .filter(~MonitoringSubjects.revision.in_(revs))
+        )
+        for r in revs_to_delete:
+            print(f"[Info] For distro {distro_id}, deleting revision: {r.revision}")
+
+        # This is a bulk delete and we close the session immediately after.
+        revs_to_delete.delete(synchronize_session=False)
+
+    with DatabaseDriver.get_session() as s:
+        for rev in revs:
+            # Only add if it doesn't already exist. We're dealing
+            # with revisions on the scale of 1, so the number of
+            # queries and inserts here doesn't matter.
+            if (
+                s.query(MonitoringSubjects)
+                .filter_by(distroID=distro_id, revision=rev)
+                .first()
+                is None
+            ):
+                print(f"[Info] For distro {distro_id}, adding revision: {rev}")
+                s.add(MonitoringSubjects(distroID=distro_id, revision=rev))
 
 
 def update_tracked_revisions(distro_id, repo):
@@ -40,8 +70,7 @@ def update_tracked_revisions(distro_id, repo):
         # Filter out edge, and only include azure revisions
         tag_names = list(filter(lambda x: "azure" in x and "edge" not in x, tag_names))
         latest_two_kernels = tag_names[-2:]
-        db_driver = MonitoringSubjectDatabaseDriver()
-        db_driver.update_revisions_for_distro(distro_id, latest_two_kernels)
+        update_revisions_for_distro(distro_id, latest_two_kernels)
 
 
 # TODO: Refactor this function into a smaller set of pieces.

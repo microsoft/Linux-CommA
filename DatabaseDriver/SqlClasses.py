@@ -62,7 +62,7 @@ class MonitoringSubjects(Base):
     distroID = Column(String, ForeignKey("Distros.distroID"))
     revision = Column(String)
     distro = relationship("Distros", back_populates="monitoringSubject")
-    missingPatch = relationship(
+    missingPatches = relationship(
         "MonitoringSubjectsMissingPatches", back_populates="monitoringSubject"
     )
 
@@ -74,7 +74,13 @@ class MonitoringSubjectsMissingPatches(Base):
         Integer, ForeignKey("MonitoringSubjects.monitoringSubjectID"), primary_key=True
     )
     monitoringSubject = relationship(
-        "MonitoringSubjects", back_populates="missingPatch"
+        "MonitoringSubjects",
+        back_populates="missingPatches",
+        single_parent=True,
+        # This ensures that when we delete a parent monitoring subject
+        # (as referenced by the foreign key above), that this is
+        # deleted too.
+        cascade="all, delete-orphan",
     )
     patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
     patches = relationship("PatchData", back_populates="monitoringSubject")
