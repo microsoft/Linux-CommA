@@ -1,5 +1,6 @@
-from pathlib import Path
+import logging
 import subprocess
+from pathlib import Path
 
 import git
 
@@ -19,7 +20,7 @@ def get_symbols(repo_dir, files):
     command = "ctags -R -x −−c−kinds=f {}".format(
         " ".join(files) + " | awk '{ if ($2 == \"function\") print $1 }'"
     )
-    # print("[Info] Running command: " + command)
+    logging.debug("Running command: " + command)
     process = subprocess.run(
         command,
         stdout=subprocess.PIPE,
@@ -67,7 +68,7 @@ def map_symbols_to_patch(
             patch.symbols = " ".join(diff_symbols)
         before_patch_apply = after_patch_apply
 
-    print("[Info] Finished symbol tracker")
+    logging.info("Finished symbol tracker")
 
 
 def get_hyperv_patch_symbols():
@@ -76,12 +77,12 @@ def get_hyperv_patch_symbols():
     """
     path_to_linux_sym = Path(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME).resolve()
     if path_to_linux_sym.exists():
-        print("[Info] Path to Linux Symbol repo exists")
+        logging.info("Path to Linux Symbol repo exists")
         repo = git.Repo(path_to_linux_sym)
-        print("[Info] Fetching recent changes")
+        logging.debug("Fetching recent changes")
         repo.git.fetch()
     else:
-        print("[Info] Path to Linux repo does not exists. Cloning linux repo.")
+        logging.info("Path to Linux repo does not exists. Cloning linux repo.")
         path_to_linux = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
         source_repo = (
             path_to_linux
@@ -91,10 +92,10 @@ def get_hyperv_patch_symbols():
         git.Git(cst.PATH_TO_REPOS).clone(source_repo, cst.LINUX_SYMBOL_REPO_NAME)
         repo = git.Repo(path_to_linux_sym)
 
-    print("[Info] parsing maintainers files")
+    logging.debug("parsing maintainers files")
     filenames = get_hyperv_filenames(repo, "origin/master")
     assert filenames is not None
-    print("[Info] Received HyperV file paths")
+    logging.info("Received HyperV file paths")
 
     with DatabaseDriver.get_session() as s:
         # Only annoying thing with SQLAlchemy is that this always
@@ -130,8 +131,8 @@ def symbol_checker(symbol_file):
 
 
 def print_missing_symbols(symbol_file):
-    print("[Info] Starting Symbol matcher")
+    logging.info("Starting Symbol matcher")
     get_hyperv_patch_symbols()
     missing_symbols = symbol_checker(symbol_file)
-    print("Missing symbols")
+    logging.info("Missing symbols")
     print(*missing_symbols)

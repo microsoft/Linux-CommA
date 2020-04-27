@@ -1,3 +1,4 @@
+import logging
 import urllib
 from contextlib import contextmanager
 
@@ -22,10 +23,10 @@ class DatabaseDriver:
         Initialize Database connection
         """
         if Util.Config.dry_run:
-            print("[Info] Using local database...")
-            engine = create_engine("sqlite:///comma.db", echo=Util.Config.verbose)
+            logging.info("Using local database")
+            engine = create_engine("sqlite:///comma.db", echo=Util.Config.verbose > 2)
         else:
-            print("[Info] Connecting to database...")
+            logging.info("Connecting to database")
             # Get Database credentials
             dbCred = DbCred()
             params = urllib.parse.quote_plus(
@@ -38,7 +39,8 @@ class DatabaseDriver:
                 )
             )
             engine = create_engine(
-                "mssql+pyodbc:///?odbc_connect=%s" % params, echo=Util.Config.verbose
+                "mssql+pyodbc:///?odbc_connect=%s" % params,
+                echo=Util.Config.verbose > 2,
             )
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)

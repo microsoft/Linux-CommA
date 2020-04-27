@@ -1,3 +1,4 @@
+import logging
 import os
 
 import git
@@ -96,6 +97,7 @@ def monitor_subject(monitoring_subject, repo):
         "--",
         filenames,
     ).split("\n")
+    logging.debug("Retrived missing patches through cherry-pick")
 
     # Run extra checks on these missing commits
     with DatabaseDriver.get_session() as s:
@@ -107,6 +109,7 @@ def monitor_subject(monitoring_subject, repo):
         # oldest upstream missing patch's commit_time, as an
         # optimization.
         earliest_commit_date = min(p.commitTime for p in upstream_missing_patches)
+        logging.debug("Processing commits since " + str(earliest_commit_date))
         downstream_patches = process_commits(
             repo,
             monitoring_subject.revision,
@@ -115,6 +118,9 @@ def monitor_subject(monitoring_subject, repo):
         )
         downstream_matcher = DownstreamMatcher(downstream_patches)
 
+        logging.info(
+            f"Starting confidence matching for {len(upstream_missing_patches)} upstream patches "
+        )
         # Removes patches which our algorithm say exist downstream.
         missing_patches = [
             p
@@ -122,8 +128,8 @@ def monitor_subject(monitoring_subject, repo):
             if not downstream_matcher.exists_matching_patch(p)
         ]
 
-        print(
-            "[Info] Number of patches missing from git log to our algo: "
+        logging.info(
+            "Number of patches missing from git log to our algo: "
             + f"{num_log_missing_patches} -> {len(missing_patches)}."
         )
 
@@ -145,8 +151,8 @@ def monitor_subject(monitoring_subject, repo):
         patches_to_delete = patches.filter(
             ~MonitoringSubjectsMissingPatches.patchID.in_(missing_patch_ids)
         )
-        print(
-            f"[Info] Deleting {patches_to_delete.count()} patches that are now present."
+        logging.info(
+            f"Deleting {patches_to_delete.count()} patches that are now present."
         )
         # This is a bulk delete and we close the session immediately after.
         patches_to_delete.delete(synchronize_session=False)
@@ -168,7 +174,7 @@ def monitor_subject(monitoring_subject, repo):
                         monitoringSubjectID=subject_id, patchID=patch_id
                     )
                 )
-        print(f"[Info] Adding {new_missing_patches} patches that are now missing.")
+        logging.info(f"Adding {new_missing_patches} patches that are now missing.")
 
 
 def monitor_downstream():
@@ -182,17 +188,17 @@ def monitor_downstream():
         for distroID, repoLink in s.query(Distros.distroID, Distros.repoLink).all():
             # Debian we handle differently
             if distroID not in current_remotes and not distroID.startswith("Debian"):
-                print(
-                    "[Info] Adding remote origin for %s from %s" % (distroID, repoLink)
+                logging.debug(
+                    "Adding remote origin for %s from %s" % (distroID, repoLink)
                 )
                 repo.create_remote(distroID, url=repoLink)
 
     # Update all remotes, and tags of all remotes
-    print("[Info] Fetching updates to all repos and tags.")
+    logging.info("Fetching updates to all repos and tags.")
     repo.git.fetch("--all", "--tags")
-    print("[Info] Fetched!")
+    logging.debug("Fetched!")
 
-    print("[Info] Updating tracked revisions for each repo.")
+    logging.info("Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
     with DatabaseDriver.get_session() as s:
         for (distroID,) in s.query(Distros.distroID).all():
@@ -202,12 +208,10 @@ def monitor_downstream():
         for subject in s.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
                 # TODO don't skip debian
-                print("skipping debian")
+                logging.debug("skipping debian")
             else:
-                print(
-                    "[Info] Monitoring Script starting for Distro: %s, revision: %s.."
+                logging.info(
+                    "Monitoring Script starting for Distro: %s, revision: %s"
                     % (subject.distroID, subject.revision)
                 )
                 monitor_subject(subject, repo)
-
-    print("Patch Tracker finished.")
