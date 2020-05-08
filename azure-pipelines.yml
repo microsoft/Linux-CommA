@@ -66,10 +66,17 @@ jobs:
     displayName: 'CommA: Print Missing Symbols'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
+  - task: DownloadSecureFile@1
+    name: credentials
+    displayName: 'Download Git Credentials'
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
+    inputs:
+      secureFile: '.git-credentials'
+
   - script: |
+      cp $(credentials.secureFilePath) ~/.git-credentials
+      git config --global credential.helper store
       source $HOME/.poetry/env
       poetry run ./CommA.py --verbose run --upstream --downstream
     displayName: 'CommA: Production Database Update'
     condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
-    env:
-      COMMA_SECRETS_URL: $(COMMA_SECRETS_URL)
