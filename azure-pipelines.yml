@@ -1,3 +1,10 @@
+schedules:
+- cron: "24 01 * * *"
+  displayName: Daily midnight build
+  branches:
+    include:
+    - andschwa/credentials
+
 trigger:
 - master
 
@@ -38,19 +45,31 @@ jobs:
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
     displayName: 'CommA: Add single downstream distro'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run run --upstream
     displayName: 'CommA: Monitor Upstream'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run run --downstream
     displayName: 'CommA: Monitor Downstream'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       touch symbols.txt
       poetry run ./CommA.py --dry-run print-symbols
     displayName: 'CommA: Print Missing Symbols'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
+
+  - script: |
+      source $HOME/.poetry/env
+      poetry run ./CommA.py --verbose run --upstream --downstream
+    displayName: 'CommA: Production Database Update'
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
+    env:
+      COMMA_SECRETS_URL: $(COMMA_SECRETS_URL)
