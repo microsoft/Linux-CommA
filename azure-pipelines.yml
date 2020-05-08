@@ -49,20 +49,20 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run run --upstream
+      poetry run ./CommA.py --dry-run --verbose run --upstream
     displayName: 'CommA: Monitor Upstream'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run run --downstream
+      poetry run ./CommA.py --dry-run --verbose run --downstream
     displayName: 'CommA: Monitor Downstream'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       touch symbols.txt
-      poetry run ./CommA.py --dry-run print-symbols
+      poetry run ./CommA.py --dry-run --verbose print-symbols
     displayName: 'CommA: Print Missing Symbols'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 

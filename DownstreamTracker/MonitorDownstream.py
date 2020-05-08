@@ -31,7 +31,7 @@ def update_revisions_for_distro(distro_id, revs):
             .filter(~MonitoringSubjects.revision.in_(revs))
         )
         for r in revs_to_delete:
-            print(f"[Info] For distro {distro_id}, deleting revision: {r.revision}")
+            logging.info(f"For distro {distro_id}, deleting revision: {r.revision}")
 
         # This is a bulk delete and we close the session immediately after.
         revs_to_delete.delete(synchronize_session=False)
@@ -47,7 +47,7 @@ def update_revisions_for_distro(distro_id, revs):
                 .first()
                 is None
             ):
-                print(f"[Info] For distro {distro_id}, adding revision: {rev}")
+                logging.info(f"For distro {distro_id}, adding revision: {rev}")
                 s.add(MonitoringSubjects(distroID=distro_id, revision=rev))
 
 
@@ -178,6 +178,7 @@ def monitor_subject(monitoring_subject, repo):
 
 
 def monitor_downstream():
+    print("Monitoring downstream...")
     # Linux repo is assumed to be present
     path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
     repo = git.Repo(path_to_linux)
@@ -215,3 +216,4 @@ def monitor_downstream():
                     % (subject.distroID, subject.revision)
                 )
                 monitor_subject(subject, repo)
+    print("Finished monitoring downstream!")
