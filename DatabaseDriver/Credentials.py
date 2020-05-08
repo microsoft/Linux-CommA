@@ -1,43 +1,41 @@
 import logging
 import os
-import xml.etree.ElementTree as ET
+import sys
+import xml.etree.ElementTree
+from pathlib import Path
 
-import git
+from git import Repo
 
-import Util.Constants as cst
+import Util.Constants
 
 
 class DatabaseCredentials:
     def __init__(self):
-        secret_repo_path = os.path.join(cst.PATH_TO_REPOS, cst.SECRET_REPO_NAME)
-        if os.path.exists(secret_repo_path):
-            logging.info("Path to Secrets Repo exists")
-            repo = git.Repo(secret_repo_path)
-            logging.debug("Pulling recent changes for secrets repo")
+        secrets_path = Path(Util.Constants.PATH_TO_REPOS, "secrets").resolve()
+        if secrets_path.exists():
+            repo = Repo(secrets_path)
+            logging.info("Pulling recent changes for secrets repo...")
             repo.remotes.origin.pull()
-            logging.info("Git pull complete")
+            logging.info("Pull complete.")
         else:
-            logging.debug("Path to Secrets repo does not exists")
-            logging.info("Cloning Secrets repo")
-            db_cred_environ_name = "LSG_SECRET_DB_CRED"
-            db_cred = os.getenv(db_cred_environ_name)
-            if db_cred is None:
+            logging.info("Cloning secrets repo...")
+            env_var = "COMMA_SECRETS_URL"
+            secrets_url = os.environ.get(env_var)
+            if secrets_url is None:
                 logging.error(
-                    "Please set %s environment variable as your token to access LSG-Secret repo."
-                    % db_cred_environ_name
+                    f"Please set the environment variable '{env_var}' as the URL to clone your secrets repo."
                 )
-                raise Exception(
-                    "LSG-Secret Repo token not set in environment variale: %s"
-                    % db_cred_environ_name
-                )
-            git.Git(cst.PATH_TO_REPOS).clone(
-                "https://anything:%s@<redacted>"
-                % db_cred
+                sys.exit(1)
+            Repo.clone_from(
+                secrets_url, secrets_path,
             )
-            logging.info("Cloning Complete")
-        tree = ET.parse(os.path.join(secret_repo_path, "PatchTrackerSecrets.xml"))
+            logging.info("Cloning complete.")
+        tree = xml.etree.ElementTree.parse(
+            # TODO: Rename XML file to e.g. `CommASecrets.xml`.
+            Path(secrets_path, "PatchTrackerSecrets.xml").resolve()
+        )
         root = tree.getroot()
-        self.database_server = root.find("DatabaseServer").text
-        self.database_name = root.find("DatabaseName").text
-        self.database_user = root.find("DatabaseUser").text
-        self.database_password = root.find("DatabasePassword").text
+        self.server = root.find("DatabaseServer").text
+        self.name = root.find("DatabaseName").text
+        self.user = root.find("DatabaseUser").text
+        self.password = root.find("DatabasePassword").text

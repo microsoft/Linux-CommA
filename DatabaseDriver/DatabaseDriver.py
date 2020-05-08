@@ -24,25 +24,22 @@ class DatabaseDriver:
         Initialize Database connection
         """
         if Util.Config.dry_run:
-            logging.info("Using local database")
-            engine = create_engine("sqlite:///comma.db", echo=Util.Config.verbose > 2)
+            db_file = "comma.db"
+            logging.info(f"Using local SQLite database at '{db_file}'.")
+            engine = create_engine(
+                f"sqlite:///{db_file}", echo=(Util.Config.verbose > 2)
+            )
         else:
-            logging.info("Connecting to database")
-            # Get Database credentials
-            dbCred = DatabaseCredentials()
+            logging.info("Connecting to remote database...")
+            creds = DatabaseCredentials()
             params = urllib.parse.quote_plus(
-                "DRIVER={ODBC Driver 17 for SQL Server};SERVER=%s;DATABASE=%s;UID=%s;PWD=%s"
-                % (
-                    dbCred.database_server,
-                    dbCred.database_name,
-                    dbCred.database_user,
-                    dbCred.database_password,
-                )
+                f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={creds.server};DATABASE={creds.name};UID={creds.user};PWD={creds.password}"
             )
             engine = create_engine(
-                "mssql+pyodbc:///?odbc_connect=%s" % params,
-                echo=Util.Config.verbose > 2,
+                f"mssql+pyodbc:///?odbc_connect={params}",
+                echo=(Util.Config.verbose > 2),
             )
+            logging.info("Connected!")
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)
         self._Session = sessionmaker(bind=engine)
