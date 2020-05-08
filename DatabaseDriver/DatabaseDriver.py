@@ -6,10 +6,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import Util.Config
+from DatabaseDriver.Credentials import DatabaseCredentials
 from DatabaseDriver.SqlClasses import Base
-from Setup.DbCred import DatabaseCredentials as DbCred
 
 
+# TODO: Rename this class because it conflicts with the module name.
 class DatabaseDriver:
     """
     Database driver class for connections
@@ -28,7 +29,7 @@ class DatabaseDriver:
         else:
             logging.info("Connecting to database")
             # Get Database credentials
-            dbCred = DbCred()
+            dbCred = DatabaseCredentials()
             params = urllib.parse.quote_plus(
                 "DRIVER={ODBC Driver 17 for SQL Server};SERVER=%s;DATABASE=%s;UID=%s;PWD=%s"
                 % (
