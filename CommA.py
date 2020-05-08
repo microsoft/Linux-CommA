@@ -56,9 +56,32 @@ symbol_parser.add_argument(
 symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
 
 
+def get_distros(args):
+    with DatabaseDriver.get_session() as s:
+        print("DistroID\tRevision")
+        for distro, revision in (
+            s.query(Distros.distroID, MonitoringSubjects.revision)
+            .outerjoin(
+                MonitoringSubjects, Distros.distroID == MonitoringSubjects.distroID
+            )
+            .all()
+        ):
+            print(f"{distro}\t{revision}")
+    logging.debug("Successfully printed revisions")
+
+
+print_distro_parser = subparsers.add_parser(
+    "print-distros", help="Print current <distro-name, revision> info.",
+)
+print_distro_parser.set_defaults(func=get_distros)
+
+
 def add_distro(args):
     with DatabaseDriver.get_session() as s:
         s.add(Distros(distroID=args.name, repoLink=args.url))
+        logging.debug(f"Successfully added {args.name} in Distro table")
+        s.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
+        logging.debug(f"Successfully added {args.name} in MonitoringSubjects table")
     logging.info("Successfully added\tDistro:" + args.name)
 
 
@@ -77,6 +100,12 @@ distro_parser.add_argument(
     required=True,
     help="Git repository URL for distro, e.g. 'https://git.launchpad.net/...'.",
 )
+distro_parser.add_argument(
+    "-r",
+    "--revision",
+    required=True,
+    help="Repository revision to track. For adding a new branch use distro-name/branch-name format. e.g. SUSE12/SUSE12-SP5-AZURE",
+)
 distro_parser.set_defaults(func=add_distro)
 
 
@@ -89,7 +118,7 @@ def add_kernel(args):
 
 
 kernel_parser = subparsers.add_parser(
-    "add-kernel", help="Add new kernel/revision to track"
+    "add-kernel", help="Add new kernel/revision to track for pre-existing distros."
 )
 kernel_parser.add_argument(
     "-n",
@@ -101,7 +130,7 @@ kernel_parser.add_argument(
     "-r",
     "--revision",
     required=True,
-    help="Repository revision to track, e.g. 'master'",
+    help="Repository revision to track. For adding a new branch use distro-name/branch-name format. e.g. SUSE12/SUSE12-SP5-AZURE",
 )
 kernel_parser.set_defaults(func=add_kernel)
 

@@ -36,7 +36,7 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic'
+      poetry run ./CommA.py --dry-run --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
     displayName: 'CommA: Add single downstream distro'
 
   - script: |
