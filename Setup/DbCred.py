@@ -1,15 +1,10 @@
 import logging
 import os
 import xml.etree.ElementTree as ET
-from pathlib import Path  # python3 only
 
 import git
-from dotenv import load_dotenv
 
 import Util.Constants as cst
-
-env_path = Path(".") / "prod.env"
-load_dotenv(dotenv_path=env_path)
 
 
 class DatabaseCredentials:

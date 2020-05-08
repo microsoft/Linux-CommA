@@ -171,17 +171,6 @@ version = "4.0.30"
 
 [[package]]
 category = "main"
-description = "Add .env support to your django/flask apps in development and deployments"
-name = "python-dotenv"
-optional = false
-python-versions = "*"
-version = "0.12.0"
-
-[package.extras]
-cli = ["click (>=5.0)"]
-
-[[package]]
-category = "main"
 description = "Python extension for computing string edit distances and similarities."
 name = "python-levenshtein"
 optional = false
@@ -244,7 +233,7 @@ python-versions = "*"
 version = "1.4.1"
 
 [metadata]
-content-hash = "e35191d37713e0a61e8835381e1ec10a2dcfa94031aa80199711478b8054b7bb"
+content-hash = "92519c3777499e3dae9f7846b78c16c25dbdcd5795e89a0a6c11812f7bfc902d"
 python-versions = "^3.6"
 
 [metadata.files]
@@ -322,10 +311,6 @@ pyodbc = [
     {file = "pyodbc-4.0.30-cp38-cp38-win32.whl", hash = "sha256:d3ad340e0053b6ec4130957efbcecce6de48d68e7e78792ea7588e27ffa629f1"},
     {file = "pyodbc-4.0.30-cp38-cp38-win_amd64.whl", hash = "sha256:bce7e41c7cfc06ec976245f361221dfdd0f04e804010cf255cbb36985f6c3406"},
     {file = "pyodbc-4.0.30.tar.gz", hash = "sha256:852b5deeeb3366af8b4408efed993501708be45d221881bce60c9aac54be726a"},
-]
-python-dotenv = [
-    {file = "python-dotenv-0.12.0.tar.gz", hash = "sha256:92b3123fb2d58a284f76cc92bfe4ee6c502c32ded73e8b051c4f6afc8b6751ed"},
-    {file = "python_dotenv-0.12.0-py2.py3-none-any.whl", hash = "sha256:81822227f771e0cab235a2939f0f265954ac4763cafd806d845801c863bf372f"},
 ]
 python-levenshtein = [
     {file = "python-Levenshtein-0.12.0.tar.gz", hash = "sha256:033a11de5e3d19ea25c9302d11224e1a1898fe5abd23c61c7c360c25195e3eb1"},
