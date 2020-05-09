@@ -21,6 +21,14 @@ jobs:
       versionSpec: '3.6'
     displayName: 'Use Python 3.6'
 
+  - task: Cache@2
+    inputs:
+      key: 'poetry | "$(Agent.OS)" | poetry.lock'
+      # This is hard-coded but I can't find the right variable for it,
+      # and ~ doesn't work.
+      path: /home/vsts/.cache/pypoetry/virtualenvs
+    displayName: 'Cache Python packages'
+
   - script: |
       curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
       curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
