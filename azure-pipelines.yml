@@ -1,9 +1,9 @@
 schedules:
-- cron: "24 01 * * *"
-  displayName: Daily midnight build
+- cron: "0 9 * * *"
+  displayName: 'Update prod every day.'
   branches:
     include:
-    - andschwa/credentials
+    - master
 
 trigger:
 - master
