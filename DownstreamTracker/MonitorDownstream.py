@@ -4,6 +4,7 @@ from pathlib import Path
 
 from git import Repo
 
+import Util.Config
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import (
@@ -199,9 +200,10 @@ def monitor_downstream():
                 repo.create_remote(distroID, url=repoLink)
 
     # Update all remotes, and tags of all remotes
-    logging.info("Fetching updates to all repos and tags.")
-    repo.git.fetch("--all", "--tags", "--force", "--shallow-since='4 years ago'")
-    logging.debug("Fetched!")
+    if Util.Config.fetch:
+        logging.info("Fetching updates to all repos and tags.")
+        repo.git.fetch("--all", "--tags", "--force", "--shallow-since='4 years ago'")
+        logging.debug("Fetched!")
 
     logging.info("Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate

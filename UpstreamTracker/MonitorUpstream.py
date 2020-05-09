@@ -1,11 +1,11 @@
 import logging
+import Util.Config
 from pathlib import Path
 
 from git import Repo
 
 import Util.Constants as cst
 from UpstreamTracker.ParseData import process_commits
-from Util.Config import filepaths_to_track
 
 
 def get_hyperv_filenames(repo, revision="master"):
@@ -41,7 +41,7 @@ def get_hyperv_filenames(repo, revision="master"):
             break
     logging.debug("Parsing maintainers file done.")
     # TODO: Remove duplicates and validate
-    file_names.extend(filepaths_to_track)
+    file_names.extend(Util.Config.filepaths_to_track)
     logging.debug("Merge config filepaths.")
     return file_names
 
@@ -52,9 +52,12 @@ def monitor_upstream():
     repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
     if repo_path.exists():
         repo = Repo(repo_path)
-        logging.info("Fetching Linux repo...")
-        repo.git.fetch("--all", "--tags", "--force", "--shallow-since='4 years ago'")
-        logging.info("Fetched!")
+        if Util.Config.fetch:
+            logging.info("Fetching Linux repo...")
+            repo.git.fetch(
+                "--all", "--tags", "--force", "--shallow-since='4 years ago'"
+            )
+            logging.info("Fetched!")
     else:
         logging.info("Cloning Linux repo...")
         # TODO add functionality for multiple upstream repos (namely linux-next, linux-mainstream, and linux-stable)

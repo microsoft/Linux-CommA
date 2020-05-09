@@ -19,6 +19,11 @@ parser.add_argument(
 parser.add_argument(
     "-v", "--verbose", action="count", default=0, help="increase output verbosity",
 )
+parser.add_argument(
+    "--no-fetch",
+    action="store_true",
+    help="Do not fetch Git repos (used by developers).",
+)
 
 subparsers = parser.add_subparsers(title="subcommands")
 
@@ -151,6 +156,7 @@ if __name__ == "__main__":
     )
     logging.getLogger().setLevel(logging_level)
     Util.Config.dry_run = args.dry_run
+    Util.Config.fetch = not args.no_fetch
     print("Welcome to Commit Analyzer!")
     args.func(args)
     print("Commit Analyzer completed!")

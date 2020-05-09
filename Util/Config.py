@@ -1,6 +1,7 @@
 from DatabaseDriver.SqlClasses import Distros
 
 dry_run = False
+fetch = True
 verbose = 0
 default_distros = [
     Distros(
