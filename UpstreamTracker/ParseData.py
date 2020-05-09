@@ -12,7 +12,27 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
 
-def process_commits(repo, revision, file_paths, add_to_database=False, since_time=None):
+def should_keep_line(line: str):
+    # Filter description by removing blank and unwanted lines
+    ignore_phrases = (
+        "reported-by:",
+        "signed-off-by:",
+        "reviewed-by:",
+        "acked-by:",
+        "cc:",
+    )
+    # TODO: Maybe just `return not line.lower().startswith(ignore_phrases)`?
+    simplified_line = line.lower()
+    if not simplified_line:
+        return False
+    if simplified_line.startswith(ignore_phrases):
+        return False
+    return True
+
+
+def process_commits(
+    repo, revision, file_paths, add_to_database=False, since_time="4 years ago"
+):
     """
     look at all commits in the given repo and handle based on distro
 
@@ -26,12 +46,9 @@ def process_commits(repo, revision, file_paths, add_to_database=False, since_tim
     num_patches = 0
     num_patches_added = 0
 
-    if since_time:
-        commits = repo.iter_commits(
-            rev=revision, paths=file_paths, no_merges=True, since=since_time.isoformat()
-        )
-    else:
-        commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True)
+    commits = repo.iter_commits(
+        rev=revision, paths=file_paths, no_merges=True, since=since_time
+    )
 
     logging.info("Starting commit processing..")
     for commit in commits:
@@ -48,23 +65,6 @@ def process_commits(repo, revision, file_paths, add_to_database=False, since_tim
         # Remove extra whitespace while splitting commit message
         split_message = [line.strip() for line in commit.message.split("\n")]
         patch.subject = split_message[0]
-
-        # Filter description by removing blank and unwanted lines
-        ignore_phrases = (
-            "reported-by:",
-            "signed-off-by:",
-            "reviewed-by:",
-            "acked-by:",
-            "cc:",
-        )
-
-        def should_keep_line(line):
-            simplified_line = line.lower()
-            if not simplified_line:
-                return False
-            if simplified_line.startswith(ignore_phrases):
-                return False
-            return True
 
         description_lines = []
         # Check for blank description
