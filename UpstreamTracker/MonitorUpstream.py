@@ -1,7 +1,7 @@
 import logging
-import os
+from pathlib import Path
 
-import git
+from git import Repo
 
 import Util.Constants as cst
 from UpstreamTracker.ParseData import process_commits
@@ -49,23 +49,23 @@ def get_hyperv_filenames(repo, revision="master"):
 def monitor_upstream():
     print("Monitoring upstream...")
     logging.info("Starting patch scraping from files..")
-    path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
-    if os.path.exists(path_to_linux):
-        logging.debug("Path to Linux Repo exists")
-        repo = git.Repo(path_to_linux)
-        logging.debug("Fetching recent changes")
-        repo.git.fetch()
+    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
+    if repo_path.exists():
+        repo = Repo(repo_path)
+        logging.info("Fetching Linux repo...")
+        repo.git.fetch("--all", "--tags", "--force", "--shallow-since='4 years ago'")
+        logging.info("Fetched!")
     else:
-        logging.debug("Path to Linux repo does not exists. Cloning linux repo.")
+        logging.info("Cloning Linux repo...")
         # TODO add functionality for multiple upstream repos (namely linux-next, linux-mainstream, and linux-stable)
-        git.Git(cst.PATH_TO_REPOS).clone(
-            "https://github.com/torvalds/linux.git", "--bare"
+        repo = Repo.clone_from(
+            cst.LINUX_REPO_URL, repo_path, bare=True, shallow_since="4 years ago",
         )
-        repo = git.Repo(path_to_linux)
+        logging.info("Cloned!")
 
-    logging.debug("Parsing maintainers files to get hyperV filenames")
+    logging.debug("Parsing maintainers files to get Hyper-V filenames.")
     filenames = get_hyperv_filenames(repo)
-    logging.debug("Received HyperV file paths")
+    logging.debug("Received Hyper-V file paths.")
 
     # TODO Make last sha work, get last sha given repo+reference we have
     # if os.path.exists(cst.PATH_TO_LAST_SHA) and out.split()[0] == open(cst.PATH_TO_LAST_SHA).read():

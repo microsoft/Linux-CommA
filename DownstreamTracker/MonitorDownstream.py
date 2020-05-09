@@ -1,7 +1,8 @@
 import logging
-import os
+import sys
+from pathlib import Path
 
-import git
+from git import Repo
 
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
@@ -180,8 +181,11 @@ def monitor_subject(monitoring_subject, repo):
 def monitor_downstream():
     print("Monitoring downstream...")
     # Linux repo is assumed to be present
-    path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
-    repo = git.Repo(path_to_linux)
+    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
+    if not repo_path.exists():
+        logging.error("Linux repo does not exist! Run with `--upstream` first!")
+        sys.exit(1)
+    repo = Repo(repo_path)
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()
@@ -196,7 +200,7 @@ def monitor_downstream():
 
     # Update all remotes, and tags of all remotes
     logging.info("Fetching updates to all repos and tags.")
-    repo.git.fetch("--all", "--tags")
+    repo.git.fetch("--all", "--tags", "--force", "--shallow-since='4 years ago'")
     logging.debug("Fetched!")
 
     logging.info("Updating tracked revisions for each repo.")
