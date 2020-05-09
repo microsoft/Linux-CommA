@@ -46,12 +46,15 @@ def process_commits(
     num_patches = 0
     num_patches_added = 0
 
+    # We use `--min-parents=1 --max-parents=1` to avoid both merges
+    # and graft commits.
     commits = repo.iter_commits(
-        rev=revision, paths=file_paths, no_merges=True, since=since_time
+        rev=revision, paths=file_paths, min_parents=1, max_parents=1, since=since_time
     )
 
     logging.info("Starting commit processing..")
     for commit in commits:
+        logging.debug(f"Parsing commit {commit.hexsha}")
         patch = PatchData(
             commitID=commit.hexsha,
             author=commit.author.name,
