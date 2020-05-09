@@ -2,6 +2,7 @@ from DatabaseDriver.SqlClasses import Distros
 
 dry_run = False
 fetch = True
+since = "4 years ago"
 verbose = 0
 default_distros = [
     Distros(

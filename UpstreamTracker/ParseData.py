@@ -4,6 +4,7 @@ import os
 import sys
 from datetime import datetime
 
+import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
 
@@ -30,17 +31,14 @@ def should_keep_line(line: str):
     return True
 
 
-def process_commits(
-    repo, revision, file_paths, add_to_database=False, since_time="4 years ago"
-):
+def process_commits(repo, revision, file_paths, add_to_database=False):
     """
     look at all commits in the given repo and handle based on distro
 
     repo: The git.repo object of the repository we want to parse commits of
     revision: The git revision we want to see the commits of, or None
     file_paths: list of filenames to check commits for
-    db: Database object to add commits to, or None to return a list instead
-    since_time: If provided, will only process commits after this commit datetime
+    add_to_db: Database object to add commits to, or None to return a list instead
     """
     all_patches = []
     num_patches = 0
@@ -49,7 +47,11 @@ def process_commits(
     # We use `--min-parents=1 --max-parents=1` to avoid both merges
     # and graft commits.
     commits = repo.iter_commits(
-        rev=revision, paths=file_paths, min_parents=1, max_parents=1, since=since_time
+        rev=revision,
+        paths=file_paths,
+        min_parents=1,
+        max_parents=1,
+        since=Util.Config.since,
     )
 
     logging.info("Starting commit processing..")

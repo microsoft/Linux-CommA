@@ -24,6 +24,13 @@ parser.add_argument(
     action="store_true",
     help="Do not fetch Git repos (used by developers).",
 )
+parser.add_argument(
+    "-s",
+    "--since",
+    action="store",
+    default=Util.Config.since,
+    help=f"Parameter to pass to underlying Git commands, default is '{Util.Config.since}'.",
+)
 
 subparsers = parser.add_subparsers(title="subcommands")
 
@@ -156,6 +163,7 @@ if __name__ == "__main__":
     )
     logging.getLogger().setLevel(logging_level)
     Util.Config.dry_run = args.dry_run
+    Util.Config.since = args.since
     Util.Config.fetch = not args.no_fetch
     print("Welcome to Commit Analyzer!")
     args.func(args)

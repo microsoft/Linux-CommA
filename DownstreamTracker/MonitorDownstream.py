@@ -202,7 +202,9 @@ def monitor_downstream():
     # Update all remotes, and tags of all remotes
     if Util.Config.fetch:
         logging.info("Fetching updates to all repos and tags.")
-        repo.git.fetch("--all", "--tags", "--force", "--shallow-since='4 years ago'")
+        repo.git.fetch(
+            f"--all", "--tags", "--force", "--shallow-since='{Util.Config.since}'"
+        )
         logging.debug("Fetched!")
 
     logging.info("Updating tracked revisions for each repo.")

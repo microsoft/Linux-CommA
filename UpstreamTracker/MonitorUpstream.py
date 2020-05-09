@@ -1,9 +1,9 @@
 import logging
-import Util.Config
 from pathlib import Path
 
 from git import Repo
 
+import Util.Config
 import Util.Constants as cst
 from UpstreamTracker.ParseData import process_commits
 
@@ -55,14 +55,14 @@ def monitor_upstream():
         if Util.Config.fetch:
             logging.info("Fetching Linux repo...")
             repo.git.fetch(
-                "--all", "--tags", "--force", "--shallow-since='4 years ago'"
+                "--all", "--tags", "--force", f"--shallow-since={Util.Config.since}",
             )
             logging.info("Fetched!")
     else:
         logging.info("Cloning Linux repo...")
         # TODO add functionality for multiple upstream repos (namely linux-next, linux-mainstream, and linux-stable)
         repo = Repo.clone_from(
-            cst.LINUX_REPO_URL, repo_path, bare=True, shallow_since="4 years ago",
+            cst.LINUX_REPO_URL, repo_path, bare=True, shallow_since=Util.Config.since,
         )
         logging.info("Cloned!")
 
