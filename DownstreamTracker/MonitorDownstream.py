@@ -86,7 +86,7 @@ def monitor_subject(monitoring_subject, repo):
     """
 
     missing_patch_ids = None
-    filenames = get_hyperv_filenames(repo)
+    paths = get_hyperv_filenames(repo)
 
     # This returns patches missing in the repo with very good accuracy, but isn't perfect
     # So, we run extra checks to confirm the missing patches.
@@ -97,7 +97,7 @@ def monitor_subject(monitoring_subject, repo):
         "--pretty=format:%H",
         "%s...master" % monitoring_subject.revision,
         "--",
-        filenames,
+        paths,
     ).split("\n")
     logging.debug("Retrived missing patches through cherry-pick")
 
@@ -110,13 +110,12 @@ def monitor_subject(monitoring_subject, repo):
         # We only want to check downstream patches as old as the
         # oldest upstream missing patch's commit_time, as an
         # optimization.
-        earliest_commit_date = min(p.commitTime for p in upstream_missing_patches)
-        logging.debug("Processing commits since " + str(earliest_commit_date))
+        earliest_commit_date = min(
+            p.commitTime for p in upstream_missing_patches
+        ).isoformat()
+        logging.debug(f"Processing commits since {earliest_commit_date}")
         downstream_patches = process_commits(
-            repo,
-            monitoring_subject.revision,
-            filenames,
-            since_time=earliest_commit_date,
+            repo, monitoring_subject.revision, paths, since=earliest_commit_date,
         )
         downstream_matcher = DownstreamMatcher(downstream_patches)
 

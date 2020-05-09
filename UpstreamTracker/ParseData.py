@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 
 import Util.Config
+from git import Repo
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
 
@@ -31,14 +32,17 @@ def should_keep_line(line: str):
     return True
 
 
-def process_commits(repo, revision, file_paths, add_to_database=False):
+def process_commits(
+    repo: Repo, rev, paths, add_to_database=False, since=Util.Config.since
+) -> list:
     """
-    look at all commits in the given repo and handle based on distro
+    Look at all commits in the given repo and handle based on distro.
 
-    repo: The git.repo object of the repository we want to parse commits of
-    revision: The git revision we want to see the commits of, or None
-    file_paths: list of filenames to check commits for
-    add_to_db: Database object to add commits to, or None to return a list instead
+    repo: Git.Repo object of the repository where we want to parse commits
+    rev: revision we want to see the commits of, or None
+    paths: list of filenames to check commits for
+    add_to_database: whether or not to add to database (side-effect)
+    since: if provided, will only process commits after this commit
     """
     all_patches = []
     num_patches = 0
@@ -47,11 +51,7 @@ def process_commits(repo, revision, file_paths, add_to_database=False):
     # We use `--min-parents=1 --max-parents=1` to avoid both merges
     # and graft commits.
     commits = repo.iter_commits(
-        rev=revision,
-        paths=file_paths,
-        min_parents=1,
-        max_parents=1,
-        since=Util.Config.since,
+        rev=rev, paths=paths, min_parents=1, max_parents=1, since=since
     )
 
     logging.info("Starting commit processing..")
@@ -103,7 +103,7 @@ def process_commits(repo, revision, file_paths, add_to_database=False):
         else:
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = commit.tree.diff(
-                commit.parents[0], paths=file_paths, create_patch=True
+                commit.parents[0], paths=paths, create_patch=True
             )
 
         # Sometimes a path is in a and not b, we want all affect filenames.
