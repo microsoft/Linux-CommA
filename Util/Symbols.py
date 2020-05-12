@@ -2,7 +2,7 @@ import logging
 import subprocess
 from pathlib import Path
 
-import git
+from git import Repo
 
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
@@ -68,34 +68,34 @@ def map_symbols_to_patch(
             patch.symbols = " ".join(diff_symbols)
         before_patch_apply = after_patch_apply
 
-    logging.info("Finished symbol tracker")
-
 
 def get_hyperv_patch_symbols():
     """
     This function clones upstream and gets upstream commits, hyperV files
     """
-    path_to_linux_sym = Path(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME).resolve()
-    if path_to_linux_sym.exists():
-        logging.info("Path to Linux Symbol repo exists")
-        repo = git.Repo(path_to_linux_sym)
-        logging.debug("Fetching recent changes")
+    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME).resolve()
+    if repo_path.exists():
+        repo = Repo(repo_path)
+        logging.info("Fetching Linux symbol checkout...")
         repo.git.fetch()
+        logging.info("Fetched!")
     else:
-        logging.info("Path to Linux repo does not exists. Cloning linux repo.")
-        path_to_linux = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
+        # TODO: Return this code when we fix the issue with shallow fetch.
+        # upstream_repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
         source_repo = (
-            path_to_linux
-            if path_to_linux.exists()
-            else "https://github.com/torvalds/linux.git"
+            # upstream_repo_path
+            # if upstream_repo_path.exists()
+            # else
+            "https://github.com/torvalds/linux.git"
         )
-        git.Git(cst.PATH_TO_REPOS).clone(source_repo, cst.LINUX_SYMBOL_REPO_NAME)
-        repo = git.Repo(path_to_linux_sym)
+        logging.info(f"Cloning Linux symbol checkout from '{source_repo}'")
+        repo = Repo.clone_from("https://github.com/torvalds/linux.git", repo_path)
+        logging.info("Cloned!")
 
-    logging.debug("parsing maintainers files")
+    logging.debug("Parsing maintainers files...")
     filenames = get_hyperv_filenames(repo, "origin/master")
     assert filenames is not None
-    logging.info("Received HyperV file paths")
+    logging.debug("Parsed!")
 
     with DatabaseDriver.get_session() as s:
         # Only annoying thing with SQLAlchemy is that this always
@@ -112,7 +112,6 @@ def symbol_checker(symbol_file):
     symbol_file: file containing symbols to run against database
     return missing_symbols_patch: list of missing symbols from given list
     """
-    print("[Info] Starting Symbol Checker")
     list_of_symbols = [line.strip() for line in symbol_file]
     symbol_file.close()
     with DatabaseDriver.get_session() as s:
@@ -131,8 +130,8 @@ def symbol_checker(symbol_file):
 
 
 def print_missing_symbols(symbol_file):
-    logging.info("Starting Symbol matcher")
+    print("Starting the Symbol Checker...")
     get_hyperv_patch_symbols()
     missing_symbols = symbol_checker(symbol_file)
-    logging.info("Missing symbols")
+    print("Missing symbols:")
     print(*missing_symbols)

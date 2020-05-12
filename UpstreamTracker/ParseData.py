@@ -4,6 +4,8 @@ import os
 import sys
 from datetime import datetime
 
+import Util.Config
+from git import Repo
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
 
@@ -12,29 +14,49 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
 
-def process_commits(repo, revision, file_paths, add_to_database=False, since_time=None):
-    """
-    look at all commits in the given repo and handle based on distro
+def should_keep_line(line: str):
+    # Filter description by removing blank and unwanted lines
+    ignore_phrases = (
+        "reported-by:",
+        "signed-off-by:",
+        "reviewed-by:",
+        "acked-by:",
+        "cc:",
+    )
+    # TODO: Maybe just `return not line.lower().startswith(ignore_phrases)`?
+    simplified_line = line.lower()
+    if not simplified_line:
+        return False
+    if simplified_line.startswith(ignore_phrases):
+        return False
+    return True
 
-    repo: The git.repo object of the repository we want to parse commits of
-    revision: The git revision we want to see the commits of, or None
-    file_paths: list of filenames to check commits for
-    db: Database object to add commits to, or None to return a list instead
-    since_time: If provided, will only process commits after this commit datetime
+
+def process_commits(
+    repo: Repo, rev, paths, add_to_database=False, since=Util.Config.since
+) -> list:
+    """
+    Look at all commits in the given repo and handle based on distro.
+
+    repo: Git.Repo object of the repository where we want to parse commits
+    rev: revision we want to see the commits of, or None
+    paths: list of filenames to check commits for
+    add_to_database: whether or not to add to database (side-effect)
+    since: if provided, will only process commits after this commit
     """
     all_patches = []
     num_patches = 0
     num_patches_added = 0
 
-    if since_time:
-        commits = repo.iter_commits(
-            rev=revision, paths=file_paths, no_merges=True, since=since_time.isoformat()
-        )
-    else:
-        commits = repo.iter_commits(rev=revision, paths=file_paths, no_merges=True)
+    # We use `--min-parents=1 --max-parents=1` to avoid both merges
+    # and graft commits.
+    commits = repo.iter_commits(
+        rev=rev, paths=paths, min_parents=1, max_parents=1, since=since
+    )
 
     logging.info("Starting commit processing..")
     for commit in commits:
+        logging.debug(f"Parsing commit {commit.hexsha}")
         patch = PatchData(
             commitID=commit.hexsha,
             author=commit.author.name,
@@ -48,23 +70,6 @@ def process_commits(repo, revision, file_paths, add_to_database=False, since_tim
         # Remove extra whitespace while splitting commit message
         split_message = [line.strip() for line in commit.message.split("\n")]
         patch.subject = split_message[0]
-
-        # Filter description by removing blank and unwanted lines
-        ignore_phrases = (
-            "reported-by:",
-            "signed-off-by:",
-            "reviewed-by:",
-            "acked-by:",
-            "cc:",
-        )
-
-        def should_keep_line(line):
-            simplified_line = line.lower()
-            if not simplified_line:
-                return False
-            if simplified_line.startswith(ignore_phrases):
-                return False
-            return True
 
         description_lines = []
         # Check for blank description
@@ -98,7 +103,7 @@ def process_commits(repo, revision, file_paths, add_to_database=False, since_tim
         else:
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = commit.tree.diff(
-                commit.parents[0], paths=file_paths, create_patch=True
+                commit.parents[0], paths=paths, create_patch=True
             )
 
         # Sometimes a path is in a and not b, we want all affect filenames.

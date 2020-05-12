@@ -1,3 +1,10 @@
+schedules:
+- cron: "0 9 * * *"
+  displayName: 'Update prod every day.'
+  branches:
+    include:
+    - master
+
 trigger:
 - master
 
@@ -13,6 +20,14 @@ jobs:
     inputs:
       versionSpec: '3.6'
     displayName: 'Use Python 3.6'
+
+  - task: Cache@2
+    inputs:
+      key: 'poetry | "$(Agent.OS)" | poetry.lock'
+      # This is hard-coded but I can't find the right variable for it,
+      # and ~ doesn't work.
+      path: /home/vsts/.cache/pypoetry/virtualenvs
+    displayName: 'Cache Python packages'
 
   - script: |
       curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
@@ -36,21 +51,40 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
+      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
     displayName: 'CommA: Add single downstream distro'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run run --upstream
+      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose run --upstream
     displayName: 'CommA: Monitor Upstream'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run run --downstream
+      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose run --downstream
     displayName: 'CommA: Monitor Downstream'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       touch symbols.txt
-      poetry run ./CommA.py --dry-run print-symbols
+      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose print-symbols
     displayName: 'CommA: Print Missing Symbols'
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
+
+  - task: DownloadSecureFile@1
+    name: credentials
+    displayName: 'Download Git Credentials'
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
+    inputs:
+      secureFile: '.git-credentials'
+
+  - script: |
+      cp $(credentials.secureFilePath) ~/.git-credentials
+      git config --global credential.helper store
+      source $HOME/.poetry/env
+      poetry run ./CommA.py --verbose run --upstream --downstream
+    displayName: 'CommA: Production Database Update'
+    condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))

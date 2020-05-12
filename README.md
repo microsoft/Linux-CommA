@@ -60,8 +60,25 @@ apt install exuberant-ctags
 ## Running CommA
 
 1. Enter the setup environment with `poetry shell`
-2. Set your personal access token like `export LSG_SECRET_DB_CRED=<PAT>` for the
-   LSG-Secrets repo.
-3. Run `./CommA.py --upstream --downstream`
+2. Provide the URL to the secrets repo with `export
+   COMMA_SECRETS_URL=<URL/to/secrets/repo>`.
+3. Run `./CommA.py run --upstream --downstream`
 
 This will parse the upstream and downstream repos.
+
+## Setting Up Secrets
+
+You should have a separate Git repository which contains an XML file with your
+database secrets, structured like:
+
+```xml
+</secrets><?xml version="1.0"?>
+<secrets>
+    <DatabaseServer>your.database.server.url</DatabaseServer>
+    <DatabaseName>your_database_name</DatabaseName>
+    <DatabaseUser>your_database_user</DatabaseUser>
+    <DatabasePassword>your_database_password</DatabasePassword>
+</secrets>
+```
+
+The file should be named `PatchTrackerSecrets.xml` and exist at the root level.

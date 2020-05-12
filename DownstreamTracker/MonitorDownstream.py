@@ -1,8 +1,10 @@
 import logging
-import os
+import sys
+from pathlib import Path
 
-import git
+from git import Repo
 
+import Util.Config
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import (
@@ -31,7 +33,7 @@ def update_revisions_for_distro(distro_id, revs):
             .filter(~MonitoringSubjects.revision.in_(revs))
         )
         for r in revs_to_delete:
-            print(f"[Info] For distro {distro_id}, deleting revision: {r.revision}")
+            logging.info(f"For distro {distro_id}, deleting revision: {r.revision}")
 
         # This is a bulk delete and we close the session immediately after.
         revs_to_delete.delete(synchronize_session=False)
@@ -47,7 +49,7 @@ def update_revisions_for_distro(distro_id, revs):
                 .first()
                 is None
             ):
-                print(f"[Info] For distro {distro_id}, adding revision: {rev}")
+                logging.info(f"For distro {distro_id}, adding revision: {rev}")
                 s.add(MonitoringSubjects(distroID=distro_id, revision=rev))
 
 
@@ -84,7 +86,7 @@ def monitor_subject(monitoring_subject, repo):
     """
 
     missing_patch_ids = None
-    filenames = get_hyperv_filenames(repo)
+    paths = get_hyperv_filenames(repo)
 
     # This returns patches missing in the repo with very good accuracy, but isn't perfect
     # So, we run extra checks to confirm the missing patches.
@@ -95,7 +97,7 @@ def monitor_subject(monitoring_subject, repo):
         "--pretty=format:%H",
         "%s...master" % monitoring_subject.revision,
         "--",
-        filenames,
+        paths,
     ).split("\n")
     logging.debug("Retrived missing patches through cherry-pick")
 
@@ -108,13 +110,12 @@ def monitor_subject(monitoring_subject, repo):
         # We only want to check downstream patches as old as the
         # oldest upstream missing patch's commit_time, as an
         # optimization.
-        earliest_commit_date = min(p.commitTime for p in upstream_missing_patches)
-        logging.debug("Processing commits since " + str(earliest_commit_date))
+        earliest_commit_date = min(
+            p.commitTime for p in upstream_missing_patches
+        ).isoformat()
+        logging.debug(f"Processing commits since {earliest_commit_date}")
         downstream_patches = process_commits(
-            repo,
-            monitoring_subject.revision,
-            filenames,
-            since_time=earliest_commit_date,
+            repo, monitoring_subject.revision, paths, since=earliest_commit_date,
         )
         downstream_matcher = DownstreamMatcher(downstream_patches)
 
@@ -178,9 +179,13 @@ def monitor_subject(monitoring_subject, repo):
 
 
 def monitor_downstream():
+    print("Monitoring downstream...")
     # Linux repo is assumed to be present
-    path_to_linux = os.path.join(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME)
-    repo = git.Repo(path_to_linux)
+    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
+    if not repo_path.exists():
+        logging.error("Linux repo does not exist! Run with `--upstream` first!")
+        sys.exit(1)
+    repo = Repo(repo_path)
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()
@@ -194,9 +199,12 @@ def monitor_downstream():
                 repo.create_remote(distroID, url=repoLink)
 
     # Update all remotes, and tags of all remotes
-    logging.info("Fetching updates to all repos and tags.")
-    repo.git.fetch("--all", "--tags")
-    logging.debug("Fetched!")
+    if Util.Config.fetch:
+        logging.info("Fetching updates to all repos and tags.")
+        repo.git.fetch(
+            f"--all", "--tags", "--force", "--shallow-since='{Util.Config.since}'"
+        )
+        logging.debug("Fetched!")
 
     logging.info("Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
@@ -215,3 +223,4 @@ def monitor_downstream():
                     % (subject.distroID, subject.revision)
                 )
                 monitor_subject(subject, repo)
+    print("Finished monitoring downstream!")
