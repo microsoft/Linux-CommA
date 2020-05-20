@@ -8,7 +8,15 @@ import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
 from UpstreamTracker.MonitorUpstream import get_tracked_paths
-from Util.util import list_diff
+
+
+def list_diff(list1, list2):
+    """
+    list_diff gives list1 - list2=items in list1 which are not present in list2
+    params: 2 lists
+    return: list
+    """
+    return list(set(list1) - set(list2))
 
 
 def get_symbols(repo_dir, files):

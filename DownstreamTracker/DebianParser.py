@@ -11,7 +11,13 @@ import Util.Constants as cst
 from DatabaseDriver.DistroMatch import DistroMatch
 from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
 from UpstreamTracker.ParseData import get_patch_object, insert_patch
-from Util.util import contains_filepath
+
+
+def contains_filepath(filepath1, filepath2):
+    """
+    contains_filepath checks if file1 is contained in filepath of file2
+    """
+    return filepath2.startswith(filepath1)
 
 
 def check_hyperV_patch(patch_filenames, filenames):
