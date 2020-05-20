@@ -1,9 +1,62 @@
 import logging
+import pathlib
 
-from Util.Config import paths_to_track
+import git
+
+import Util.Config
 
 
-def get_tracked_paths(repo, revision="master"):
+def get_repo_path(name: str) -> pathlib.Path:
+    return pathlib.Path("Repos", name).resolve()
+
+
+# Global state tracking for repos which have been updated.
+updated_repos = set()
+
+
+def get_repo(
+    name="linux.git",
+    url="https://github.com/torvalds/linux.git",
+    bare=True,
+    pull=False,
+) -> git.Repo:
+    """Clone and optionally update a repo, returning the object.
+
+    By default this clones the Linux repo to 'name' from 'url',
+    optionally 'bare', and returns the 'git.Repo' object. It only
+    fetches or pulls once per session, and only if told to do so.
+    """
+    repo = None
+    path = get_repo_path(name)
+    if path.exists():
+        repo = git.Repo(path)
+        if name not in updated_repos:
+            if pull:
+                logging.info(f"Pulling '{name}' repo...")
+                repo.remotes.origin.pull()
+                logging.info("Pulled!")
+            elif Util.Config.fetch:
+                logging.info(f"Fetching '{name}' repo...")
+                repo.git.fetch(
+                    "--all",
+                    "--tags",
+                    "--force",
+                    f"--shallow-since={Util.Config.since}",
+                )
+                logging.info("Fetched!")
+    else:
+        logging.info(f"Cloning '{name}' repo from '{url}'...")
+        repo = git.Repo.clone_from(
+            url, path, bare=bare, shallow_since=Util.Config.since,
+        )
+        logging.info("Cloned!")
+    # We either cloned, pulled, fetched, or purposefully skipped doing
+    # so. Don't update the repo again this session.
+    updated_repos.add(name)
+    return repo
+
+
+def get_tracked_paths():
     """
     This function will parse maintainers file to get hyperV filenames
 
@@ -11,9 +64,10 @@ def get_tracked_paths(repo, revision="master"):
     revision: Revision of the git repository to look at
     """
     logging.debug("Parsing maintainers files...")
+    repo = get_repo()
     found_hyperv_block = False
     paths = []
-    maintainers_file_content = repo.git.show(f"{revision}:MAINTAINERS")
+    maintainers_file_content = repo.git.show("master:MAINTAINERS")
 
     for line in maintainers_file_content.split("\n"):
         if "Hyper-V CORE AND DRIVERS" in line:
@@ -33,6 +87,6 @@ def get_tracked_paths(repo, revision="master"):
             break
     logging.debug("Parsed!")
     # TODO: Remove duplicates and validate
-    paths.extend(paths_to_track)
+    paths.extend(Util.Config.paths_to_track)
     assert paths is not None
     return paths
