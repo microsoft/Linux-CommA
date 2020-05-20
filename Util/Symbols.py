@@ -7,7 +7,7 @@ from git import Repo
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-from UpstreamTracker.MonitorUpstream import get_tracked_paths
+from Util.Tracking import get_tracked_paths
 
 
 def list_diff(list1, list2):

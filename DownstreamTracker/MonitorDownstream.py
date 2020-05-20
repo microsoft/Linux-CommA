@@ -14,8 +14,8 @@ from DatabaseDriver.SqlClasses import (
     PatchData,
 )
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from UpstreamTracker.MonitorUpstream import get_tracked_paths
 from UpstreamTracker.ParseData import process_commits
+from Util.Tracking import get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
