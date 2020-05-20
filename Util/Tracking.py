@@ -1,6 +1,6 @@
 import logging
 
-from Util.Config import filepaths_to_track
+from Util.Config import paths_to_track
 
 
 def get_tracked_paths(repo, revision="master"):
@@ -12,8 +12,8 @@ def get_tracked_paths(repo, revision="master"):
     """
     logging.debug("Parsing maintainers files...")
     found_hyperv_block = False
-    file_names = []
-    maintainers_file_content = repo.git.show("%s:%s" % (revision, "MAINTAINERS"))
+    paths = []
+    maintainers_file_content = repo.git.show(f"{revision}:MAINTAINERS")
 
     for line in maintainers_file_content.split("\n"):
         if "Hyper-V CORE AND DRIVERS" in line:
@@ -27,12 +27,12 @@ def get_tracked_paths(repo, revision="master"):
                 and len(file_path) != 0
                 and "Documentation" not in file_path
             ):
-                file_names.append(file_path)
+                paths.append(file_path)
         # Check if we have reached the end of hyperv block
         if found_hyperv_block and line == "":
             break
     logging.debug("Parsed!")
     # TODO: Remove duplicates and validate
-    file_names.extend(filepaths_to_track)
-    assert file_names is not None
-    return file_names
+    paths.extend(paths_to_track)
+    assert paths is not None
+    return paths

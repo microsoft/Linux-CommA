@@ -35,4 +35,4 @@ Guildelines:
     * e.g. arch/x86/include/asm/mshyperv.h
     * please refer to Hyper-V block under MAINTAINERS file to avoid duplicates.
 """
-filepaths_to_track = []
+paths_to_track = []
