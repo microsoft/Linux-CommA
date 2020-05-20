@@ -1,6 +1,7 @@
 schedules:
 - cron: "0 9 * * *"
   displayName: 'Update prod every day.'
+  always: true
   branches:
     include:
     - master
