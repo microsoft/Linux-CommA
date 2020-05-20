@@ -108,7 +108,10 @@ def monitor_subject(monitoring_subject, repo):
         ).isoformat()
         logging.debug(f"Processing commits since {earliest_commit_date}")
         downstream_patches = process_commits(
-            repo, monitoring_subject.revision, paths, since=earliest_commit_date,
+            repo,
+            paths,
+            revision=monitoring_subject.revision,
+            since=earliest_commit_date,
         )
         downstream_matcher = DownstreamMatcher(downstream_patches)
 
