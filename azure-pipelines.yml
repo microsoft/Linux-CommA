@@ -79,7 +79,7 @@ jobs:
   - script: |
       source $HOME/.poetry/env
       touch symbols.txt
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose print-symbols
+      poetry run ./CommA.py --dry-run --no-fetch --verbose print-symbols
     displayName: 'CommA: Print Missing Symbols'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 

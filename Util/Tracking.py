@@ -18,6 +18,7 @@ def get_repo(
     name="linux.git",
     url="https://github.com/torvalds/linux.git",
     bare=True,
+    shallow=True,
     pull=False,
 ) -> git.Repo:
     """Clone and optionally update a repo, returning the object.
@@ -46,9 +47,10 @@ def get_repo(
                 logging.info("Fetched!")
     else:
         logging.info(f"Cloning '{name}' repo from '{url}'...")
-        repo = git.Repo.clone_from(
-            url, path, bare=bare, shallow_since=Util.Config.since,
-        )
+        args = {"bare": bare}
+        if shallow:
+            args.update({"shallow_since": Util.Config.since})
+        repo = git.Repo.clone_from(url, path, **args)
         logging.info("Cloned!")
     # We either cloned, pulled, fetched, or purposefully skipped doing
     # so. Don't update the repo again this session.
