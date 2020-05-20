@@ -1,11 +1,6 @@
 import logging
-import sys
-from pathlib import Path
-
-from git import Repo
 
 import Util.Config
-import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import (
     Distros,
@@ -15,7 +10,7 @@ from DatabaseDriver.SqlClasses import (
 )
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from UpstreamTracker.ParseData import process_commits
-from Util.Tracking import get_tracked_paths
+from Util.Tracking import get_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -84,7 +79,7 @@ def monitor_subject(monitoring_subject, repo):
     """
 
     missing_patch_ids = None
-    paths = get_tracked_paths(repo)
+    paths = get_tracked_paths()
 
     # This returns patches missing in the repo with very good accuracy, but isn't perfect
     # So, we run extra checks to confirm the missing patches.
@@ -178,12 +173,7 @@ def monitor_subject(monitoring_subject, repo):
 
 def monitor_downstream():
     print("Monitoring downstream...")
-    # Linux repo is assumed to be present
-    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
-    if not repo_path.exists():
-        logging.error("Linux repo does not exist! Run with `--upstream` first!")
-        sys.exit(1)
-    repo = Repo(repo_path)
+    repo = get_repo()
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()

@@ -1,40 +1,34 @@
 import logging
 import os
+import pathlib
 import sys
 import xml.etree.ElementTree
-from pathlib import Path
 
-from git import Repo
-
-import Util.Constants
+import Util.Tracking
 
 
 class DatabaseCredentials:
     def __init__(self):
-        secrets_path = Path(Util.Constants.PATH_TO_REPOS, "secrets").resolve()
-        if secrets_path.exists():
-            repo = Repo(secrets_path)
-            logging.info("Pulling recent changes for secrets repo...")
-            repo.remotes.origin.pull()
-            logging.info("Pull complete.")
-        else:
-            logging.info("Cloning secrets repo...")
-            env_var = "COMMA_SECRETS_URL"
-            secrets_url = os.environ.get(env_var)
-            if secrets_url is None:
-                logging.error(
-                    f"Please set the environment variable '{env_var}' as the URL to clone your secrets repo."
-                )
-                sys.exit(1)
-            Repo.clone_from(
-                secrets_url, secrets_path,
+        path = Util.Tracking.get_repo_path("secrets")
+
+        env_var = "COMMA_SECRETS_URL"
+        secrets_url = os.environ.get(env_var)
+        if not path.exists() and secrets_url is None:
+            logging.error(
+                f"Please set the environment variable '{env_var}' as the URL to clone your secrets repo."
             )
-            logging.info("Cloning complete.")
-        tree = xml.etree.ElementTree.parse(
+            sys.exit(1)
+
+        # NOTE: It is possible that `secrets_url` might be `None`, but
+        # at this point we're assuming it's already cloned and
+        # therefore just needs to be pulled.
+        Util.Tracking.get_repo(name="secrets", url=secrets_url, bare=False, pull=True)
+
+        root = xml.etree.ElementTree.parse(
             # TODO: Rename XML file to e.g. `CommASecrets.xml`.
-            Path(secrets_path, "PatchTrackerSecrets.xml").resolve()
-        )
-        root = tree.getroot()
+            pathlib.Path(path, "PatchTrackerSecrets.xml").resolve()
+        ).getroot()
+
         self.server = root.find("DatabaseServer").text
         self.name = root.find("DatabaseName").text
         self.user = root.find("DatabaseUser").text

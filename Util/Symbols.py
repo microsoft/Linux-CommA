@@ -1,13 +1,9 @@
 import logging
 import subprocess
-from pathlib import Path
 
-from git import Repo
-
-import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-from Util.Tracking import get_tracked_paths
+from Util.Tracking import get_repo, get_tracked_paths
 
 
 def list_diff(list1, list2):
@@ -81,32 +77,14 @@ def get_hyperv_patch_symbols():
     """
     This function clones upstream and gets upstream commits, hyperV files
     """
-    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_SYMBOL_REPO_NAME).resolve()
-    if repo_path.exists():
-        repo = Repo(repo_path)
-        logging.info("Fetching Linux symbol checkout...")
-        repo.git.fetch()
-        logging.info("Fetched!")
-    else:
-        # TODO: Return this code when we fix the issue with shallow fetch.
-        # upstream_repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
-        source_repo = (
-            # upstream_repo_path
-            # if upstream_repo_path.exists()
-            # else
-            "https://github.com/torvalds/linux.git"
-        )
-        logging.info(f"Cloning Linux symbol checkout from '{source_repo}'")
-        repo = Repo.clone_from("https://github.com/torvalds/linux.git", repo_path)
-        logging.info("Cloned!")
-
     with DatabaseDriver.get_session() as s:
         # Only annoying thing with SQLAlchemy is that this always
         # returns tuples which we need to unwrap.
         commits = [
             c for c, in s.query(PatchData.commitID).order_by(PatchData.commitTime).all()
         ]
-        map_symbols_to_patch(repo, commits, get_tracked_paths(repo, "origin/master"))
+        repo = get_repo(name="linux-sym", bare=False)
+        map_symbols_to_patch(repo, commits, get_tracked_paths())
 
 
 def symbol_checker(symbol_file):
