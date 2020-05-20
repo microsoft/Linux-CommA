@@ -7,7 +7,7 @@ from git import Repo
 import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
+from UpstreamTracker.MonitorUpstream import get_tracked_paths
 from Util.util import list_diff
 
 
@@ -92,18 +92,13 @@ def get_hyperv_patch_symbols():
         repo = Repo.clone_from("https://github.com/torvalds/linux.git", repo_path)
         logging.info("Cloned!")
 
-    logging.debug("Parsing maintainers files...")
-    filenames = get_hyperv_filenames(repo, "origin/master")
-    assert filenames is not None
-    logging.debug("Parsed!")
-
     with DatabaseDriver.get_session() as s:
         # Only annoying thing with SQLAlchemy is that this always
         # returns tuples which we need to unwrap.
         commits = [
             c for c, in s.query(PatchData.commitID).order_by(PatchData.commitTime).all()
         ]
-        map_symbols_to_patch(repo, commits, filenames)
+        map_symbols_to_patch(repo, commits, get_tracked_paths(repo, "origin/master"))
 
 
 def symbol_checker(symbol_file):

@@ -14,10 +14,8 @@ from DatabaseDriver.SqlClasses import (
     PatchData,
 )
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
+from UpstreamTracker.MonitorUpstream import get_tracked_paths
 from UpstreamTracker.ParseData import process_commits
-
-# from DownstreamTracker.DebianParser import monitor_debian
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -86,7 +84,7 @@ def monitor_subject(monitoring_subject, repo):
     """
 
     missing_patch_ids = None
-    paths = get_hyperv_filenames(repo)
+    paths = get_tracked_paths(repo)
 
     # This returns patches missing in the repo with very good accuracy, but isn't perfect
     # So, we run extra checks to confirm the missing patches.
