@@ -6,18 +6,6 @@ since = "4 years ago"
 verbose = 0
 default_distros = [
     Distros(
-        distroID="Ubuntu16.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/xenial",
-    ),
-    Distros(
-        distroID="Ubuntu18.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic",
-    ),
-    Distros(
-        distroID="Ubuntu19.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/disco",
-    ),
-    Distros(
         distroID="Ubuntu19.10",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/eoan",
     ),
