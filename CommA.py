@@ -8,7 +8,10 @@ from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
 from Util.Symbols import print_missing_symbols
+from Util.Tracking import print_tracked_paths
 
+# TODO: We have a lot of parsers and could refactor them into their
+# own modules.
 parser = argparse.ArgumentParser(description="Linux Commit Analyzer.")
 parser.add_argument(
     "-n",
@@ -40,6 +43,10 @@ def run(args):
         with DatabaseDriver.get_session() as s:
             if s.query(Distros).first() is None:
                 s.add_all(Util.Config.default_distros)
+    if args.section:
+        Util.Config.sections = args.section
+    if args.print_tracked_paths:
+        print_tracked_paths()
     if args.upstream:
         monitor_upstream()
     if args.downstream:
@@ -52,6 +59,19 @@ run_parser.add_argument(
 )
 run_parser.add_argument(
     "-d", "--downstream", action="store_true", help="Monitor the downstream patches."
+)
+run_parser.add_argument(
+    "-p",
+    "--print-tracked-paths",
+    action="store_true",
+    help="Print the paths that would be analyzed.",
+)
+run_parser.add_argument(
+    "-s",
+    "--section",
+    action="append",
+    default=Util.Config.sections,
+    help="List of kernel section entries in MAINTAINERS file to analyze.",
 )
 run_parser.set_defaults(func=run)
 
