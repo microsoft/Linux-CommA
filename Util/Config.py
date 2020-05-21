@@ -4,7 +4,7 @@ dry_run = False
 fetch = True
 since = "4 years ago"
 verbose = 0
-sections = ["Hyper-V CORE AND DRIVERS"]
+sections = ["Hyper-V CORE AND DRIVERS", "COMMON INTERNET FILE SYSTEM"]
 default_distros = [
     Distros(
         distroID="Ubuntu19.10",
