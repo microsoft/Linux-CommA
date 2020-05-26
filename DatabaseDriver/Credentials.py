@@ -21,8 +21,12 @@ class DatabaseCredentials:
 
         # NOTE: It is possible that `secrets_url` might be `None`, but
         # at this point we're assuming it's already cloned and
-        # therefore just needs to be pulled.
-        Util.Tracking.get_repo(name="secrets", url=secrets_url, bare=False, pull=True)
+        # therefore just needs to be pulled. Also, it is possible the
+        # _server_ from which we're cloning does not support
+        # `--shallow-since`, so we have to disable this here.
+        Util.Tracking.get_repo(
+            name="secrets", url=secrets_url, bare=False, shallow=False, pull=True
+        )
 
         root = xml.etree.ElementTree.parse(
             # TODO: Rename XML file to e.g. `CommASecrets.xml`.
