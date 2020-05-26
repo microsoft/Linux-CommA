@@ -4,8 +4,9 @@ import os
 import sys
 from datetime import datetime
 
+import git
+
 import Util.Config
-from git import Repo
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
 
@@ -33,7 +34,11 @@ def should_keep_line(line: str):
 
 
 def process_commits(
-    repo: Repo, rev, paths, add_to_database=False, since=Util.Config.since
+    repo: git.Repo,
+    paths,
+    revision="master",
+    add_to_database=False,
+    since=Util.Config.since,
 ) -> list:
     """
     Look at all commits in the given repo and handle based on distro.
@@ -51,10 +56,10 @@ def process_commits(
     # We use `--min-parents=1 --max-parents=1` to avoid both merges
     # and graft commits.
     commits = repo.iter_commits(
-        rev=rev, paths=paths, min_parents=1, max_parents=1, since=since
+        rev=revision, paths=paths, min_parents=1, max_parents=1, since=since
     )
 
-    logging.info("Starting commit processing..")
+    logging.info("Starting commit processing...")
     for commit in commits:
         logging.debug(f"Parsing commit {commit.hexsha}")
         patch = PatchData(

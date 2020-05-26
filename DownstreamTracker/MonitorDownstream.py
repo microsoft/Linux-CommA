@@ -1,11 +1,6 @@
 import logging
-import sys
-from pathlib import Path
-
-from git import Repo
 
 import Util.Config
-import Util.Constants as cst
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import (
     Distros,
@@ -14,10 +9,8 @@ from DatabaseDriver.SqlClasses import (
     PatchData,
 )
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
-from UpstreamTracker.MonitorUpstream import get_hyperv_filenames
 from UpstreamTracker.ParseData import process_commits
-
-# from DownstreamTracker.DebianParser import monitor_debian
+from Util.Tracking import get_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -86,7 +79,7 @@ def monitor_subject(monitoring_subject, repo):
     """
 
     missing_patch_ids = None
-    paths = get_hyperv_filenames(repo)
+    paths = get_tracked_paths()
 
     # This returns patches missing in the repo with very good accuracy, but isn't perfect
     # So, we run extra checks to confirm the missing patches.
@@ -115,7 +108,10 @@ def monitor_subject(monitoring_subject, repo):
         ).isoformat()
         logging.debug(f"Processing commits since {earliest_commit_date}")
         downstream_patches = process_commits(
-            repo, monitoring_subject.revision, paths, since=earliest_commit_date,
+            repo,
+            paths,
+            revision=monitoring_subject.revision,
+            since=earliest_commit_date,
         )
         downstream_matcher = DownstreamMatcher(downstream_patches)
 
@@ -180,12 +176,7 @@ def monitor_subject(monitoring_subject, repo):
 
 def monitor_downstream():
     print("Monitoring downstream...")
-    # Linux repo is assumed to be present
-    repo_path = Path(cst.PATH_TO_REPOS, cst.LINUX_REPO_NAME).resolve()
-    if not repo_path.exists():
-        logging.error("Linux repo does not exist! Run with `--upstream` first!")
-        sys.exit(1)
-    repo = Repo(repo_path)
+    repo = get_repo()
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()
@@ -200,7 +191,7 @@ def monitor_downstream():
 
     # Update all remotes, and tags of all remotes
     if Util.Config.fetch:
-        logging.info("Fetching updates to all repos and tags.")
+        logging.info("Fetching updates to all repos and tags...")
         repo.git.fetch(
             f"--all", "--tags", "--force", "--shallow-since='{Util.Config.since}'"
         )

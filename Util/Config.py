@@ -4,19 +4,8 @@ dry_run = False
 fetch = True
 since = "4 years ago"
 verbose = 0
+sections = ["Hyper-V CORE AND DRIVERS", "COMMON INTERNET FILE SYSTEM"]
 default_distros = [
-    Distros(
-        distroID="Ubuntu16.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/xenial",
-    ),
-    Distros(
-        distroID="Ubuntu18.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic",
-    ),
-    Distros(
-        distroID="Ubuntu19.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/disco",
-    ),
     Distros(
         distroID="Ubuntu19.10",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/eoan",
@@ -35,4 +24,4 @@ Guildelines:
     * e.g. arch/x86/include/asm/mshyperv.h
     * please refer to Hyper-V block under MAINTAINERS file to avoid duplicates.
 """
-filepaths_to_track = []
+paths_to_track = []
