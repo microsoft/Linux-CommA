@@ -31,11 +31,10 @@ jobs:
     displayName: 'Cache Python packages'
 
   - script: |
+      # NOTE: Microsoft SQL Tools are already installed on this image.
       curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-      curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-      curl -sSL https://packages.microsoft.com/config/ubuntu/18.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
       sudo apt-get update
-      sudo apt-get install mssql-tools unixodbc-dev exuberant-ctags
+      sudo apt-get install exuberant-ctags
     displayName: 'Install system dependencies'
 
   - script: |
