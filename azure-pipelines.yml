@@ -60,19 +60,19 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
+      poetry run ./CommA.py --dry-run --since '6 months ago' --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
     displayName: 'CommA: Add single downstream distro'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose run --upstream
+      poetry run ./CommA.py --dry-run --since '6 months ago' --verbose run --upstream
     displayName: 'CommA: Monitor Upstream'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose run --downstream
+      poetry run ./CommA.py --dry-run --since '6 months ago' --verbose run --downstream
     displayName: 'CommA: Monitor Downstream'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
