@@ -45,17 +45,17 @@ jobs:
   - script: |
       source $HOME/.poetry/env
       poetry run flake8
-    displayName: 'semantics check with flake8'
+    displayName: 'Semantics check with flake8'
 
   - script: |
       source $HOME/.poetry/env
       poetry run isort --check-only
-    displayName: 'import check with isort'
+    displayName: 'Import check with isort'
 
   - script: |
       source $HOME/.poetry/env
       poetry run black --check .
-    displayName: 'formatting check with black'
+    displayName: 'Formatting check with black'
 
   - script: |
       source $HOME/.poetry/env
