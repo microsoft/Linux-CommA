@@ -44,6 +44,16 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
+      poetry export --dev --format requirements.txt --output requirements.txt
+    displayName: 'Export dependencies for Component Governance Detection'
+
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    inputs:
+      failOnAlert: true
+    displayName: 'Microsoft Internal Open Source Component Governance Detection'
+
+  - script: |
+      source $HOME/.poetry/env
       poetry run flake8
     displayName: 'Semantics check with flake8'
 
