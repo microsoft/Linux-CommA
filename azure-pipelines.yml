@@ -31,11 +31,10 @@ jobs:
     displayName: 'Cache Python packages'
 
   - script: |
+      # NOTE: Microsoft SQL Tools are already installed on this image.
       curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-      curl -sSL https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-      curl -sSL https://packages.microsoft.com/config/ubuntu/18.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
       sudo apt-get update
-      sudo apt-get install mssql-tools unixodbc-dev exuberant-ctags
+      sudo apt-get install exuberant-ctags
     displayName: 'Install system dependencies'
 
   - script: |
@@ -45,34 +44,44 @@ jobs:
 
   - script: |
       source $HOME/.poetry/env
+      poetry export --dev --format requirements.txt --output requirements.txt
+    displayName: 'Export dependencies for Component Governance Detection'
+
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    inputs:
+      failOnAlert: true
+    displayName: 'Microsoft Internal Open Source Component Governance Detection'
+
+  - script: |
+      source $HOME/.poetry/env
       poetry run flake8
-    displayName: 'semantics check with flake8'
+    displayName: 'Semantics check with flake8'
 
   - script: |
       source $HOME/.poetry/env
       poetry run isort --check-only
-    displayName: 'import check with isort'
+    displayName: 'Import check with isort'
 
   - script: |
       source $HOME/.poetry/env
       poetry run black --check .
-    displayName: 'formatting check with black'
+    displayName: 'Formatting check with black'
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
+      poetry run ./CommA.py --dry-run --since '6 months ago' --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
     displayName: 'CommA: Add single downstream distro'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose run --upstream
+      poetry run ./CommA.py --dry-run --since '6 months ago' --verbose run --upstream
     displayName: 'CommA: Monitor Upstream'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
-      poetry run ./CommA.py --dry-run --since '1 month ago' --verbose run --downstream
+      poetry run ./CommA.py --dry-run --since '6 months ago' --verbose run --downstream
     displayName: 'CommA: Monitor Downstream'
     condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 

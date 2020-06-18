@@ -193,7 +193,7 @@ def monitor_downstream():
     if Util.Config.fetch:
         logging.info("Fetching updates to all repos and tags...")
         repo.git.fetch(
-            f"--all", "--tags", "--force", "--shallow-since='{Util.Config.since}'"
+            "--all", "--tags", "--force", f"--shallow-since='{Util.Config.since}'"
         )
         logging.debug("Fetched!")
 

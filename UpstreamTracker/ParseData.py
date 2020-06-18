@@ -1,7 +1,4 @@
-import inspect
 import logging
-import os
-import sys
 from datetime import datetime
 
 import git
@@ -9,10 +6,6 @@ import git
 import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
 
 
 def should_keep_line(line: str):
