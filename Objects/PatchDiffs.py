@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 class PatchDiffs:
     def __init__(self, git_diff):
         """

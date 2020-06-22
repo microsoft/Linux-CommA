@@ -1,3 +1,5 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
 schedules:
 - cron: "0 9 * * *"
   displayName: 'Update prod every day.'

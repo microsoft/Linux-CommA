@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+#
 # TODO: This file is unused and therefore untested and quite broken.
 # It was work-in-progress to support monitoring Debian based on patch
 # files instead of commits.
