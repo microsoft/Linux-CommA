@@ -1,15 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-schedules:
-- cron: "0 9 * * *"
-  displayName: 'Update prod every day.'
-  always: true
-  branches:
-    include:
-    - master
-
 trigger:
-- master
+- main
 
 jobs:
 - job:
@@ -73,38 +65,19 @@ jobs:
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run --since '6 months ago' --verbose add-distro --name 'Ubuntu18.04' --url 'https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic' --revision 'Ubuntu-azure-5.0.0-1036.38'
     displayName: 'CommA: Add single downstream distro'
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run --since '6 months ago' --verbose run --upstream
     displayName: 'CommA: Monitor Upstream'
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       poetry run ./CommA.py --dry-run --since '6 months ago' --verbose run --downstream
     displayName: 'CommA: Monitor Downstream'
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
 
   - script: |
       source $HOME/.poetry/env
       touch symbols.txt
       poetry run ./CommA.py --dry-run --no-fetch --verbose print-symbols
     displayName: 'CommA: Print Missing Symbols'
-    condition: and(succeeded(), ne(variables['Build.Reason'], 'Schedule'))
-
-  - task: DownloadSecureFile@1
-    name: credentials
-    displayName: 'Download Git Credentials'
-    condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
-    inputs:
-      secureFile: '.git-credentials'
-
-  - script: |
-      cp $(credentials.secureFilePath) ~/.git-credentials
-      git config --global credential.helper store
-      source $HOME/.poetry/env
-      poetry run ./CommA.py --verbose run --upstream --downstream
-    displayName: 'CommA: Production Database Update'
-    condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
