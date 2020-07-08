@@ -1,5 +1,7 @@
 # Linux Commit Analyzer (CommA)
 
+[![Build Status](https://dev.azure.com/ms/Linux-CommA/_apis/build/status/microsoft.Linux-CommA?branchName=main)](https://dev.azure.com/ms/Linux-CommA/_build/latest?definitionId=366&branchName=main)
+
 This tool populates a database with the details of which patches that are
 upstream (in `linux-mainline`) are missing from distros in their downstream
 kernels (e.g. Ubuntu kernels). For our use case, we are looking at Hyper-V
