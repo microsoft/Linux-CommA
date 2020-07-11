@@ -118,3 +118,6 @@ comma.db
 
 # Symbol file
 /symbols.txt
+
+# Spreadsheets
+*.xlsx

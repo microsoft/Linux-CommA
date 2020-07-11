@@ -11,6 +11,7 @@ from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
 from Util.Symbols import print_missing_symbols
 from Util.Tracking import print_tracked_paths
+from Util.Export import export_spreadsheet
 
 # TODO: We have a lot of parsers and could refactor them into their
 # own modules.
@@ -90,6 +91,16 @@ symbol_parser.add_argument(
     help="File with symbols to compare against.",
 )
 symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
+
+export_parser = subparsers.add_parser("export", help="Export to Excel Spreadsheet.",)
+export_parser.add_argument(
+    "-f",
+    "--file",
+    type=argparse.FileType("r"),
+    default="spreadsheet.xlsx",
+    help="Spreadsheet to modify.",
+)
+export_parser.set_defaults(func=(lambda args: export_spreadsheet(args.file)))
 
 
 def get_distros(args):
