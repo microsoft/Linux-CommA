@@ -10,6 +10,16 @@ import git
 import Util.Config
 
 
+def get_filenames(commit: git.Commit):
+    if len(commit.parents) == 0:
+        return []
+    diffs = commit.tree.diff(commit.parents[0])
+    # Sometimes a path is in A and not B but we want all filenames.
+    a = {diff.a_path for diff in diffs if diff.a_path is not None}
+    b = {diff.b_path for diff in diffs if diff.b_path is not None}
+    return list(a | b)
+
+
 def get_repo_path(name: str) -> pathlib.Path:
     return pathlib.Path("Repos", name).resolve()
 
