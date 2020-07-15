@@ -3,11 +3,21 @@
 import itertools
 import logging
 import pathlib
-from typing import List
+from typing import List, Set
 
 import git
 
 import Util.Config
+
+
+def get_filenames(commit: git.Commit) -> List[str]:
+    if len(commit.parents) == 0:
+        return []
+    diffs = commit.tree.diff(commit.parents[0])
+    # Sometimes a path is in A and not B but we want all filenames.
+    a = {diff.a_path for diff in diffs if diff.a_path is not None}
+    b = {diff.b_path for diff in diffs if diff.b_path is not None}
+    return list(a | b)
 
 
 def get_repo_path(name: str) -> pathlib.Path:
@@ -62,7 +72,7 @@ def get_repo(
     return repo
 
 
-def get_files(section: str, content: List[str]) -> List[str]:
+def get_files(section: str, content: List[str]) -> Set[str]:
     """Get list of files under section.
 
     The MAINTAINERS file sections look like:
@@ -84,26 +94,27 @@ def get_files(section: str, content: List[str]) -> List[str]:
     # Take until we reach end of section.
     content = itertools.takewhile(lambda x: x.strip() != "", content)
     # Extract file paths from section.
-    paths = [x.strip().split()[-1] for x in content if x.startswith("F:")]
+    paths = {x.strip().split()[-1] for x in content if x.startswith("F:")}
     # Drop Documentation and return everything else.
-    return [x for x in paths if not x.startswith("Documentation")]
+    return {x for x in paths if not x.startswith("Documentation")}
 
 
-def get_tracked_paths(sections=Util.Config.sections):
+def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
     """Get list of files from MAINTAINERS for given sections.
 
     """
     logging.debug("Parsing MAINTAINERS file...")
     repo = get_repo()
-    paths = []
-    # TODO: Run those over several revisions bisecting the last few
-    # years of history and then deduplicate the paths, that way we
-    # don't miss anything.
-    maintainers = repo.git.show("master:MAINTAINERS").split("\n")
-    for section in sections:
-        paths += get_files(section, maintainers)
+    paths = set()
+    # All tag commits starting with v4, also master.
+    commits = repo.git.tag("v[^123]*", list=True).split()
+    commits.append("master")
+    for commit in commits:
+        maintainers = repo.git.show(f"{commit}:MAINTAINERS").split("\n")
+        for section in sections:
+            paths |= get_files(section, maintainers)
     logging.debug("Parsed!")
-    return paths
+    return sorted(paths)
 
 
 def print_tracked_paths():

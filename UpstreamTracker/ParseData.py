@@ -8,6 +8,7 @@ import git
 import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
+from Util.Tracking import get_filenames
 
 
 def should_keep_line(line: str):
@@ -94,6 +95,16 @@ def process_commits(
                     fixed_patches.append(words[1])
             patch.fixedPatches = " ".join(fixed_patches)
 
+        patch.affectedFilenames = " ".join(get_filenames(commit))
+
+        # Parse diff to only keep lines with changes (+ or - at start)
+        # diff is passed in as bytes
+        def parse_diff(diff):
+            diff_lines = diff.decode("utf-8").splitlines()
+            return "\n".join(
+                filter(lambda line: line.startswith(("+", "-")), diff_lines)
+            )
+
         if len(commit.parents) == 0:
             # First ever commit, we don't need to store this as
             # it'll be present in any distro as it's needed
@@ -105,25 +116,6 @@ def process_commits(
             commit_diffs = commit.tree.diff(
                 commit.parents[0], paths=paths, create_patch=True
             )
-
-        # Sometimes a path is in a and not b, we want all affect filenames.
-        filenames_list_a = {
-            diff.a_path for diff in commit_diffs if diff.a_path is not None
-        }
-        filenames_list_b = {
-            diff.b_path for diff in commit_diffs if diff.b_path is not None
-        }
-        filenames_list = list(filenames_list_a | filenames_list_b)
-        patch.affectedFilenames = " ".join(filenames_list)
-
-        # Parse diff to only keep lines with changes (+ or - at start)
-        # diff is passed in as bytes
-        def parse_diff(diff):
-            diff_lines = diff.decode("utf-8").splitlines()
-            return "\n".join(
-                filter(lambda line: line.startswith(("+", "-")), diff_lines)
-            )
-
         # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
         patch.commitDiffs = "\n".join(
             [
