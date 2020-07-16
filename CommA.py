@@ -94,13 +94,14 @@ symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
 
 export_parser = subparsers.add_parser("export", help="Export to Excel Spreadsheet.",)
 export_parser.add_argument(
-    "-f",
-    "--file",
-    type=argparse.FileType("r"),
-    default="spreadsheet.xlsx",
-    help="Spreadsheet to modify.",
+    "-i", "--in-file", default="input.xlsx", help="Spreadsheet to modify.",
 )
-export_parser.set_defaults(func=(lambda args: export_spreadsheet(args.file)))
+export_parser.add_argument(
+    "-o", "--out-file", default="output.xlsx", help="Spreadsheet to modify.",
+)
+export_parser.set_defaults(
+    func=(lambda args: export_spreadsheet(args.in_file, args.out_file))
+)
 
 
 def get_distros(args):
