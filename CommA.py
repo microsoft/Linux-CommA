@@ -45,6 +45,8 @@ def run(args):
         with DatabaseDriver.get_session() as s:
             if s.query(Distros).first() is None:
                 s.add_all(Util.Config.default_distros)
+            if s.query(MonitoringSubjects).first() is None:
+                s.add_all(Util.Config.default_monitoring_subjects)
     if args.section:
         Util.Config.sections = args.section
     if args.print_tracked_paths:
