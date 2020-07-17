@@ -2,13 +2,14 @@
 # Licensed under the MIT License.
 import logging
 from datetime import datetime
+from typing import List, Optional, Set
 
 import git
 
 import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-from Util.Tracking import get_filenames
+from Util.Tracking import get_filenames, get_repo, get_tracked_paths
 
 
 def should_keep_line(line: str):
@@ -30,12 +31,13 @@ def should_keep_line(line: str):
 
 
 def process_commits(
-    repo: git.Repo,
-    paths,
-    revision="master",
-    add_to_database=False,
-    since=Util.Config.since,
-) -> list:
+    repo: Optional[git.Repo] = get_repo(),
+    commit_ids: Optional[Set[str]] = None,
+    revision: str = "master",
+    paths: Optional[List[str]] = get_tracked_paths(),
+    add_to_database: bool = False,
+    since: str = Util.Config.since,
+) -> List[PatchData]:
     """
     Look at all commits in the given repo and handle based on distro.
 
@@ -49,11 +51,15 @@ def process_commits(
     num_patches = 0
     num_patches_added = 0
 
-    # We use `--min-parents=1 --max-parents=1` to avoid both merges
-    # and graft commits.
-    commits = repo.iter_commits(
-        rev=revision, paths=paths, min_parents=1, max_parents=1, since=since
-    )
+    if commit_ids is None:
+        # We use `--min-parents=1 --max-parents=1` to avoid both
+        # merges and graft commits.
+        commits = repo.iter_commits(
+            rev=revision, paths=paths, min_parents=1, max_parents=1, since=since
+        )
+    else:
+        # If given a list of commit SHAs, get the commit objects.
+        commits = [repo.commit(c) for c in commit_ids]
 
     logging.info("Starting commit processing...")
     for commit in commits:
