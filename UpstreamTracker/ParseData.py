@@ -59,7 +59,12 @@ def process_commits(
         )
     else:
         # If given a list of commit SHAs, get the commit objects.
-        commits = [repo.commit(c) for c in commit_ids]
+        commits = list()
+        for c in commit_ids:
+            try:
+                commits.append(repo.commit(c))
+            except ValueError:
+                logging.warning(f"Commit '{c}' does not exist in the repo! Skipping...")
 
     logging.info("Starting commit processing...")
     for commit in commits:
