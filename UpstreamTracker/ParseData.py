@@ -4,12 +4,10 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Set
 
-import git
-
 import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-from Util.Tracking import get_filenames, get_repo, get_tracked_paths
+from Util.Tracking import get_filenames, get_linux_repo, get_tracked_paths
 
 
 def should_keep_line(line: str):
@@ -31,7 +29,6 @@ def should_keep_line(line: str):
 
 
 def process_commits(
-    repo: Optional[git.Repo] = get_repo(),
     commit_ids: Optional[Set[str]] = None,
     revision: str = "master",
     add_to_database: bool = False,
@@ -49,6 +46,8 @@ def process_commits(
     all_patches = []
     num_patches = 0
     num_patches_added = 0
+
+    repo = get_linux_repo()
 
     if commit_ids is None:
         # We use `--min-parents=1 --max-parents=1` to avoid both

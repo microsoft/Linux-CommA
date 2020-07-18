@@ -12,7 +12,7 @@ from DatabaseDriver.SqlClasses import (
 )
 from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
 from UpstreamTracker.ParseData import process_commits
-from Util.Tracking import get_repo, get_tracked_paths
+from Util.Tracking import get_linux_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -109,7 +109,7 @@ def monitor_subject(monitoring_subject, repo):
         ).isoformat()
         logging.debug(f"Processing commits since {earliest_commit_date}")
         downstream_patches = process_commits(
-            repo=repo, revision=monitoring_subject.revision, since=earliest_commit_date,
+            revision=monitoring_subject.revision, since=earliest_commit_date,
         )
         downstream_matcher = DownstreamMatcher(downstream_patches)
 
@@ -174,7 +174,7 @@ def monitor_subject(monitoring_subject, repo):
 
 def monitor_downstream():
     print("Monitoring downstream...")
-    repo = get_repo()
+    repo = get_linux_repo()
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()

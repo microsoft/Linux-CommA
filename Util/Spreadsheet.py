@@ -126,7 +126,7 @@ def export_commits(in_file: str, out_file: str) -> None:
     # Collect the commits in the database which are not in the
     # workbook, but that we want to include.
     db_commits = get_db_commits()
-    repo = Util.Tracking.get_repo()
+    repo = Util.Tracking.get_linux_repo()
     base_commit = repo.commit("v4.11")
     missing_commits = [
         commit
