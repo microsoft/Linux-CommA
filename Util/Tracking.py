@@ -111,7 +111,8 @@ def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
     repo = get_repo()
     paths = set()
     # All tag commits starting with v4, also master.
-    commits = repo.git.tag("v[^123]*", list=True).split()
+    tags = repo.git.tag("v[^123]*", list=True).split()
+    commits = [c for c in tags if "-rc" not in c]
     commits.append("master")
     for commit in commits:
         maintainers = repo.git.show(f"{commit}:MAINTAINERS").split("\n")
