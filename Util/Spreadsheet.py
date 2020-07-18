@@ -45,6 +45,9 @@ def get_workbook(in_file: str) -> Tuple[workbook.Workbook, worksheet.Worksheet]:
         logging.error(f"The file {in_file} does not exist")
         sys.exit(1)
     wb = openpyxl.load_workbook(filename=in_file)
+    # Force refresh of pivot table in “Pivot” worksheet.
+    pivot = wb["Pivot"]._pivots[0]
+    pivot.cache.refreshOnLoad = True
     # The worksheet is manually named “git log”.
     ws = wb["git log"]
     return (wb, ws)
