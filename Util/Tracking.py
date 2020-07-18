@@ -99,10 +99,14 @@ def get_files(section: str, content: List[str]) -> Set[str]:
     return {x for x in paths if not x.startswith("Documentation")}
 
 
-def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
-    """Get list of files from MAINTAINERS for given sections.
+TRACKED_PATHS: List[str] = None
 
-    """
+
+def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
+    """Get list of files from MAINTAINERS for given sections."""
+    global TRACKED_PATHS
+    if TRACKED_PATHS is not None:
+        return TRACKED_PATHS
     logging.debug("Parsing MAINTAINERS file...")
     repo = get_repo()
     paths = set()
@@ -114,7 +118,8 @@ def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
         for section in sections:
             paths |= get_files(section, maintainers)
     logging.debug("Parsed!")
-    return sorted(paths)
+    TRACKED_PATHS = sorted(paths)
+    return TRACKED_PATHS
 
 
 def print_tracked_paths():

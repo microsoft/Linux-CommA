@@ -34,7 +34,6 @@ def process_commits(
     repo: Optional[git.Repo] = get_repo(),
     commit_ids: Optional[Set[str]] = None,
     revision: str = "master",
-    paths: Optional[List[str]] = get_tracked_paths(),
     add_to_database: bool = False,
     since: str = Util.Config.since,
 ) -> List[PatchData]:
@@ -55,7 +54,11 @@ def process_commits(
         # We use `--min-parents=1 --max-parents=1` to avoid both
         # merges and graft commits.
         commits = repo.iter_commits(
-            rev=revision, paths=paths, min_parents=1, max_parents=1, since=since
+            rev=revision,
+            paths=get_tracked_paths(),
+            min_parents=1,
+            max_parents=1,
+            since=since,
         )
     else:
         # If given a list of commit SHAs, get the commit objects.
@@ -125,7 +128,7 @@ def process_commits(
         else:
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = commit.tree.diff(
-                commit.parents[0], paths=paths, create_patch=True
+                commit.parents[0], paths=get_tracked_paths(), create_patch=True
             )
         # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
         patch.commitDiffs = "\n".join(
