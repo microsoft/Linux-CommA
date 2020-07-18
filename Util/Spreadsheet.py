@@ -5,7 +5,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import git
 import openpyxl
@@ -92,11 +92,11 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     return True
 
 
-def create_commit_row(sha: str, repo: git.Repo) -> Dict[str, str]:
+def create_commit_row(sha: str, repo: git.Repo) -> Dict[str, Any]:
     """Create a row with the commit's SHA, date, release and title."""
     # TODO: Add a column with the “fixes” info.
     commit = repo.commit(sha)
-    date = datetime.utcfromtimestamp(commit.authored_date).strftime("%Y-%m-%d")
+    date = datetime.utcfromtimestamp(commit.authored_date).date()
     title = commit.message.split("\n")[0]
     # Get the ‘v5.7’ from ‘v5.7-rc1-2-gc81992e7f’.
     # NOTE: This must be ordered “--contains <SHA>” for Git.
