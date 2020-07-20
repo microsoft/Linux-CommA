@@ -32,7 +32,7 @@ class PatchData(Base):
         "UpstreamPatchStatuses", uselist=False, back_populates="patch"
     )
     monitoringSubject = relationship(
-        "MonitoringSubjectsMissingPatches", back_populates="patches"
+        "MonitoringSubjectsMissingPatches", back_populates="patches", lazy="dynamic",
     )
 
 
@@ -65,7 +65,9 @@ class MonitoringSubjects(Base):
     revision = Column(String)
     distro = relationship("Distros", back_populates="monitoringSubject")
     missingPatches = relationship(
-        "MonitoringSubjectsMissingPatches", back_populates="monitoringSubject"
+        "MonitoringSubjectsMissingPatches",
+        back_populates="monitoringSubject",
+        lazy="dynamic",
     )
 
 

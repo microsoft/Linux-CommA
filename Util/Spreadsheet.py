@@ -17,12 +17,7 @@ from openpyxl.worksheet import worksheet
 import Util.Config
 import Util.Tracking
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import (
-    Distros,
-    MonitoringSubjects,
-    MonitoringSubjectsMissingPatches,
-    PatchData,
-)
+from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects, PatchData
 from UpstreamTracker.ParseData import process_commits
 
 
@@ -156,33 +151,31 @@ def create_distros_row(
     commit = c.value
     with DatabaseDriver.get_session() as s:
         for distro in distros:
-            # TODO: This logic awful because the database schema
-            # is a bit obtuse. We need to find the max subject ID
-            # for the distro (meaning the most recently added
-            # revision, so the latest code), then find the patch
-            # ID for the given commit, then check if that patch ID
-            # is in the list of missing patches for the subject
-            # ID, as stored in ‘MonitoringSubjectsMissingPatches’.
-
-            (subject_id,) = (
-                s.query(sqlalchemy.func.max(MonitoringSubjects.monitoringSubjectID))
+            if commit not in commits:
+                row.append("Unknown")
+                continue
+            # NOTE: For some distros (e.g. Ubuntu), we continually add
+            # new revisions (Git tags) as they become available, so we
+            # need the max ID, which is the most recent.
+            subject, _ = (
+                s.query(
+                    MonitoringSubjects,
+                    sqlalchemy.func.max(MonitoringSubjects.monitoringSubjectID),
+                )
                 .filter_by(distroID=distro)
                 .one()
             )
-            if commit not in commits:
-                row.append("Unknown")
+            # TODO: We could try to simplify this using the
+            # ‘monitoringSubject’ relationship on the ‘PatchData’
+            # table, but because the database tracks what’s missing,
+            # it becomes hard to state where the patch is present.
+            missing_patch = subject.missingPatches.filter_by(
+                patchID=commits[commit]
+            ).one_or_none()
+            if missing_patch is None:  # Then it’s present.
+                row.append(subject.revision)
             else:
-                patch_id = commits[commit]
-                listed_missing = (
-                    s.query(MonitoringSubjectsMissingPatches)
-                    .filter_by(monitoringSubjectID=subject_id)
-                    .filter_by(patchID=patch_id)
-                    .one_or_none()
-                )
-                if listed_missing is None:  # Then it’s present.
-                    row.append("Present")
-                else:
-                    row.append("Absent")
+                row.append("Absent")
     return row
 
 
