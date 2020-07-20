@@ -146,9 +146,12 @@ def create_distros_row(
     c: cell.Cell, commits: Dict[str, int], distros: List[str]
 ) -> List[str]:
     """Create a row with every distro's status of the cell's commit."""
-    # Excel XLOOPUP to make this a reference: ='git log'!A3
-    row = [f"='{c.parent.title}'!{c.coordinate}"]
+    # TODO: We could use an Excel XLOOPUP to make this a reference:
+    # e.g. ='git log'!A3 with f"='{c.parent.title}'!{c.coordinate}",
+    # but then the spreadsheet doesn’t track if the referenced
+    # worksheet gets rearranged.
     commit = c.value
+    row = [commit]
     with DatabaseDriver.get_session() as s:
         for distro in distros:
             if commit not in commits:
