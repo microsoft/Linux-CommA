@@ -184,11 +184,17 @@ def create_distros_row(
 
 def export_distros(in_file: str, out_file: str) -> None:
     """This adds a worksheet with downstream distro statuses."""
+    # TODO: You can also connect a PowerBI dashboard as a Pivot Table
+    # into an Excel spreadsheet, so in the future we could replace all
+    # this, but we need to fix up the dashboard first.
     wb, ws = get_workbook(in_file)
 
     # Collect the distros we’re tracking in the database.
     with DatabaseDriver.get_session() as s:
-        distros = [d for (d,) in s.query(Distros.distroID)]
+        # TODO: Handle Debian.
+        distros = [
+            d for (d,) in s.query(Distros.distroID) if not d.startswith("Debian")
+        ]
 
     # Create the distros worksheet with a header.
     distros_ws = wb.create_sheet("distros")
