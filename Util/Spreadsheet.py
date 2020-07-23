@@ -170,67 +170,77 @@ def export_commits(in_file: str, out_file: str) -> None:
     print("Finished exporting!")
 
 
-def create_distros_row(
-    c: cell.Cell, commits: Dict[str, int], distros: List[str]
-) -> List[str]:
-    """Create a row with every distro's status of the cell's commit."""
-    # TODO: We could use an Excel XLOOPUP to make this a reference:
-    # e.g. ='git log'!A3 with f"='{c.parent.title}'!{c.coordinate}",
-    # but then the spreadsheet doesn’t track if the referenced
-    # worksheet gets rearranged.
-    commit = c.value
-    row = [commit]
-    with DatabaseDriver.get_session() as s:
-        for distro in distros:
-            if commit not in commits:
-                row.append("Unknown")
-                continue
-            # NOTE: For some distros (e.g. Ubuntu), we continually add
-            # new revisions (Git tags) as they become available, so we
-            # need the max ID, which is the most recent.
-            subject, _ = (
-                s.query(
-                    MonitoringSubjects,
-                    sqlalchemy.func.max(MonitoringSubjects.monitoringSubjectID),
-                )
-                .filter_by(distroID=distro)
-                .one()
-            )
-            # TODO: We could try to simplify this using the
-            # ‘monitoringSubject’ relationship on the ‘PatchData’
-            # table, but because the database tracks what’s missing,
-            # it becomes hard to state where the patch is present.
-            missing_patch = subject.missingPatches.filter_by(
-                patchID=commits[commit]
-            ).one_or_none()
-            if missing_patch is None:  # Then it’s present.
-                row.append(subject.revision)
-            else:
-                row.append("Absent")
-    return row
-
-
-def export_distros(in_file: str, out_file: str) -> None:
-    """This adds a worksheet with downstream distro statuses."""
-    # TODO: You can also connect a PowerBI dashboard as a Pivot Table
-    # into an Excel spreadsheet, so in the future we could replace all
-    # this, but we need to fix up the dashboard first.
-    wb, ws = get_workbook(in_file)
-
-    # Collect the distros we’re tracking in the database.
+def get_distros() -> List[str]:
+    """Collect the distros we’re tracking in the database."""
     with DatabaseDriver.get_session() as s:
         # TODO: Handle Debian.
-        distros = [
-            d for (d,) in s.query(Distros.distroID) if not d.startswith("Debian")
-        ]
+        return [d for (d,) in s.query(Distros.distroID) if not d.startswith("Debian")]
 
-    # Create the distros worksheet with a header.
-    distros_ws = wb.create_sheet("distros")
-    # TODO: Make this a real header with fonts.
-    distros_ws.append(["Commit ID"] + distros)
 
+def get_fixed_patches(commit: str, commits: Dict[str, int]) -> str:
+    """Get the fixed patches for the given commit."""
+    with DatabaseDriver.get_session() as s:
+        patch = s.query(PatchData).filter_by(patchID=commits[commit]).one()
+        return patch.fixedPatches
+
+
+def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
+    """Get the kernel revision which includes commit or 'Absent'."""
+    # NOTE: For some distros (e.g. Ubuntu), we continually add new
+    # revisions (Git tags) as they become available, so we need the
+    # max ID, which is the most recent.
+    with DatabaseDriver.get_session() as s:
+        subject, _ = (
+            s.query(
+                MonitoringSubjects,
+                sqlalchemy.func.max(MonitoringSubjects.monitoringSubjectID),
+            )
+            .filter_by(distroID=distro)
+            .one()
+        )
+
+        # TODO: We could try to simplify this using the
+        # ‘monitoringSubject’ relationship on the ‘PatchData’ table,
+        # but because the database tracks what’s missing, it becomes
+        # hard to state where the patch is present.
+        missing_patch = subject.missingPatches.filter_by(
+            patchID=commits[commit]
+        ).one_or_none()
+
+        if missing_patch is None:  # Then it’s present.
+            return subject.revision
+        else:
+            return "Absent"
+
+
+def update_commits(in_file: str, out_file: str) -> None:
+    """Update each row with the 'Fixes' and distro information."""
+    wb, ws = get_workbook(in_file)
     commits = get_db_commits()
-    for c in ws["A"][1:]:  # Ignore header.
-        if c.value:  # Ignore empty cells.
-            distros_ws.append(create_distros_row(c, commits, distros))
+    distros = get_distros()
+    commit_column = get_column(ws, "Commit ID").column_letter
+
+    for commit_cell in ws[commit_column][1:]:  # Skip the header row
+        commit = commit_cell.value
+        if commit is None:
+            continue  # Ignore empty rows.
+
+        def get_cell(name: str) -> cell.Cell:
+            """Get the cell of the named column in this commit's row."""
+            return ws[f"{get_column(ws, name).column_letter}{commit_cell.row}"]
+
+        # Update “Fixes” column.
+        if commit in commits:
+            get_cell("Fixes").value = get_fixed_patches(commit, commits)
+
+        # Update all distro columns.
+        #
+        # TODO: Check that each distro is in the header row.
+        for distro in distros:
+            if commit in commits:
+                get_cell(distro).value = get_revision(distro, commit, commits)
+            else:
+                get_cell(distro).value = "Unknown"
+
     wb.save(out_file)
+    print("Finished updating!")

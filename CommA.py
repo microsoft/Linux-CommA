@@ -9,7 +9,7 @@ from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
-from Util.Spreadsheet import export_commits, export_distros, import_commits
+from Util.Spreadsheet import export_commits, import_commits, update_commits
 from Util.Symbols import print_missing_symbols
 from Util.Tracking import print_tracked_paths
 
@@ -98,8 +98,8 @@ def spreadsheet(args):
         import_commits(args.in_file)
     if args.export_commits:
         export_commits(args.in_file, args.out_file)
-    if args.export_distros:
-        export_distros(args.in_file, args.out_file)
+    if args.update_commits:
+        update_commits(args.in_file, args.out_file)
 
 
 spreadsheet_parser = subparsers.add_parser(
@@ -118,8 +118,8 @@ spreadsheet_parser.add_argument(
     help="Export commits from database into spreadsheet.",
 )
 spreadsheet_parser.add_argument(
-    "-d",
-    "--export-distros",
+    "-u",
+    "--update-commits",
     action="store_true",
     help="Export downstream distro statuses from database into spreadsheet.",
 )
