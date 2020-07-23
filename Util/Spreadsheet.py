@@ -36,6 +36,11 @@ def get_db_commits() -> Dict[str, int]:
 
 
 def get_workbook(in_file: str) -> Tuple[workbook.Workbook, worksheet.Worksheet]:
+    """Open the spreadsheet and return it and the 'git log' worksheet.
+
+    Also fix the pivot table so the spreadsheet doesn't crash.
+
+    """
     if not Path(in_file).exists():
         logging.error(f"The file {in_file} does not exist")
         sys.exit(1)
@@ -48,9 +53,23 @@ def get_workbook(in_file: str) -> Tuple[workbook.Workbook, worksheet.Worksheet]:
     return (wb, ws)
 
 
+def get_column(ws: worksheet.Worksheet, name: str) -> cell.Cell:
+    """Gets the header cell for the given column name.
+
+    The column names are the values of the cells in the first row,
+    e.g. 'Commit Title'. Use 'cell.column' for the numeric column, or
+    'cell.column_letter' for the letter. Given a row, index into it
+    with 'row[get_column(ws, "Commit Title").column]'.
+
+    """
+    return next(c for c in ws[1] if c.value == name)
+
+
 def get_wb_commits(ws: worksheet.Worksheet) -> Set[str]:
+    """Get every commit in the workbook."""
     # Skip the header and all ‘None’ values.
-    return {c.value for c in ws["A"][1:] if c.value is not None}
+    column = get_column(ws, "Commit ID").column_letter
+    return {c.value for c in ws[column][1:] if c.value is not None}
 
 
 def import_commits(in_file: str) -> None:
@@ -90,23 +109,31 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     return True
 
 
-def create_commit_row(sha: str, repo: git.Repo) -> Dict[str, Any]:
+def create_commit_row(
+    sha: str, repo: git.Repo, ws: worksheet.Worksheet
+) -> Dict[str, Any]:
     """Create a row with the commit's SHA, date, release and title."""
-    # TODO: Add a column with the “fixes” info.
     commit = repo.commit(sha)
+    # TODO: Some (but not all) of this info is available in the
+    # database, so if add the release to the database we can skip
+    # using the commit here.
     date = datetime.utcfromtimestamp(commit.authored_date).date()
     title = commit.message.split("\n")[0]
     # Get the ‘v5.7’ from ‘v5.7-rc1-2-gc81992e7f’.
     # NOTE: This must be ordered “--contains <SHA>” for Git.
     tag = repo.git.describe("--contains", sha)
     release = re.search(r"(v[^-~]*)[-~]", tag).group(1)
+
     # The worksheet has additional columns with manually entered
     # info, which we can’t insert, so we skip them.
+    def get_letter(name: str) -> str:
+        return get_column(ws, name).column_letter
+
     return {
-        "A": sha,
-        "B": date,
-        "C": release,
-        "G": title[: min(len(title), 120)],
+        get_letter("Commit ID"): sha,
+        get_letter("Date"): date,
+        get_letter("Release"): release,
+        get_letter("Commit Title"): title[: min(len(title), 120)],
     }
 
 
@@ -137,7 +164,8 @@ def export_commits(in_file: str, out_file: str) -> None:
     print(f"Exporting {len(missing_commits)} commits to {out_file}...")
     for commit in missing_commits:
         # TODO: Set fonts of the cells.
-        ws.append(create_commit_row(commit, repo))
+        ws.append(create_commit_row(commit, repo, ws))
+
     wb.save(out_file)
     print("Finished exporting!")
 
