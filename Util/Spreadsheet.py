@@ -46,9 +46,11 @@ def get_workbook(in_file: str) -> Tuple[workbook.Workbook, worksheet.Worksheet]:
         sys.exit(1)
     wb = openpyxl.load_workbook(filename=in_file)
     # Force refresh of pivot table in “Pivot” worksheet.
+    logging.debug("Finding worksheet named 'Pivot'...")
     pivot = wb["Pivot"]._pivots[0]
     pivot.cache.refreshOnLoad = True
     # The worksheet is manually named “git log”.
+    logging.debug("Finding worksheet named 'git log'...")
     ws = wb["git log"]
     return (wb, ws)
 
@@ -62,6 +64,7 @@ def get_column(ws: worksheet.Worksheet, name: str) -> cell.Cell:
     with 'row[get_column(ws, "Commit Title").column]'.
 
     """
+    logging.debug(f"Looking for column with name '{name}'...")
     return next(c for c in ws[1] if c.value == name)
 
 
@@ -85,6 +88,7 @@ def import_commits(in_file: str) -> None:
     wb_commits = get_wb_commits(ws)
     db_commits = get_db_commits()
     missing_commits = wb_commits - db_commits.keys()
+    print(f"Adding {len(missing_commits)} commits to database...")
     process_commits(commit_ids=missing_commits, add_to_database=True)
     print("Finished importing!")
 
@@ -93,18 +97,22 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     """Determine if we should export the commit."""
     # Skip empty values (such as if ‘cell.value’ was passed).
     if sha is None:
+        logging.warning("Given SHA was 'None'!")
         return False
     # Skip commits that aren’t in the repo.
     try:
         commit = repo.commit(sha)
     except ValueError:
+        logging.warning(f"Commit '{sha}' not in repo!")
         return False
     # Skip commits before the chosen base.
     if not repo.is_ancestor(base_commit, commit):
+        logging.debug(f"Commit '{sha}' is too old!")
         return False
     # Skip commits to tools.
     filenames = Util.Tracking.get_filenames(commit)
     if any(f.startswith("tools/hv/") for f in filenames):
+        logging.debug(f"Commit '{sha}' is to 'tools/hv/'!")
         return False
     return True
 
@@ -152,7 +160,9 @@ def export_commits(in_file: str, out_file: str) -> None:
     # workbook, but that we want to include.
     db_commits = get_db_commits()
     repo = Util.Tracking.get_linux_repo()
-    base_commit = repo.commit("v4.11")
+    tag = "v4.11"
+    logging.info(f"Skipping commits before tag '{tag}'!")
+    base_commit = repo.commit(tag)
     missing_commits = [
         commit
         for commit in list(db_commits.keys() - wb_commits)
@@ -223,6 +233,13 @@ def update_commits(in_file: str, out_file: str) -> None:
     wb, ws = get_workbook(in_file)
     commits = get_db_commits()
     distros = get_distros()
+    for distro in distros:
+        try:
+            get_column(ws, distro)
+        except StopIteration:
+            print(f"No column with distro '{distro}', please fix spreadsheet!")
+            sys.exit(1)
+
     commit_column = get_column(ws, "Commit ID").column_letter
 
     for commit_cell in ws[commit_column][1:]:  # Skip the header row
@@ -239,8 +256,6 @@ def update_commits(in_file: str, out_file: str) -> None:
             get_cell("Fixes").value = get_fixed_patches(commit, commits)
 
         # Update all distro columns.
-        #
-        # TODO: Check that each distro is in the header row.
         for distro in distros:
             if commit in commits:
                 get_cell(distro).value = get_revision(distro, commit, commits)
