@@ -181,7 +181,12 @@ def get_fixed_patches(commit: str, commits: Dict[str, int]) -> str:
     """Get the fixed patches for the given commit."""
     with DatabaseDriver.get_session() as s:
         patch = s.query(PatchData).filter_by(patchID=commits[commit]).one()
-        return patch.fixedPatches
+        # The database stores these separated by a space, but we want
+        # commas in the spreadsheet.
+        if patch.fixedPatches:
+            return ", ".join(patch.fixedPatches.split())
+        else:
+            return None
 
 
 def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
