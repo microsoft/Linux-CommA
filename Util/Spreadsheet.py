@@ -83,6 +83,10 @@ def import_commits(in_file: str) -> None:
     upstream monitoring logic.
 
     """
+    print("Sorry, importing is not supported at this time!")
+    sys.exit(1)
+    # TODO: Fix tracking to support commits which are manually added
+    # to the database, and therefore affect untracked paths.
     print(f"Importing commits from spreadsheet '{in_file}'...")
     wb, ws = get_workbook(in_file)
     wb_commits = get_wb_commits(ws)
