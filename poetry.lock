@@ -259,6 +259,18 @@ toml = "*"
 dev = ["isort (>=5.0)", "flake8", "pytest", "mypy"]
 
 [[package]]
+category = "dev"
+description = "Isort plugin for python-language-server"
+name = "pyls-isort"
+optional = false
+python-versions = "*"
+version = "0.1.1"
+
+[package.dependencies]
+isort = "*"
+python-language-server = "*"
+
+[[package]]
 category = "main"
 description = "DB API Module for ODBC"
 name = "pyodbc"
@@ -412,7 +424,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "fd8ff14105d791dbd14b131a0a522162412b0947c357383e0ff578e9fed06f96"
+content-hash = "ce1102c3c103f714fe6a1845069e989952a67a89f0e6950da0ef818aae321909"
 lock-version = "1.0"
 python-versions = "^3.6"
 
@@ -503,6 +515,10 @@ pyflakes = [
 pyls-black = [
     {file = "pyls-black-0.4.6.tar.gz", hash = "sha256:33700e5ed605636ea7ba39188a1362d2f8602f7301f8f2b8544773886f965663"},
     {file = "pyls_black-0.4.6-py3-none-any.whl", hash = "sha256:8f5fb8fed503588c10435d2d48e2c3751437f1bdb8116134b05a4591c4899940"},
+]
+pyls-isort = [
+    {file = "pyls-isort-0.1.1.tar.gz", hash = "sha256:5bad833dab833c4e8d61172428c6ff16e4d334d986fe5dd809aa55c2e7e4fb7f"},
+    {file = "pyls_isort-0.1.1-py3-none-any.whl", hash = "sha256:eaf323e12d652ed4ccf8365c1f65d55923e5ee5a9cbfa27bdd5f2941a14d16e6"},
 ]
 pyodbc = [
     {file = "pyodbc-4.0.30-cp27-cp27m-win32.whl", hash = "sha256:a1af49a2f4f0abbafdc018d510e31561d3f9472725dc1d49cce3bd2e10e9ec18"},
