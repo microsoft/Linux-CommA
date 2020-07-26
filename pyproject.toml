@@ -25,6 +25,7 @@ black = "^19.10b0"
 isort = "^4.3.21"
 flake8-bugbear = "^20.1.4"
 python-language-server = {version = "^0.34.1", extras = ["flake8", "rope"]}
+pyls-black = "^0.4.6"
 
 [tool.black]
 [build-system]
