@@ -9,6 +9,7 @@ from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
 from DownstreamTracker.MonitorDownstream import monitor_downstream
 from UpstreamTracker.MonitorUpstream import monitor_upstream
+from Util.Spreadsheet import export_commits, import_commits, update_commits
 from Util.Symbols import print_missing_symbols
 from Util.Tracking import print_tracked_paths
 
@@ -90,6 +91,45 @@ symbol_parser.add_argument(
     help="File with symbols to compare against.",
 )
 symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
+
+
+def spreadsheet(args):
+    if args.import_commits:
+        import_commits(args.in_file)
+    if args.export_commits:
+        export_commits(args.in_file, args.out_file)
+    if args.update_commits:
+        update_commits(args.in_file, args.out_file)
+
+
+spreadsheet_parser = subparsers.add_parser(
+    "spreadsheet", help="Export to Excel Spreadsheet.",
+)
+spreadsheet_parser.add_argument(
+    "-i",
+    "--import-commits",
+    action="store_true",
+    help="Import commits from spreadsheet into database.",
+)
+spreadsheet_parser.add_argument(
+    "-e",
+    "--export-commits",
+    action="store_true",
+    help="Export commits from database into spreadsheet.",
+)
+spreadsheet_parser.add_argument(
+    "-u",
+    "--update-commits",
+    action="store_true",
+    help="Export downstream distro statuses from database into spreadsheet.",
+)
+spreadsheet_parser.add_argument(
+    "-f", "--in-file", default="input.xlsx", help="Spreadsheet to read in.",
+)
+spreadsheet_parser.add_argument(
+    "-o", "--out-file", default="output.xlsx", help="Spreadsheet to write out.",
+)
+spreadsheet_parser.set_defaults(func=spreadsheet)
 
 
 def get_distros(args):

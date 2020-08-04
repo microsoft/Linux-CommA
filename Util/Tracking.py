@@ -3,6 +3,7 @@
 import itertools
 import logging
 import pathlib
+import re
 from typing import List, Set
 
 import git
@@ -24,16 +25,15 @@ def get_repo_path(name: str) -> pathlib.Path:
     return pathlib.Path("Repos", name).resolve()
 
 
-# Global state tracking for repos which have been updated.
-updated_repos = set()
+UPDATED_REPOS = set()
 
 
 def get_repo(
-    name="linux.git",
-    url="https://github.com/torvalds/linux.git",
-    bare=True,
-    shallow=True,
-    pull=False,
+    name: str,
+    url: str = "https://github.com/torvalds/linux.git",
+    bare: bool = True,
+    shallow: bool = True,
+    pull: bool = False,
 ) -> git.Repo:
     """Clone and optionally update a repo, returning the object.
 
@@ -41,11 +41,12 @@ def get_repo(
     optionally 'bare', and returns the 'git.Repo' object. It only
     fetches or pulls once per session, and only if told to do so.
     """
+    global UPDATED_REPOS
     repo = None
     path = get_repo_path(name)
     if path.exists():
         repo = git.Repo(path)
-        if name not in updated_repos:
+        if name not in UPDATED_REPOS:
             if pull:
                 logging.info(f"Pulling '{name}' repo...")
                 repo.remotes.origin.pull()
@@ -68,8 +69,18 @@ def get_repo(
         logging.info("Cloned!")
     # We either cloned, pulled, fetched, or purposefully skipped doing
     # so. Don't update the repo again this session.
-    updated_repos.add(name)
+    UPDATED_REPOS.add(name)
     return repo
+
+
+LINUX_REPO: git.Repo = None
+
+
+def get_linux_repo() -> git.Repo:
+    global LINUX_REPO
+    if LINUX_REPO is None:
+        LINUX_REPO = get_repo("linux.git")
+    return LINUX_REPO
 
 
 def get_files(section: str, content: List[str]) -> Set[str]:
@@ -99,22 +110,28 @@ def get_files(section: str, content: List[str]) -> Set[str]:
     return {x for x in paths if not x.startswith("Documentation")}
 
 
-def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
-    """Get list of files from MAINTAINERS for given sections.
+TRACKED_PATHS: List[str] = None
 
-    """
+
+def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
+    """Get list of files from MAINTAINERS for given sections."""
+    global TRACKED_PATHS
+    if TRACKED_PATHS is not None:
+        return TRACKED_PATHS
     logging.debug("Parsing MAINTAINERS file...")
-    repo = get_repo()
+    repo = get_linux_repo()
     paths = set()
     # All tag commits starting with v4, also master.
-    commits = repo.git.tag("v[^123]*", list=True).split()
+    tags = repo.git.tag("v[^123]*", list=True).split()
+    commits = [c for c in tags if re.match(r"v[0-9]+\.[0-9]+$", c)]
     commits.append("master")
     for commit in commits:
         maintainers = repo.git.show(f"{commit}:MAINTAINERS").split("\n")
         for section in sections:
             paths |= get_files(section, maintainers)
     logging.debug("Parsed!")
-    return sorted(paths)
+    TRACKED_PATHS = sorted(paths)
+    return TRACKED_PATHS
 
 
 def print_tracked_paths():

@@ -2,13 +2,12 @@
 # Licensed under the MIT License.
 import logging
 from datetime import datetime
-
-import git
+from typing import List, Optional, Set
 
 import Util.Config
 from DatabaseDriver.DatabaseDriver import DatabaseDriver
 from DatabaseDriver.SqlClasses import PatchData
-from Util.Tracking import get_filenames
+from Util.Tracking import get_filenames, get_linux_repo, get_tracked_paths
 
 
 def should_keep_line(line: str):
@@ -30,12 +29,11 @@ def should_keep_line(line: str):
 
 
 def process_commits(
-    repo: git.Repo,
-    paths,
-    revision="master",
-    add_to_database=False,
-    since=Util.Config.since,
-) -> list:
+    commit_ids: Optional[Set[str]] = None,
+    revision: str = "master",
+    add_to_database: bool = False,
+    since: str = Util.Config.since,
+) -> List[PatchData]:
     """
     Look at all commits in the given repo and handle based on distro.
 
@@ -49,11 +47,26 @@ def process_commits(
     num_patches = 0
     num_patches_added = 0
 
-    # We use `--min-parents=1 --max-parents=1` to avoid both merges
-    # and graft commits.
-    commits = repo.iter_commits(
-        rev=revision, paths=paths, min_parents=1, max_parents=1, since=since
-    )
+    repo = get_linux_repo()
+
+    if commit_ids is None:
+        # We use `--min-parents=1 --max-parents=1` to avoid both
+        # merges and graft commits.
+        commits = repo.iter_commits(
+            rev=revision,
+            paths=get_tracked_paths(),
+            min_parents=1,
+            max_parents=1,
+            since=since,
+        )
+    else:
+        # If given a list of commit SHAs, get the commit objects.
+        commits = list()
+        for c in commit_ids:
+            try:
+                commits.append(repo.commit(c))
+            except ValueError:
+                logging.warning(f"Commit '{c}' does not exist in the repo! Skipping...")
 
     logging.info("Starting commit processing...")
     for commit in commits:
@@ -114,7 +127,7 @@ def process_commits(
         else:
             # We are ignoring merges so all commits should have a single parent
             commit_diffs = commit.tree.diff(
-                commit.parents[0], paths=paths, create_patch=True
+                commit.parents[0], paths=get_tracked_paths(), create_patch=True
             )
         # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
         patch.commitDiffs = "\n".join(

@@ -10,9 +10,9 @@ from DatabaseDriver.SqlClasses import (
     MonitoringSubjectsMissingPatches,
     PatchData,
 )
-from DownstreamTracker.DownstreamMatcher import DownstreamMatcher
+from DownstreamTracker.DownstreamMatcher import patch_matches
 from UpstreamTracker.ParseData import process_commits
-from Util.Tracking import get_repo, get_tracked_paths
+from Util.Tracking import get_linux_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -81,56 +81,50 @@ def monitor_subject(monitoring_subject, repo):
     """
 
     missing_patch_ids = None
-    paths = get_tracked_paths()
 
-    # This returns patches missing in the repo with very good accuracy, but isn't perfect
-    # So, we run extra checks to confirm the missing patches.
-    missing_commit_ids = repo.git.log(
+    # This list every missing cherry for our tracked paths, we then
+    # filter to commits in our database, and double-check these.
+    missing_cherries = repo.git.log(
         "--no-merges",
         "--right-only",
         "--cherry-pick",
         "--pretty=format:%H",
-        "%s...master" % monitoring_subject.revision,
+        f"{monitoring_subject.revision}...master",
         "--",
-        paths,
+        get_tracked_paths(),
     ).split("\n")
-    logging.debug("Retrived missing patches through cherry-pick")
+
+    logging.debug(f"Found {len(missing_cherries)} missing patches through cherry-pick.")
 
     # Run extra checks on these missing commits
     with DatabaseDriver.get_session() as s:
-        upstream_missing_patches = (
-            s.query(PatchData).filter(PatchData.commitID.in_(missing_commit_ids)).all()
+        patches = (
+            s.query(PatchData)
+            .filter(PatchData.commitID.in_(missing_cherries))
+            .order_by(PatchData.commitTime)
+            .all()
         )
-        num_log_missing_patches = len(upstream_missing_patches)
         # We only want to check downstream patches as old as the
-        # oldest upstream missing patch's commit_time, as an
-        # optimization.
-        earliest_commit_date = min(
-            p.commitTime for p in upstream_missing_patches
-        ).isoformat()
+        # oldest upstream missing patch, as an optimization.
+        earliest_commit_date = min(p.commitTime for p in patches).isoformat()
         logging.debug(f"Processing commits since {earliest_commit_date}")
+
+        # Get the downstream commits for this revision (these are
+        # distinct from upstream because they’ve been cherry-picked).
+        #
+        # NOTE: This is slow but necessary!
         downstream_patches = process_commits(
-            repo,
-            paths,
-            revision=monitoring_subject.revision,
-            since=earliest_commit_date,
+            revision=monitoring_subject.revision, since=earliest_commit_date,
         )
-        downstream_matcher = DownstreamMatcher(downstream_patches)
 
         logging.info(
-            f"Starting confidence matching for {len(upstream_missing_patches)} upstream patches "
+            f"Starting confidence matching for {len(patches)} upstream patches..."
         )
-        # Removes patches which our algorithm say exist downstream.
+
+        # Double check the missing cherries using our fuzzy algorithm.
         missing_patches = [
-            p
-            for p in upstream_missing_patches
-            if not downstream_matcher.exists_matching_patch(p)
+            p for p in patches if not patch_matches(downstream_patches, p)
         ]
-
-        logging.info(
-            "Number of patches missing from git log to our algo: "
-            + f"{num_log_missing_patches} -> {len(missing_patches)}."
-        )
 
         missing_patch_ids = [p.patchID for p in missing_patches]
 
@@ -178,7 +172,7 @@ def monitor_subject(monitoring_subject, repo):
 
 def monitor_downstream():
     print("Monitoring downstream...")
-    repo = get_repo()
+    repo = get_linux_repo()
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()
