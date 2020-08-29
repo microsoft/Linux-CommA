@@ -121,6 +121,17 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     return True
 
 
+def get_release(sha: str, repo: git.Repo) -> str:
+    """Get the ‘v5.7’ from ‘v5.7-rc1-2-gc81992e7f’."""
+    try:
+        # NOTE: This must be ordered “--contains <SHA>” for Git.
+        tag = repo.git.describe("--contains", sha)
+        # Use "(v[^-~]+(-rc[0-9]+)?)[-~]" to include ‘-rcX’
+        return re.search(r"(v[^-~]*)[-~]", tag).group(1)
+    except git.GitCommandError:
+        return "N/A"
+
+
 def create_commit_row(
     sha: str, repo: git.Repo, ws: worksheet.Worksheet
 ) -> Dict[str, Any]:
@@ -131,10 +142,6 @@ def create_commit_row(
     # using the commit here.
     date = datetime.utcfromtimestamp(commit.authored_date).date()
     title = commit.message.split("\n")[0]
-    # Get the ‘v5.7’ from ‘v5.7-rc1-2-gc81992e7f’.
-    # NOTE: This must be ordered “--contains <SHA>” for Git.
-    tag = repo.git.describe("--contains", sha)
-    release = re.search(r"(v[^-~]*)[-~]", tag).group(1)
 
     # The worksheet has additional columns with manually entered
     # info, which we can’t insert, so we skip them.
@@ -144,7 +151,7 @@ def create_commit_row(
     return {
         get_letter("Commit ID"): sha,
         get_letter("Date"): date,
-        get_letter("Release"): release,
+        get_letter("Release"): get_release(sha, repo),
         get_letter("Commit Title"): title[: min(len(title), 120)],
     }
 
