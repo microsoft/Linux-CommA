@@ -30,7 +30,7 @@ def should_keep_line(line: str):
 
 def process_commits(
     commit_ids: Optional[Set[str]] = None,
-    revision: str = "master",
+    revision: str = "origin/master",
     add_to_database: bool = False,
     since: str = Util.Config.since,
 ) -> List[PatchData]:

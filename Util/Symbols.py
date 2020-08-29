@@ -50,7 +50,7 @@ def map_symbols_to_patch(
     commits: SHA of all commits in database
     fileNames: hyperV files
     """
-    repo = get_repo(name="linux-sym", bare=False, shallow=False, pull=True)
+    repo = get_repo(name="linux-sym", shallow=False, pull=True)
     repo.head.reference = repo.commit(prev_commit)
     repo.head.reset(index=True, working_tree=True)
     before_patch_apply = None

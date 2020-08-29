@@ -89,7 +89,7 @@ def monitor_subject(monitoring_subject, repo):
         "--right-only",
         "--cherry-pick",
         "--pretty=format:%H",
-        f"{monitoring_subject.revision}...master",
+        f"{monitoring_subject.revision}...origin/master",
         "--",
         get_tracked_paths(),
     ).split("\n")

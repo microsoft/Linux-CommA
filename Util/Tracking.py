@@ -31,15 +31,15 @@ UPDATED_REPOS = set()
 def get_repo(
     name: str,
     url: str = "https://github.com/torvalds/linux.git",
-    bare: bool = True,
     shallow: bool = True,
     pull: bool = False,
 ) -> git.Repo:
     """Clone and optionally update a repo, returning the object.
 
-    By default this clones the Linux repo to 'name' from 'url',
-    optionally 'bare', and returns the 'git.Repo' object. It only
-    fetches or pulls once per session, and only if told to do so.
+    By default this clones the Linux repo to 'name' from 'url', and
+    returns the 'git.Repo' object. It only fetches or pulls once per
+    session, and only if told to do so.
+
     """
     global UPDATED_REPOS
     repo = None
@@ -62,7 +62,7 @@ def get_repo(
                 logging.info("Fetched!")
     else:
         logging.info(f"Cloning '{name}' repo from '{url}'...")
-        args = {"bare": bare}
+        args = {}
         if shallow:
             args.update({"shallow_since": Util.Config.since})
         repo = git.Repo.clone_from(url, path, **args)
@@ -124,7 +124,7 @@ def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
     # All tag commits starting with v4, also master.
     tags = repo.git.tag("v[^123]*", list=True).split()
     commits = [c for c in tags if re.match(r"v[0-9]+\.[0-9]+$", c)]
-    commits.append("master")
+    commits.append("origin/master")
     for commit in commits:
         maintainers = repo.git.show(f"{commit}:MAINTAINERS").split("\n")
         for section in sections:
