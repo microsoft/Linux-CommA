@@ -27,7 +27,7 @@ class DatabaseCredentials:
         # _server_ from which we're cloning does not support
         # `--shallow-since`, so we have to disable this here.
         Util.Tracking.get_repo(
-            name="secrets", url=secrets_url, bare=False, shallow=False, pull=True
+            name="secrets", url=secrets_url, shallow=False, pull=True
         )
 
         root = xml.etree.ElementTree.parse(
