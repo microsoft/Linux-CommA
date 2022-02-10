@@ -6,7 +6,11 @@ dry_run = False
 fetch = True
 since = "4 years ago"
 verbose = 0
-sections = ["Hyper-V CORE AND DRIVERS", "Hyper-V/Azure CORE AND DRIVERS", "DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE"]
+sections = [
+    "Hyper-V CORE AND DRIVERS",
+    "Hyper-V/Azure CORE AND DRIVERS",
+    "DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE",
+]
 default_distros = [
     Distros(
         distroID="Ubuntu16.04",
@@ -29,10 +33,29 @@ default_distros = [
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/focal",
     ),
     Distros(
+        distroID="Ubuntu20.10",
+        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/groovy",
+    ),
+    Distros(
+        distroID="Ubuntu21.04",
+        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/hirsute",
+    ),
+    Distros(
+        distroID="Ubuntu21.10",
+        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/impish",
+    ),
+    Distros(
+        distroID="Ubuntu22.04",
+        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/jammy",
+    ),
+    Distros(
         distroID="Debian9-backport",
         repoLink="https://salsa.debian.org/kernel-team/linux.git",
     ),
-    Distros(distroID="SUSE12", repoLink="https://github.com/openSUSE/kernel",),
+    Distros(
+        distroID="SUSE12",
+        repoLink="https://github.com/openSUSE/kernel",
+    ),
 ]
 
 # NOTE: The Ubuntu kernels get revisions added automatically by
