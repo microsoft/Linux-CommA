@@ -38,8 +38,9 @@ repos](https://docs.microsoft.com/en-us/sql/linux/quickstart-install-connect-ubu
 > Ubuntu version to your version (`cat /etc/os-release` for the number).
 
 ```sh
+. /etc/os-release
 curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-curl https://packages.microsoft.com/config/ubuntu/18.04/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
+curl https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/prod.list | sudo tee /etc/apt/sources.list.d/msprod.list
 ```
 
 Install the required packages for connecting to the Microsoft SQL database:
@@ -73,20 +74,15 @@ This will parse the upstream and downstream repos.
 
 ### Setting Up Secrets
 
-You should have a separate Git repository which contains an XML file with your
-database secrets, structured like:
+Place database info into the following environment variables before running CommA:
+COMMA_DB_URL
+COMMA_DB_NAME
+COMMA_DB_USERNAME
+COMMA_DB_PW
 
-```xml
-</secrets><?xml version="1.0"?>
-<secrets>
-    <DatabaseServer>your.database.server.url</DatabaseServer>
-    <DatabaseName>your_database_name</DatabaseName>
-    <DatabaseUser>your_database_user</DatabaseUser>
-    <DatabasePassword>your_database_password</DatabasePassword>
-</secrets>
-```
+>[!TIP]
+> We leave it to the user to keep their secrets secure before running CommA. Azure Pipelines provides a few mechanisms for managing secrets, use a comparable tool when creating a CommA pipeline to ensure you don't leak your database credentials.
 
-The file should be named `PatchTrackerSecrets.xml` and exist at the root level.
 
 ## Contributing
 
