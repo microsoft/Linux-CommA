@@ -63,10 +63,10 @@ def update_tracked_revisions(distro_id, repo):
 
     if distro_id.startswith("Ubuntu"):
         latest_two_kernels = []
-        tag_lines = repo.git.ls_remote("--t", "--refs", distro_id).split("\n")
+        tag_lines = repo.git.ls_remote("--t", "--refs", "--sort=v:refname", distro_id).split("\n")
         tag_names = [tag_line.rpartition("/")[-1] for tag_line in tag_lines]
         # Filter out edge, and only include azure revisions
-        tag_names = list(filter(lambda x: "azure" in x and "edge" not in x, tag_names))
+        tag_names = list(filter(lambda x: "azure" in x and "edge" not in x and "cvm" not in x and "fde" not in x, tag_names))
         latest_two_kernels = tag_names[-2:]
         update_revisions_for_distro(distro_id, latest_two_kernels)
 
