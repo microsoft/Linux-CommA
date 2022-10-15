@@ -171,7 +171,7 @@ def export_commits(in_file: str, out_file: str) -> None:
     # workbook, but that we want to include.
     db_commits = get_db_commits()
     repo = Util.Tracking.get_linux_repo()
-    tag = "v4.11"
+    tag = "v4.15"
     logging.info(f"Skipping commits before tag '{tag}'!")
     base_commit = repo.commit(tag)
     missing_commits = [
