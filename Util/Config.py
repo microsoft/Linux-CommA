@@ -18,9 +18,17 @@ default_distros = [
         distroID="Ubuntu18.04",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic",
     ),
-        Distros(
+    Distros(
         distroID="Ubuntu20.04",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/focal",
+    ),
+     Distros(
+        distroID="Ubuntu22.04",
+        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/jammy",
+    ),
+     Distros(
+        distroID="Debian10-backport",
+        repoLink="https://salsa.debian.org/kernel-team/linux.git",
     ),
     Distros(
        distroID="Ubuntu22.04",
@@ -40,6 +48,7 @@ default_distros = [
 # checking the remote repos’ tags.
 default_monitoring_subjects = [
     MonitoringSubjects(distroID="Debian9-backport", revision="stretch-backports"),
+    MonitoringSubjects(distroID="Debian10-backport", revision="bullseye-backports"),
     MonitoringSubjects(distroID="SUSE12", revision="SUSE12/SLE12-SP5-AZURE"),
 ]
 
