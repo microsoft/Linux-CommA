@@ -2,17 +2,17 @@
 # Licensed under the MIT License.
 import logging
 
-import Util.Config
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import (
+from comma.Util import Config
+from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
+from comma.DatabaseDriver.SqlClasses import (
     Distros,
     MonitoringSubjects,
     MonitoringSubjectsMissingPatches,
     PatchData,
 )
-from DownstreamTracker.DownstreamMatcher import patch_matches
-from UpstreamTracker.ParseData import process_commits
-from Util.Tracking import get_linux_repo, get_tracked_paths
+from comma.DownstreamTracker.DownstreamMatcher import patch_matches
+from comma.UpstreamTracker.ParseData import process_commits
+from comma.Util.Tracking import get_linux_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -186,10 +186,10 @@ def monitor_downstream():
                 repo.create_remote(distroID, url=repoLink)
 
     # Update all remotes, and tags of all remotes
-    if Util.Config.fetch:
+    if Config.fetch:
         logging.info("Fetching updates to all repos and tags...")
         repo.git.fetch(
-            "--all", "--tags", "--force", f"--shallow-since='{Util.Config.since}'"
+            "--all", "--tags", "--force", f"--shallow-since='{Config.since}'"
         )
         logging.debug("Fetched!")
 

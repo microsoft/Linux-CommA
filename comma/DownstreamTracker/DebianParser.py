@@ -10,10 +10,10 @@ from datetime import datetime
 
 import git
 
-import Util.Constants as cst
-from DatabaseDriver.DistroMatch import DistroMatch
-from UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
-from UpstreamTracker.ParseData import get_patch_object, insert_patch
+import comma.Util.Constants as cst
+from comma.DatabaseDriver.DistroMatch import DistroMatch
+from comma.UpstreamTracker.MonitorUpstream import parse_maintainers, sanitize_filenames
+from comma.UpstreamTracker.ParseData import get_patch_object, insert_patch
 
 
 def contains_filepath(filepath1, filepath2):

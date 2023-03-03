@@ -3,9 +3,9 @@
 import logging
 import subprocess
 
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import PatchData
-from Util.Tracking import get_repo, get_tracked_paths
+from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
+from comma.DatabaseDriver.SqlClasses import PatchData
+from comma.Util.Tracking import get_repo, get_tracked_paths
 
 
 def list_diff(list1, list2):

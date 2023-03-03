@@ -14,11 +14,11 @@ from openpyxl.cell import cell
 from openpyxl.workbook import workbook
 from openpyxl.worksheet import worksheet
 
-import Util.Config
-import Util.Tracking
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects, PatchData
-from UpstreamTracker.ParseData import process_commits
+import comma.Util.Config
+from comma.Util import Tracking
+from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
+from comma.DatabaseDriver.SqlClasses import Distros, MonitoringSubjects, PatchData
+from comma.UpstreamTracker.ParseData import process_commits
 
 
 def get_db_commits() -> Dict[str, int]:
@@ -114,7 +114,7 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
         logging.debug(f"Commit '{sha}' is too old!")
         return False
     # Skip commits to tools.
-    filenames = Util.Tracking.get_filenames(commit)
+    filenames = Tracking.get_filenames(commit)
     if any(f.startswith("tools/hv/") for f in filenames):
         logging.debug(f"Commit '{sha}' is to 'tools/hv/'!")
         return False
@@ -170,7 +170,7 @@ def export_commits(in_file: str, out_file: str) -> None:
     # Collect the commits in the database which are not in the
     # workbook, but that we want to include.
     db_commits = get_db_commits()
-    repo = Util.Tracking.get_linux_repo()
+    repo = Tracking.get_linux_repo()
     tag = "v4.15"
     logging.info(f"Skipping commits before tag '{tag}'!")
     base_commit = repo.commit(tag)

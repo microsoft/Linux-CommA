@@ -1,35 +1,63 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-[tool.poetry]
-name = "CommA"
-version = "0.1.0"
+
+[build-system]
+requires = ["setuptools >= 65"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "comma"
 description = "Linux Commit Analyzer"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Software Development",
+]
+dependencies = [
+  "gitpython ~= 3.1.0",
+  "pyodbc ~= 4.0.30",
+  "python-Levenshtein ~= 0.12.0",
+  "fuzzywuzzy ~= 0.18.0",
+  "sqlalchemy ~= 1.3.13",
+  "openpyxl ~= 3.0.4",
+
+]
+dynamic = ["version"]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
 authors = [
-  "Ryan Feldman <ryfeldma@microsoft.com>",
-  "Abhishek Marathe <abmarath@microsoft.com>",
-  "Andrew Schwartzmeyer <andrew@schwartzmeyer.com>"]
-license = "MIT"
+  {name = "Ryan Feldman", email = "ryfeldma@microsoft.com"},
+  {name = "Abhishek Marathe", email = "abmarath@microsoft.com"},
+  {name = "Andrew Schwartzmeyer", email = "andrew@schwartzmeyer.com"},
+]
 
-[tool.poetry.dependencies]
-python = "^3.6"
-gitpython = "^3.1.0"
-pyodbc = "^4.0.30"
-python-Levenshtein = "^0.12.0"
-fuzzywuzzy = "^0.18.0"
-sqlalchemy = "^1.3.13"
-openpyxl = "^3.0.4"
+[project.scripts]
+comma = "comma.__main__:main"
 
-[tool.poetry.dev-dependencies]
-flake8 = "^3.7.9"
-black = "^19.10b0"
-isort = "^4.3.21"
-flake8-bugbear = "^20.1.4"
-python-language-server = {version = "^0.34.1", extras = ["flake8", "rope"]}
-pyls-black = "^0.4.6"
-pyls-isort = "^0.1.1"
+[project.optional-dependencies]
+flake8 = [
+  "flake8 ~= 3.7.9",
+  "flake8-bugbear ~= 20.1.4",
+]
+
+black = [
+  "black ~= 19.10b0",
+]
+
+isort = [
+  "isort ~= 4.3.21",
+]
+
+[project.urls]
+homepage = "https://github.com/microsoft/Linux-CommA"
 
 [tool.black]
-[build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
 
+[tool.setuptools.packages.find]
+include = ["comma*"]
+namespaces = false
+
+[tool.setuptools.dynamic]
+version = {attr = "comma.__version__"}
