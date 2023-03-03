@@ -5,8 +5,8 @@ from typing import List
 
 from fuzzywuzzy import fuzz
 
-from DatabaseDriver.SqlClasses import PatchData
-from Objects.PatchDiffs import PatchDiffs
+from comma.DatabaseDriver.SqlClasses import PatchData
+from comma.Objects.PatchDiffs import PatchDiffs
 
 
 def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> bool:

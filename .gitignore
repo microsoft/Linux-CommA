@@ -121,3 +121,6 @@ comma.db
 
 # Spreadsheets
 *.xlsx
+
+# Local notes
+notes

@@ -8,7 +8,7 @@ from typing import List, Set
 
 import git
 
-import Util.Config
+from comma.Util import Config
 
 
 def get_filenames(commit: git.Commit) -> List[str]:
@@ -51,20 +51,20 @@ def get_repo(
                 logging.info(f"Pulling '{name}' repo...")
                 repo.remotes.origin.pull()
                 logging.info("Pulled!")
-            elif Util.Config.fetch:
+            elif Config.fetch:
                 logging.info(f"Fetching '{name}' repo...")
                 repo.git.fetch(
                     "--all",
                     "--tags",
                     "--force",
-                    f"--shallow-since={Util.Config.since}",
+                    f"--shallow-since={Config.since}",
                 )
                 logging.info("Fetched!")
     else:
         logging.info(f"Cloning '{name}' repo from '{url}'...")
         args = {}
         if shallow:
-            args.update({"shallow_since": Util.Config.since})
+            args.update({"shallow_since": Config.since})
         repo = git.Repo.clone_from(url, path, **args)
         logging.info("Cloned!")
     # We either cloned, pulled, fetched, or purposefully skipped doing
@@ -113,7 +113,7 @@ def get_files(section: str, content: List[str]) -> Set[str]:
 TRACKED_PATHS: List[str] = None
 
 
-def get_tracked_paths(sections=Util.Config.sections) -> List[str]:
+def get_tracked_paths(sections=Config.sections) -> List[str]:
     """Get list of files from MAINTAINERS for given sections."""
     global TRACKED_PATHS
     if TRACKED_PATHS is not None:

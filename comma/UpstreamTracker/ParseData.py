@@ -4,10 +4,10 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Set
 
-import Util.Config
-from DatabaseDriver.DatabaseDriver import DatabaseDriver
-from DatabaseDriver.SqlClasses import PatchData
-from Util.Tracking import get_filenames, get_linux_repo, get_tracked_paths
+from comma.Util import Config
+from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
+from comma.DatabaseDriver.SqlClasses import PatchData
+from comma.Util.Tracking import get_filenames, get_linux_repo, get_tracked_paths
 
 
 def should_keep_line(line: str):
@@ -32,7 +32,7 @@ def process_commits(
     commit_ids: Optional[Set[str]] = None,
     revision: str = "origin/master",
     add_to_database: bool = False,
-    since: str = Util.Config.since,
+    since: str = Config.since,
 ) -> List[PatchData]:
     """
     Look at all commits in the given repo and handle based on distro.

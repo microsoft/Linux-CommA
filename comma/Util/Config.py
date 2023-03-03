@@ -1,6 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-from DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
+from comma.DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
 
 dry_run = False
 fetch = True

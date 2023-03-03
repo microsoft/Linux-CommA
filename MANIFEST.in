@@ -1,0 +1,6 @@
+# This file provides fine-grain control over what files are included in a
+# Python source distribution (sdist).
+# For more details see https://packaging.python.org/en/latest/guides/using-manifest-in/
+
+exclude .*
+exclude azure-pipelines.yml
