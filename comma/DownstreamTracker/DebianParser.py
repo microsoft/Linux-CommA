@@ -24,7 +24,6 @@ def contains_filepath(filepath1, filepath2):
 
 
 def check_hyperV_patch(patch_filenames, filenames):
-
     for file in patch_filenames:
         for hV_file in filenames:
             if contains_filepath(file, hV_file):
@@ -75,7 +74,6 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
                     if words is None or len(words) == 0:
                         continue
                     if len(words) >= 3 and words[0] == "From:":
-
                         if len(patch.subject) > 0 and not db.check_commit_present(
                             patch.subject, distro
                         ):

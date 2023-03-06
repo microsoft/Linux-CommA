@@ -32,7 +32,9 @@ class PatchData(Base):
         "UpstreamPatchStatuses", uselist=False, back_populates="patch"
     )
     monitoringSubject = relationship(
-        "MonitoringSubjectsMissingPatches", back_populates="patches", lazy="dynamic",
+        "MonitoringSubjectsMissingPatches",
+        back_populates="patches",
+        lazy="dynamic",
     )
 
 
