@@ -14,11 +14,10 @@ from openpyxl.cell import cell
 from openpyxl.workbook import workbook
 from openpyxl.worksheet import worksheet
 
-import comma.Util.Config
-from comma.Util import Tracking
 from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
 from comma.DatabaseDriver.SqlClasses import Distros, MonitoringSubjects, PatchData
 from comma.UpstreamTracker.ParseData import process_commits
+from comma.Util import Tracking
 
 
 def get_db_commits() -> Dict[str, int]:
@@ -239,6 +238,11 @@ def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
             return "Absent"
 
 
+def get_cell(worksheet, name: str, row) -> cell.Cell:
+    """Get the cell of the named column in this commit's row."""
+    return worksheet[f"{get_column(worksheet, name).column_letter}{row}"]
+
+
 def update_commits(in_file: str, out_file: str) -> None:
     """Update each row with the 'Fixes' and distro information."""
     wb, ws = get_workbook(in_file)
@@ -258,20 +262,20 @@ def update_commits(in_file: str, out_file: str) -> None:
         if commit is None:
             continue  # Ignore empty rows.
 
-        def get_cell(name: str) -> cell.Cell:
-            """Get the cell of the named column in this commit's row."""
-            return ws[f"{get_column(ws, name).column_letter}{commit_cell.row}"]
-
         # Update “Fixes” column.
         if commit in commits:
-            get_cell("Fixes").value = get_fixed_patches(commit, commits)
+            get_cell(ws, "Fixes", commit_cell.row).value = get_fixed_patches(
+                commit, commits
+            )
 
         # Update all distro columns.
         for distro in distros:
             if commit in commits:
-                get_cell(distro).value = get_revision(distro, commit, commits)
+                get_cell(ws, distro, commit_cell.row).value = get_revision(
+                    distro, commit, commits
+                )
             else:
-                get_cell(distro).value = "Unknown"
+                get_cell(ws, distro, commit_cell.row).value = "Unknown"
 
     wb.save(out_file)
     print("Finished updating!")

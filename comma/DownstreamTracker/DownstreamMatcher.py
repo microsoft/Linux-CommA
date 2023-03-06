@@ -10,7 +10,7 @@ from comma.Objects.PatchDiffs import PatchDiffs
 
 
 def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> bool:
-    """Check if 'upstream' has an equivalent in 'downstream_patches'. """
+    """Check if 'upstream' has an equivalent in 'downstream_patches'."""
     # Confidence weights
     author_weight = 0.2
     subject_weight = 0.48
@@ -51,10 +51,13 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
                 _get_filepath_components(filepath) for filepath in downstream_filepaths
             ]
 
-            for (upstream_path, upstream_name) in upstream_file_components:
+            for upstream_path, upstream_name in upstream_file_components:
                 max_match = 0.0
                 # Find best matching downstream filepath
-                for (downstream_path, downstream_name,) in downstream_file_components:
+                for (
+                    downstream_path,
+                    downstream_name,
+                ) in downstream_file_components:
                     if upstream_name == downstream_name:
                         # 0.5 for matching filename, the paths are
                         # fuzzymatched scaled 0.0-0.5 for remaining

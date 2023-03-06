@@ -22,16 +22,16 @@ default_distros = [
         distroID="Ubuntu20.04",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/focal",
     ),
-     Distros(
+    Distros(
         distroID="Ubuntu22.04",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/jammy",
     ),
-     Distros(
+    Distros(
         distroID="Debian10-backport",
         repoLink="https://salsa.debian.org/kernel-team/linux.git",
     ),
     Distros(
-       distroID="Ubuntu22.04",
+        distroID="Ubuntu22.04",
         repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/jammy",
     ),
     Distros(

@@ -4,9 +4,9 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Set
 
-from comma.Util import Config
 from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
 from comma.DatabaseDriver.SqlClasses import PatchData
+from comma.Util import Config
 from comma.Util.Tracking import get_filenames, get_linux_repo, get_tracked_paths
 
 
@@ -26,6 +26,18 @@ def should_keep_line(line: str):
     if simplified_line.startswith(ignore_phrases):
         return False
     return True
+
+
+def parse_diff(diff):
+    """
+    Parse diff to only keep lines with changes (+ or - at start)
+    diff is passed in as bytes
+    """
+    return "\n".join(
+        filter(
+            lambda line: line.startswith(("+", "-")), diff.decode("utf-8").splitlines()
+        )
+    )
 
 
 def process_commits(
@@ -109,14 +121,6 @@ def process_commits(
             patch.fixedPatches = " ".join(fixed_patches)
 
         patch.affectedFilenames = " ".join(get_filenames(commit))
-
-        # Parse diff to only keep lines with changes (+ or - at start)
-        # diff is passed in as bytes
-        def parse_diff(diff):
-            diff_lines = diff.decode("utf-8").splitlines()
-            return "\n".join(
-                filter(lambda line: line.startswith(("+", "-")), diff_lines)
-            )
 
         if len(commit.parents) == 0:
             # First ever commit, we don't need to store this as
