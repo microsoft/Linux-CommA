@@ -11,25 +11,6 @@ patches and checking downstream azure specific kernels, but this is adaptable.
 
 ### Install Dependencies
 
-Install `python3` via `apt` and then it as default:
-
-> This is not technically required but is a recommended configuration, as
-> `poetry` expects _some_ Python at `python`. You could also install Python 2.7.
-
-```bash
-apt install python3 python3-pip python3-venv
-update-alternatives --install /usr/bin/python python /usr/bin/python3 1
-update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
-```
-
-Install [poetry](https://python-poetry.org/docs/):
-
-> Caution: this modifies your `.bashrc`.
-
-```sh
-curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-```
-
 Setup [Microsoft SQL
 repos](https://docs.microsoft.com/en-us/sql/linux/quickstart-install-connect-ubuntu?view=sql-server-ver15#tools)
 (this is for `mssql-tools`):
@@ -46,14 +27,8 @@ curl https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/prod.list | sudo
 Install the required packages for connecting to the Microsoft SQL database:
 
 ```sh
-apt update
-apt install mssql-tools unixodbc-dev
-```
-
-Install Python packages via `poetry`:
-
-```sh
-poetry install
+sudo apt update
+sudo apt install mssql-tools unixodbc-dev
 ```
 
 For the symbol matcher, install `exuberant-ctags` as the default `ctags` will
@@ -63,12 +38,17 @@ not work:
 apt install exuberant-ctags
 ```
 
+### Install CommA
+
+```sh
+pip install .
+```
+
 ### Running CommA
 
-1. Enter the setup environment with `poetry shell`
-2. Provide the URL to the secrets repo with `export
+1. Provide the URL to the secrets repo with `export
    COMMA_SECRETS_URL=<URL/to/secrets/repo>`.
-3. Run `./CommA.py run --upstream --downstream`
+2. Run `comma run --upstream --downstream`
 
 This will parse the upstream and downstream repos.
 
