@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  release:
+  schedule:
+    # Every Thursday at 1 AM
+    - cron: '0 1 * * 4'
+
+jobs:
+
+  CI:
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    continue-on-error: ${{ matrix.optional || false }}
+    name: ${{ matrix.nox-session }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        nox-session: [flake8, demo, symbols]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version || '3.x' }}
+
+      - name: Install system dependencies
+        run: |
+          # Ubuntu Git Maintainers PPA for latest stable Git
+          sudo add-apt-repository ppa:git-core/ppa
+          sudo apt update
+          sudo apt install exuberant-ctags git
+
+      - name: Install Nox
+        run: pip install nox toml
+
+      - name: Run Nox
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: nox -vs ${{ matrix.nox-session }}
