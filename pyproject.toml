@@ -15,12 +15,10 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dependencies = [
-  "gitpython ~= 3.1.0",
-  "pyodbc ~= 4.0.30",
-  "python-Levenshtein ~= 0.12.0",
-  "fuzzywuzzy ~= 0.18.0",
-  "sqlalchemy ~= 1.3.13",
-  "openpyxl ~= 3.0.4",
+  "gitpython ~= 3.1.31",
+  "fuzzywuzzy[speedup] ~= 0.18.0",
+  "sqlalchemy[mssql] ~= 1.4.48",
+  "openpyxl ~= 3.1.2",
 
 ]
 dynamic = ["version"]
