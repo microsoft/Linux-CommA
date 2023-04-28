@@ -34,9 +34,7 @@ def parse_diff(diff):
     diff is passed in as bytes
     """
     return "\n".join(
-        filter(
-            lambda line: line.startswith(("+", "-")), diff.decode("utf-8").splitlines()
-        )
+        filter(lambda line: line.startswith(("+", "-")), diff.decode("utf-8").splitlines())
     )
 
 
@@ -147,9 +145,7 @@ def process_commits(
             # If we DO want to keep this check, let's move before parsing everything
             with DatabaseDriver.get_session() as s:
                 if (
-                    s.query(PatchData.commitID)
-                    .filter_by(commitID=patch.commitID)
-                    .one_or_none()
+                    s.query(PatchData.commitID).filter_by(commitID=patch.commitID).one_or_none()
                     is None
                 ):
                     s.add(patch)

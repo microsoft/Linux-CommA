@@ -25,9 +25,7 @@ def get_db_commits() -> Dict[str, int]:
     with DatabaseDriver.get_session() as s:  # type: sqlalchemy.orm.session.Session
         return {
             commit_id: patch_id
-            for (commit_id, patch_id) in s.query(
-                PatchData.commitID, PatchData.patchID
-            ).filter(
+            for (commit_id, patch_id) in s.query(PatchData.commitID, PatchData.patchID).filter(
                 # Exclude ~1000 CIFS patches.
                 ~PatchData.affectedFilenames.like("%fs/cifs%")
             )
@@ -131,9 +129,7 @@ def get_release(sha: str, repo: git.Repo) -> str:
         return "N/A"
 
 
-def create_commit_row(
-    sha: str, repo: git.Repo, ws: worksheet.Worksheet
-) -> Dict[str, Any]:
+def create_commit_row(sha: str, repo: git.Repo, ws: worksheet.Worksheet) -> Dict[str, Any]:
     """Create a row with the commit's SHA, date, release and title."""
     commit = repo.commit(sha)
     # TODO: Some (but not all) of this info is available in the
@@ -228,9 +224,7 @@ def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
         # ‘monitoringSubject’ relationship on the ‘PatchData’ table,
         # but because the database tracks what’s missing, it becomes
         # hard to state where the patch is present.
-        missing_patch = subject.missingPatches.filter_by(
-            patchID=commits[commit]
-        ).one_or_none()
+        missing_patch = subject.missingPatches.filter_by(patchID=commits[commit]).one_or_none()
 
         if missing_patch is None:  # Then it’s present.
             return subject.revision
@@ -264,16 +258,12 @@ def update_commits(in_file: str, out_file: str) -> None:
 
         # Update “Fixes” column.
         if commit in commits:
-            get_cell(ws, "Fixes", commit_cell.row).value = get_fixed_patches(
-                commit, commits
-            )
+            get_cell(ws, "Fixes", commit_cell.row).value = get_fixed_patches(commit, commits)
 
         # Update all distro columns.
         for distro in distros:
             if commit in commits:
-                get_cell(ws, distro, commit_cell.row).value = get_revision(
-                    distro, commit, commits
-                )
+                get_cell(ws, distro, commit_cell.row).value = get_revision(distro, commit, commits)
             else:
                 get_cell(ws, distro, commit_cell.row).value = "Unknown"
 

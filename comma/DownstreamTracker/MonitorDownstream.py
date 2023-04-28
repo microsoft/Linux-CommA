@@ -39,9 +39,7 @@ def update_revisions_for_distro(distro_id, revs):
             # with revisions on the scale of 1, so the number of
             # queries and inserts here doesn't matter.
             if (
-                s.query(MonitoringSubjects)
-                .filter_by(distroID=distro_id, revision=rev)
-                .first()
+                s.query(MonitoringSubjects).filter_by(distroID=distro_id, revision=rev).first()
                 is None
             ):
                 logging.info(f"For distro {distro_id}, adding revision: {rev}")
@@ -63,17 +61,12 @@ def update_tracked_revisions(distro_id, repo):
 
     if distro_id.startswith("Ubuntu"):
         latest_two_kernels = []
-        tag_lines = repo.git.ls_remote(
-            "--t", "--refs", "--sort=v:refname", distro_id
-        ).split("\n")
+        tag_lines = repo.git.ls_remote("--t", "--refs", "--sort=v:refname", distro_id).split("\n")
         tag_names = [tag_line.rpartition("/")[-1] for tag_line in tag_lines]
         # Filter out edge, and only include azure revisions
         tag_names = list(
             filter(
-                lambda x: "azure" in x
-                and "edge" not in x
-                and "cvm" not in x
-                and "fde" not in x,
+                lambda x: "azure" in x and "edge" not in x and "cvm" not in x and "fde" not in x,
                 tag_names,
             )
         )
@@ -128,14 +121,10 @@ def monitor_subject(monitoring_subject, repo):
             since=earliest_commit_date,
         )
 
-        logging.info(
-            f"Starting confidence matching for {len(patches)} upstream patches..."
-        )
+        logging.info(f"Starting confidence matching for {len(patches)} upstream patches...")
 
         # Double check the missing cherries using our fuzzy algorithm.
-        missing_patches = [
-            p for p in patches if not patch_matches(downstream_patches, p)
-        ]
+        missing_patches = [p for p in patches if not patch_matches(downstream_patches, p)]
 
         missing_patch_ids = [p.patchID for p in missing_patches]
 
@@ -155,9 +144,7 @@ def monitor_subject(monitoring_subject, repo):
         patches_to_delete = patches.filter(
             ~MonitoringSubjectsMissingPatches.patchID.in_(missing_patch_ids)
         )
-        logging.info(
-            f"Deleting {patches_to_delete.count()} patches that are now present."
-        )
+        logging.info(f"Deleting {patches_to_delete.count()} patches that are now present.")
         # This is a bulk delete and we close the session immediately after.
         patches_to_delete.delete(synchronize_session=False)
 
@@ -191,17 +178,13 @@ def monitor_downstream():
         for distroID, repoLink in s.query(Distros.distroID, Distros.repoLink).all():
             # Debian we handle differently
             if distroID not in current_remotes and not distroID.startswith("Debian"):
-                logging.debug(
-                    "Adding remote origin for %s from %s" % (distroID, repoLink)
-                )
+                logging.debug("Adding remote origin for %s from %s" % (distroID, repoLink))
                 repo.create_remote(distroID, url=repoLink)
 
     # Update all remotes, and tags of all remotes
     if Config.fetch:
         logging.info("Fetching updates to all repos and tags...")
-        repo.git.fetch(
-            "--all", "--tags", "--force", f"--shallow-since='{Config.since}'"
-        )
+        repo.git.fetch("--all", "--tags", "--force", f"--shallow-since='{Config.since}'")
         logging.debug("Fetched!")
 
     logging.info("Updating tracked revisions for each repo.")

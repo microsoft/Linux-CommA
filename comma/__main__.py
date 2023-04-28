@@ -46,9 +46,7 @@ def get_distros(args):
         print("DistroID\tRevision")
         for distro, revision in (
             s.query(Distros.distroID, MonitoringSubjects.revision)
-            .outerjoin(
-                MonitoringSubjects, Distros.distroID == MonitoringSubjects.distroID
-            )
+            .outerjoin(MonitoringSubjects, Distros.distroID == MonitoringSubjects.distroID)
             .all()
         ):
             print(f"{distro}\t{revision}")
@@ -65,9 +63,7 @@ def add_distro(args):
 def add_kernel(args):
     with DatabaseDriver.get_session() as s:
         s.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
-    logging.info(
-        f"Successfully added new revision '{args.revision}' for distro '{args.name}'"
-    )
+    logging.info(f"Successfully added new revision '{args.revision}' for distro '{args.name}'")
 
 
 def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
@@ -131,9 +127,7 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
     )
     run_parser.set_defaults(func=run)
 
-    symbol_parser = subparsers.add_parser(
-        "print-symbols", help="Compare symbols against patches."
-    )
+    symbol_parser = subparsers.add_parser("print-symbols", help="Compare symbols against patches.")
     symbol_parser.add_argument(
         "-f",
         "--file",
@@ -185,9 +179,7 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
     )
     print_distro_parser.set_defaults(func=get_distros)
 
-    distro_parser = subparsers.add_parser(
-        "add-distro", help="Add a distro to the database."
-    )
+    distro_parser = subparsers.add_parser("add-distro", help="Add a distro to the database.")
     distro_parser.add_argument(
         "-n",
         "--name",
