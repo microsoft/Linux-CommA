@@ -27,9 +27,7 @@ class DatabaseDriver:
         if Config.dry_run:
             db_file = "comma.db"
             logging.info(f"Using local SQLite database at '{db_file}'.")
-            engine = sqlalchemy.create_engine(
-                f"sqlite:///{db_file}", echo=(Config.verbose > 2)
-            )
+            engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=(Config.verbose > 2))
         else:
             logging.info("Connecting to remote database...")
             creds = DatabaseCredentials()

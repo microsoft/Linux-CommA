@@ -150,9 +150,7 @@ def dev(session: nox.Session) -> None:
     session.install("virtualenv", silent=False)
 
     # Create virtual environment
-    session.run(
-        "virtualenv", "--python", str(session.python), "--prompt", "comma", venv_path
-    )
+    session.run("virtualenv", "--python", str(session.python), "--prompt", "comma", venv_path)
 
     # Make sure pip and setuptools are up-to-date
     session.run(

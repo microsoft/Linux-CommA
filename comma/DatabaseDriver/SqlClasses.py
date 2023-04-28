@@ -28,9 +28,7 @@ class PatchData(Base):
     # TODO: If this 1-1, why isn't `priority` just a column on `PatchData`?
     metaData = relationship("PatchDataMeta", uselist=False, back_populates="patch")
     # TODO: If this 1-1, why isn't `status` just a column on `PatchData`?
-    upstreamStatus = relationship(
-        "UpstreamPatchStatuses", uselist=False, back_populates="patch"
-    )
+    upstreamStatus = relationship("UpstreamPatchStatuses", uselist=False, back_populates="patch")
     monitoringSubject = relationship(
         "MonitoringSubjectsMissingPatches",
         back_populates="patches",

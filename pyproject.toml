@@ -55,9 +55,10 @@ isort = [
 homepage = "https://github.com/microsoft/Linux-CommA"
 
 [tool.black]
+line-length = 100
 
 [tool.flake8]
-max-line-length = 88
+max-line-length = 100
 select = ["C", "E", "F", "W", "B"]
 ignore = ["E203", "E501", "W503"]
 extend-exclude = [
@@ -71,7 +72,7 @@ multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
-line_length = 88
+line_length = 100
 skip_gitignore = true
 
 [tool.setuptools.packages.find]

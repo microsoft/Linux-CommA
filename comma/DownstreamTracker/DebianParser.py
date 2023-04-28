@@ -105,13 +105,9 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
                             date += " " + words[i]
                         date = date.strip()
                         try:
-                            patch.author_time = datetime.strptime(
-                                date, "%a, %d %b %Y %H:%M:%S"
-                            )
+                            patch.author_time = datetime.strptime(date, "%a, %d %b %Y %H:%M:%S")
                         except ValueError:
-                            patch.author_time = datetime.strptime(
-                                date, "%a %b %d %H:%M:%S %Y"
-                            )
+                            patch.author_time = datetime.strptime(date, "%a %b %d %H:%M:%S %Y")
                         commit_msg_started = True
                     elif words[0] == "Bug-Debian:":
                         patch.buglink = words[1]
@@ -150,15 +146,12 @@ def parse_file_log(filename, db, match, distro, hv_filenames):
                 print("[Error] " + str(e))
                 print(line)
 
-        if (
-            patch.subject is not None or len(patch.subject) != 0
-        ) and not db.check_commit_present(patch.subject, distro):
+        if (patch.subject is not None or len(patch.subject) != 0) and not db.check_commit_present(
+            patch.subject, distro
+        ):
             patch.filenames = " ".join(diff_filenames)
             if check_hyperV_patch(diff_filenames, hv_filenames):
-                print(
-                    " ************hyperV related patch*********************"
-                    + patch.subject
-                )
+                print(" ************hyperV related patch*********************" + patch.subject)
                 # if true then match upstream
                 insert_patch(db, match, distro, patch, distro.distro_id)
                 count_added += 1

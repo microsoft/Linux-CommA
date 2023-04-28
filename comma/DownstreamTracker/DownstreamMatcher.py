@@ -16,12 +16,8 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
     subject_weight = 0.48
     description_weight = 0.1
     filenames_weight = 0.2
-    author_date_weight = (
-        0.01  # This addresses some edge cases of identical other fields
-    )
-    commit_date_weight = (
-        0.01  # This addresses some edge cases of identical other fields
-    )
+    author_date_weight = 0.01  # This addresses some edge cases of identical other fields
+    commit_date_weight = 0.01  # This addresses some edge cases of identical other fields
 
     # Threshold that we must hit to return a match
     threshold = 0.75
@@ -40,9 +36,7 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
         # of upstream filepaths present in downstream patch.
         if downstream.affectedFilenames == "" or upstream.affectedFilenames == "":
             filenames_confidence = (
-                1.0
-                if (downstream.affectedFilenames == upstream.affectedFilenames)
-                else 0.0
+                1.0 if (downstream.affectedFilenames == upstream.affectedFilenames) else 0.0
             )
         else:
             total_filepaths_match = 0
@@ -62,9 +56,7 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
                         # 0.5 for matching filename, the paths are
                         # fuzzymatched scaled 0.0-0.5 for remaining
                         # match
-                        match = 0.5 + (
-                            fuzz.partial_ratio(upstream_path, downstream_path) / 200.0
-                        )
+                        match = 0.5 + (fuzz.partial_ratio(upstream_path, downstream_path) / 200.0)
                     else:
                         match = 0.0
 
@@ -72,29 +64,17 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
                         max_match = match
                 total_filepaths_match += max_match
 
-            filenames_confidence = float(total_filepaths_match) / len(
-                upstream_filepaths
-            )
+            filenames_confidence = float(total_filepaths_match) / len(upstream_filepaths)
 
-        author_confidence = (
-            fuzz.token_set_ratio(upstream.author, downstream.author) / 100.0
-        )
-        subject_confidence = (
-            fuzz.partial_ratio(upstream.subject, downstream.subject) / 100.0
-        )
+        author_confidence = fuzz.token_set_ratio(upstream.author, downstream.author) / 100.0
+        subject_confidence = fuzz.partial_ratio(upstream.subject, downstream.subject) / 100.0
         # Temporarily for description only checking exact string is in
         if upstream.description == "":
             description_confidence = 1.0 if downstream.description == "" else 0.0
         else:
-            description_confidence = (
-                1.0 if upstream.description in downstream.description else 0.0
-            )
-        author_date_confidence = (
-            1.0 if upstream.authorTime == downstream.authorTime else 0.0
-        )
-        commit_date_confidence = (
-            1.0 if upstream.commitTime == downstream.commitTime else 0.0
-        )
+            description_confidence = 1.0 if upstream.description in downstream.description else 0.0
+        author_date_confidence = 1.0 if upstream.authorTime == downstream.authorTime else 0.0
+        commit_date_confidence = 1.0 if upstream.commitTime == downstream.commitTime else 0.0
 
         confidence = (
             author_weight * author_confidence
