@@ -15,6 +15,7 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dependencies = [
+  "approxidate",
   "gitpython ~= 3.1.31",
   "fuzzywuzzy[speedup] ~= 0.18.0",
   "sqlalchemy[mssql] ~= 1.4.48",

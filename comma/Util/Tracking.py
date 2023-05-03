@@ -49,15 +49,14 @@ def get_repo(
         if name not in UPDATED_REPOS:
             if pull:
                 logging.info(f"Pulling '{name}' repo...")
-                repo.remotes.origin.pull()
+                repo.remotes.origin.pull(progress=GitProgressPrinter())
                 logging.info("Pulled!")
             elif Config.fetch:
                 logging.info(f"Fetching '{name}' repo...")
-                repo.git.fetch(
-                    "--all",
-                    "--tags",
-                    "--force",
-                    f"--shallow-since={Config.since}",
+                repo.remotes.origin.fetch(
+                    shallow_since=Config.since,
+                    verbose=True,
+                    progress=GitProgressPrinter(),
                 )
                 logging.info("Fetched!")
     else:
@@ -65,7 +64,7 @@ def get_repo(
         args = {}
         if shallow:
             args.update({"shallow_since": Config.since})
-        repo = git.Repo.clone_from(url, path, **args)
+        repo = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
         logging.info("Cloned!")
     # We either cloned, pulled, fetched, or purposefully skipped doing
     # so. Don't update the repo again this session.
@@ -137,3 +136,22 @@ def get_tracked_paths(sections=Config.sections) -> List[str]:
 def print_tracked_paths():
     for path in get_tracked_paths():
         print(path)
+
+
+class GitProgressPrinter(git.RemoteProgress):
+    """
+    Simple status printer for GitPython
+    """
+
+    def update(self, op_code, cur_count, max_count=None, message=""):
+        """
+        Subclassed from parent. Called for each line in output.
+        """
+        if not Config.verbose:
+            return
+
+        print(f"  {self._cur_line}", end="    ")
+        if op_code & self.END:
+            print()
+        else:
+            print("\r", end="", flush=True)

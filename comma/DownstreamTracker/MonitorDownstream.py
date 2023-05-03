@@ -2,6 +2,8 @@
 # Licensed under the MIT License.
 import logging
 
+import approxidate
+
 from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
 from comma.DatabaseDriver.SqlClasses import (
     Distros,
@@ -12,7 +14,7 @@ from comma.DatabaseDriver.SqlClasses import (
 from comma.DownstreamTracker.DownstreamMatcher import patch_matches
 from comma.UpstreamTracker.ParseData import process_commits
 from comma.Util import Config
-from comma.Util.Tracking import get_linux_repo, get_tracked_paths
+from comma.Util.Tracking import get_linux_repo, get_tracked_paths, GitProgressPrinter
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -92,6 +94,7 @@ def monitor_subject(monitoring_subject, repo):
         "--right-only",
         "--cherry-pick",
         "--pretty=format:%H",
+        f"--since={Config.since}",
         f"{monitoring_subject.revision}...origin/master",
         "--",
         get_tracked_paths(),
@@ -178,14 +181,8 @@ def monitor_downstream():
         for distroID, repoLink in s.query(Distros.distroID, Distros.repoLink).all():
             # Debian we handle differently
             if distroID not in current_remotes and not distroID.startswith("Debian"):
-                logging.debug("Adding remote origin for %s from %s" % (distroID, repoLink))
+                logging.debug("Adding remote origin for %s from %s", distroID, repoLink)
                 repo.create_remote(distroID, url=repoLink)
-
-    # Update all remotes, and tags of all remotes
-    if Config.fetch:
-        logging.info("Fetching updates to all repos and tags...")
-        repo.git.fetch("--all", "--tags", "--force", f"--shallow-since='{Config.since}'")
-        logging.debug("Fetched!")
 
     logging.info("Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
@@ -193,15 +190,57 @@ def monitor_downstream():
         for (distroID,) in s.query(Distros.distroID).all():
             update_tracked_revisions(distroID, repo)
 
+    approx_date_since = approxidate.approx(Config.since)
     with DatabaseDriver.get_session() as s:
         for subject in s.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
                 # TODO don't skip debian
-                logging.debug("skipping debian")
+                logging.debug("skipping Debian")
+                continue
+
+            remote = repo.remote(subject.distroID)
+
+            # Initially fetch revision at depth 1
+            # TODO: Is there a better way to get the date of the last commit?
+            logging.info(
+                f"Fetching remote ref {subject.revision} from remote {subject.distroID} at depth 1"
+            )
+            fetch_info = remote.fetch(
+                subject.revision, depth=1, verbose=True, progress=GitProgressPrinter()
+            )
+
+            # If last commit for revision is in the fetch window, expand depth
+            # This check is necessary because some servers will throw an error when there are
+            # no commits in the fetch window
+            if fetch_info[-1].commit.committed_date >= approx_date_since:
+                logging.info(
+                    'Fetching ref %s from remote %s shallow since "%s"',
+                    subject.revision,
+                    subject.distroID,
+                    Config.since,
+                )
+                remote.fetch(
+                    subject.revision,
+                    shallow_since=Config.since,
+                    verbose=True,
+                    progress=GitProgressPrinter(),
+                )
             else:
                 logging.info(
-                    "Monitoring Script starting for Distro: %s, revision: %s"
-                    % (subject.distroID, subject.revision)
+                    'Newest commit for ref %s from remote %s is older than fetch window "%s"',
+                    subject.revision,
+                    subject.distroID,
+                    Config.since,
                 )
-                monitor_subject(subject, repo)
+
+            # Create tag at FETCH_HEAD to preserve reference locally
+            if not hasattr(repo.references, subject.revision):
+                repo.create_tag(subject.revision, "FETCH_HEAD")
+
+            logging.info(
+                "Monitoring Script starting for Distro: %s, revision: %s",
+                subject.distroID,
+                subject.revision,
+            )
+            monitor_subject(subject, repo)
     print("Finished monitoring downstream!")
