@@ -15,7 +15,7 @@ from comma.DatabaseDriver.SqlClasses import (
 from comma.DownstreamTracker.DownstreamMatcher import patch_matches
 from comma.UpstreamTracker.ParseData import process_commits
 from comma.Util import Config
-from comma.Util.Tracking import GitProgressPrinter, get_linux_repo, get_tracked_paths
+from comma.Util.Tracking import get_linux_repo, get_tracked_paths, GitProgressPrinter
 
 
 def update_revisions_for_distro(distro_id, revs):
