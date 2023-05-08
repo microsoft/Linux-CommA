@@ -85,22 +85,34 @@ def monitor_subject(monitoring_subject, repo):
     repo: The git repo object pointing to relevant upstream linux repo
     """
 
-    missing_patch_ids = None
+    # Get all upstream commits on tracked paths within window
+    upstream_commits = set(
+        repo.git.log(
+            "--no-merges",
+            "--pretty=format:%H",
+            f"--since={Config.since}",
+            "origin/master",
+            "--",
+            get_tracked_paths(),
+        ).splitlines()
+    )
 
-    # This list every missing cherry for our tracked paths, we then
-    # filter to commits in our database, and double-check these.
-    missing_cherries = repo.git.log(
-        "--no-merges",
-        "--right-only",
-        "--cherry-pick",
-        "--pretty=format:%H",
-        f"--since={Config.since}",
-        f"{monitoring_subject.revision}...origin/master",
-        "--",
-        get_tracked_paths(),
-    ).split("\n")
+    # Get missing cherries for all paths, but don't filter by path since it takes forever
+    missing_cherries = set(
+        repo.git.log(
+            "--no-merges",
+            "--right-only",
+            "--cherry-pick",
+            "--pretty=format:%H",
+            f"--since={Config.since}",
+            f"{monitoring_subject.revision}...origin/master",
+        ).splitlines()
+    )
 
-    logging.debug(f"Found {len(missing_cherries)} missing patches through cherry-pick.")
+    missing_cherries &= upstream_commits
+    del upstream_commits
+
+    logging.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
     # Run extra checks on these missing commits
     with DatabaseDriver.get_session() as s:
@@ -130,6 +142,12 @@ def monitor_subject(monitoring_subject, repo):
         missing_patches = [p for p in patches if not patch_matches(downstream_patches, p)]
 
         missing_patch_ids = [p.patchID for p in missing_patches]
+
+        logging.info(
+            "Identified %d missing patches:\n  %s",
+            len(missing_patch_ids),
+            "\n  ".join(sorted(patch.commitID for patch in missing_patches)),
+        )
 
     subject_id = monitoring_subject.monitoringSubjectID
 
