@@ -107,8 +107,8 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
         logging.warning(f"Commit '{sha}' not in repo!")
         return False
     # Skip commits before the chosen base.
-    if not repo.is_ancestor(base_commit, commit):
-        logging.debug(f"Commit '{sha}' is too old!")
+    if base_commit and not repo.is_ancestor(base_commit, commit):
+        logging.debug("Commit '%s' is too old!", sha)
         return False
     # Skip commits to tools.
     filenames = Tracking.get_filenames(commit)
@@ -167,8 +167,12 @@ def export_commits(in_file: str, out_file: str) -> None:
     db_commits = get_db_commits()
     repo = Tracking.get_linux_repo()
     tag = "v4.15"
-    logging.info(f"Skipping commits before tag '{tag}'!")
-    base_commit = repo.commit(tag)
+    if tag in repo.references:
+        logging.info("Skipping commits before tag '%s'!", tag)
+        base_commit = repo.commit(tag)
+    else:
+        logging.warning("Tag '%s' not in local repo, not limiting commits by age", tag)
+        base_commit = None
     missing_commits = [
         commit
         for commit in list(db_commits.keys() - wb_commits)
