@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        nox-session: [flake8, demo, symbols]
+        nox-session: [flake8, pylint, demo, symbols]
 
     steps:
       - uses: actions/checkout@v3
