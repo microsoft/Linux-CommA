@@ -2,7 +2,7 @@
 # Licensed under the MIT License.
 import logging
 
-from comma.UpstreamTracker.ParseData import process_commits
+from comma.upstream.parser import process_commits
 
 
 def monitor_upstream():

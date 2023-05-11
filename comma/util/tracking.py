@@ -8,7 +8,7 @@ from typing import List, Set
 
 import git
 
-from comma.Util import Config
+from comma.util import config
 
 
 def get_filenames(commit: git.Commit) -> List[str]:
@@ -57,11 +57,11 @@ def get_repo(
                 logging.info(f"Pulling '{name}' repo...")
                 repo.remotes.origin.pull(progress=GitProgressPrinter())
                 logging.info("Pulled!")
-            elif Config.fetch:
+            elif config.fetch:
                 logging.info(f"Fetching '{name}' repo...")
                 try:
                     repo.remotes.origin.fetch(
-                        shallow_since=Config.since,
+                        shallow_since=config.since,
                         verbose=True,
                         progress=GitProgressPrinter(),
                     )
@@ -76,7 +76,7 @@ def get_repo(
         logging.info(f"Cloning '{name}' repo from '{url}'...")
         args = {}
         if shallow:
-            args["shallow_since"] = Config.since
+            args["shallow_since"] = config.since
         repo = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
         logging.info("Cloned!")
     # We either cloned, pulled, fetched, or purposefully skipped doing
@@ -125,7 +125,7 @@ def get_files(section: str, content: List[str]) -> Set[str]:
 TRACKED_PATHS: List[str] = None
 
 
-def get_tracked_paths(sections=Config.sections) -> List[str]:
+def get_tracked_paths(sections=config.sections) -> List[str]:
     """Get list of files from MAINTAINERS for given sections."""
     global TRACKED_PATHS
     if TRACKED_PATHS is not None:
@@ -160,7 +160,7 @@ class GitProgressPrinter(git.RemoteProgress):
         """
         Subclassed from parent. Called for each line in output.
         """
-        if not Config.verbose:
+        if not config.verbose:
             return
 
         print(f"  {self._cur_line}", end="    ")
