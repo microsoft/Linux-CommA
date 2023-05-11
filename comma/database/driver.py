@@ -18,7 +18,7 @@ class DatabaseDriver:
     """
 
     _instance = None
-    _Session = None
+    _session = None
 
     def __init__(self):
         """
@@ -41,7 +41,7 @@ class DatabaseDriver:
             logging.info("Connected!")
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)
-        self._Session = sqlalchemy.orm.sessionmaker(bind=engine)
+        self._session = sqlalchemy.orm.sessionmaker(bind=engine)
 
     @staticmethod
     def get_instance():
@@ -55,7 +55,7 @@ class DatabaseDriver:
     @contextmanager
     def get_session() -> sqlalchemy.orm.session.Session:
         instance = DatabaseDriver.get_instance()
-        session = instance._Session()
+        session = instance._session()
         try:
             yield session
             session.commit()

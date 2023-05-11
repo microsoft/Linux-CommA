@@ -17,11 +17,11 @@ from comma.util.tracking import print_tracked_paths
 
 def run(args):
     if args.dry_run:
-        with DatabaseDriver.get_session() as s:
-            if s.query(Distros).first() is None:
-                s.add_all(config.default_distros)
-            if s.query(MonitoringSubjects).first() is None:
-                s.add_all(config.default_monitoring_subjects)
+        with DatabaseDriver.get_session() as session:
+            if session.query(Distros).first() is None:
+                session.add_all(config.default_distros)
+            if session.query(MonitoringSubjects).first() is None:
+                session.add_all(config.default_monitoring_subjects)
     if args.section:
         config.sections = args.section
     if args.print_tracked_paths:
@@ -42,10 +42,10 @@ def spreadsheet(args):
 
 
 def get_distros(args):
-    with DatabaseDriver.get_session() as s:
+    with DatabaseDriver.get_session() as session:
         print("DistroID\tRevision")
         for distro, revision in (
-            s.query(Distros.distroID, MonitoringSubjects.revision)
+            session.query(Distros.distroID, MonitoringSubjects.revision)
             .outerjoin(MonitoringSubjects, Distros.distroID == MonitoringSubjects.distroID)
             .all()
         ):
@@ -54,15 +54,15 @@ def get_distros(args):
 
 
 def add_distro(args):
-    with DatabaseDriver.get_session() as s:
-        s.add(Distros(distroID=args.name, repoLink=args.url))
-        s.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
+    with DatabaseDriver.get_session() as session:
+        session.add(Distros(distroID=args.name, repoLink=args.url))
+        session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
     logging.info(f"Successfully added new distro: {args.name}")
 
 
 def add_kernel(args):
-    with DatabaseDriver.get_session() as s:
-        s.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
+    with DatabaseDriver.get_session() as session:
+        session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
     logging.info(f"Successfully added new revision '{args.revision}' for distro '{args.name}'")
 
 

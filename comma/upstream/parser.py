@@ -71,17 +71,17 @@ def process_commits(
         )
     else:
         # If given a list of commit SHAs, get the commit objects.
-        commits = list()
-        for c in commit_ids:
+        commits = []
+        for id_ in commit_ids:
             try:
-                commits.append(repo.commit(c))
+                commits.append(repo.commit(id_))
             except ValueError:
-                logging.warning(f"Commit '{c}' does not exist in the repo! Skipping...")
+                logging.warning(f"Commit '{id_}' does not exist in the repo! Skipping...")
 
     logging.info("Starting commit processing...")
     for commit in commits:
         logging.debug(f"Parsing commit {commit.hexsha}")
-        patch = PatchData(
+        patch: PatchData = PatchData(
             commitID=commit.hexsha,
             author=commit.author.name,
             authorEmail=commit.author.email,
@@ -143,12 +143,14 @@ def process_commits(
         if add_to_database:
             # TODO is this check needed if we start on only patches we haven't processed before?
             # If we DO want to keep this check, let's move before parsing everything
-            with DatabaseDriver.get_session() as s:
+            with DatabaseDriver.get_session() as session:
                 if (
-                    s.query(PatchData.commitID).filter_by(commitID=patch.commitID).one_or_none()
+                    session.query(PatchData.commitID)
+                    .filter_by(commitID=patch.commitID)
+                    .one_or_none()
                     is None
                 ):
-                    s.add(patch)
+                    session.add(patch)
                     num_patches_added += 1
         else:
             all_patches.append(patch)

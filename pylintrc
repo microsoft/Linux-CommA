@@ -48,9 +48,6 @@ disable=
     logging-fstring-interpolation,
     logging-not-lazy,
 
-    # Naming
-    invalid-name,
-
     # Docstrings
     missing-class-docstring,
     missing-function-docstring,

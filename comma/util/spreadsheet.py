@@ -10,9 +10,9 @@ from typing import Any, Dict, List, Set, Tuple
 import git
 import openpyxl
 import sqlalchemy
-from openpyxl.cell import cell
-from openpyxl.workbook import workbook
-from openpyxl.worksheet import worksheet
+from openpyxl.cell.cell import Cell
+from openpyxl.workbook.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects, PatchData
@@ -22,17 +22,16 @@ from comma.util import tracking
 
 def get_db_commits() -> Dict[str, int]:
     """Query the 'PatchData' table for all commit hashes and IDs."""
-    with DatabaseDriver.get_session() as s:  # type: sqlalchemy.orm.session.Session
-        return {
-            commit_id: patch_id
-            for (commit_id, patch_id) in s.query(PatchData.commitID, PatchData.patchID).filter(
+    with DatabaseDriver.get_session() as session:  # type: sqlalchemy.orm.session.Session
+        return dict(
+            session.query(PatchData.commitID, PatchData.patchID).filter(
                 # Exclude ~1000 CIFS patches.
                 ~PatchData.affectedFilenames.like("%fs/cifs%")
             )
-        }
+        )
 
 
-def get_workbook(in_file: str) -> Tuple[workbook.Workbook, worksheet.Worksheet]:
+def get_workbook(in_file: str) -> Tuple[Workbook, Worksheet]:
     """Open the spreadsheet and return it and the 'git log' worksheet.
 
     Also fix the pivot table so the spreadsheet doesn't crash.
@@ -41,18 +40,18 @@ def get_workbook(in_file: str) -> Tuple[workbook.Workbook, worksheet.Worksheet]:
     if not Path(in_file).exists():
         logging.error(f"The file {in_file} does not exist")
         sys.exit(1)
-    wb = openpyxl.load_workbook(filename=in_file)
+    workbook = openpyxl.load_workbook(filename=in_file)
     # Force refresh of pivot table in “Pivot” worksheet.
     logging.debug("Finding worksheet named 'Pivot'...")
-    pivot = wb["Pivot"]._pivots[0]
+    pivot = workbook["Pivot"]._pivots[0]
     pivot.cache.refreshOnLoad = True
     # The worksheet is manually named “git log”.
     logging.debug("Finding worksheet named 'git log'...")
-    ws = wb["git log"]
-    return (wb, ws)
+    worksheet = workbook["git log"]
+    return (workbook, worksheet)
 
 
-def get_column(ws: worksheet.Worksheet, name: str) -> cell.Cell:
+def get_column(worksheet: Worksheet, name: str) -> Cell:
     """Gets the header cell for the given column name.
 
     The column names are the values of the cells in the first row,
@@ -62,14 +61,14 @@ def get_column(ws: worksheet.Worksheet, name: str) -> cell.Cell:
 
     """
     logging.debug(f"Looking for column with name '{name}'...")
-    return next(c for c in ws[1] if c.value == name)
+    return next(cell for cell in worksheet[1] if cell.value == name)
 
 
-def get_wb_commits(ws: worksheet.Worksheet) -> Set[str]:
+def get_wb_commits(worksheet: Worksheet) -> Set[str]:
     """Get every commit in the workbook."""
     # Skip the header and all ‘None’ values.
-    column = get_column(ws, "Commit ID").column_letter
-    return {c.value for c in ws[column][1:] if c.value is not None}
+    column = get_column(worksheet, "Commit ID").column_letter
+    return {cell.value for cell in worksheet[column][1:] if cell.value is not None}
 
 
 def import_commits(in_file: str) -> None:
@@ -85,8 +84,8 @@ def import_commits(in_file: str) -> None:
     # TODO: Fix tracking to support commits which are manually added
     # to the database, and therefore affect untracked paths.
     print(f"Importing commits from spreadsheet '{in_file}'...")
-    wb, ws = get_workbook(in_file)
-    wb_commits = get_wb_commits(ws)
+    workbook, worksheet = get_workbook(in_file)
+    wb_commits = get_wb_commits(worksheet)
     db_commits = get_db_commits()
     missing_commits = wb_commits - db_commits.keys()
     print(f"Adding {len(missing_commits)} commits to database...")
@@ -124,12 +123,12 @@ def get_release(sha: str, repo: git.Repo) -> str:
         # NOTE: This must be ordered “--contains <SHA>” for Git.
         tag = repo.git.describe("--contains", sha)
         # Use "(v[^-~]+(-rc[0-9]+)?)[-~]" to include ‘-rcX’
-        return re.search(r"(v[^-~]*)[-~]", tag).group(1)
+        return re.search(r"(v[^-~]*)[-~]", tag)[1]
     except git.GitCommandError:
         return "N/A"
 
 
-def create_commit_row(sha: str, repo: git.Repo, ws: worksheet.Worksheet) -> Dict[str, Any]:
+def create_commit_row(sha: str, repo: git.Repo, worksheet: Worksheet) -> Dict[str, Any]:
     """Create a row with the commit's SHA, date, release and title."""
     commit = repo.commit(sha)
     # TODO: Some (but not all) of this info is available in the
@@ -141,7 +140,7 @@ def create_commit_row(sha: str, repo: git.Repo, ws: worksheet.Worksheet) -> Dict
     # The worksheet has additional columns with manually entered
     # info, which we can’t insert, so we skip them.
     def get_letter(name: str) -> str:
-        return get_column(ws, name).column_letter
+        return get_column(worksheet, name).column_letter
 
     return {
         get_letter("Commit ID"): sha,
@@ -159,8 +158,8 @@ def export_commits(in_file: str, out_file: str) -> None:
     from the commit.
 
     """
-    wb, ws = get_workbook(in_file)
-    wb_commits = get_wb_commits(ws)
+    workbook, worksheet = get_workbook(in_file)
+    wb_commits = get_wb_commits(worksheet)
 
     # Collect the commits in the database which are not in the
     # workbook, but that we want to include.
@@ -184,29 +183,30 @@ def export_commits(in_file: str, out_file: str) -> None:
     print(f"Exporting {len(missing_commits)} commits to {out_file}...")
     for commit in missing_commits:
         # TODO: Set fonts of the cells.
-        ws.append(create_commit_row(commit, repo, ws))
+        worksheet.append(create_commit_row(commit, repo, worksheet))
 
-    wb.save(out_file)
+    workbook.save(out_file)
     print("Finished exporting!")
 
 
 def get_distros() -> List[str]:
     """Collect the distros we’re tracking in the database."""
-    with DatabaseDriver.get_session() as s:
+    with DatabaseDriver.get_session() as session:
         # TODO: Handle Debian.
-        return [d for (d,) in s.query(Distros.distroID) if not d.startswith("Debian")]
+        return [
+            distro
+            for (distro,) in session.query(Distros.distroID)
+            if not distro.startswith("Debian")
+        ]
 
 
 def get_fixed_patches(commit: str, commits: Dict[str, int]) -> str:
     """Get the fixed patches for the given commit."""
-    with DatabaseDriver.get_session() as s:
-        patch = s.query(PatchData).filter_by(patchID=commits[commit]).one()
+    with DatabaseDriver.get_session() as session:
+        patch = session.query(PatchData).filter_by(patchID=commits[commit]).one()
         # The database stores these separated by a space, but we want
         # commas in the spreadsheet.
-        if patch.fixedPatches:
-            return ", ".join(patch.fixedPatches.split())
-        else:
-            return None
+        return ", ".join(patch.fixedPatches.split()) if patch.fixedPatches else None
 
 
 def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
@@ -214,9 +214,9 @@ def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
     # NOTE: For some distros (e.g. Ubuntu), we continually add new
     # revisions (Git tags) as they become available, so we need the
     # max ID, which is the most recent.
-    with DatabaseDriver.get_session() as s:
+    with DatabaseDriver.get_session() as session:
         subject, _ = (
-            s.query(
+            session.query(
                 MonitoringSubjects,
                 sqlalchemy.func.max(MonitoringSubjects.monitoringSubjectID),
             )
@@ -230,46 +230,45 @@ def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
         # hard to state where the patch is present.
         missing_patch = subject.missingPatches.filter_by(patchID=commits[commit]).one_or_none()
 
-        if missing_patch is None:  # Then it’s present.
-            return subject.revision
-        else:
-            return "Absent"
+        return subject.revision if missing_patch is None else "Absent"
 
 
-def get_cell(worksheet, name: str, row) -> cell.Cell:
+def get_cell(worksheet, name: str, row) -> Cell:
     """Get the cell of the named column in this commit's row."""
     return worksheet[f"{get_column(worksheet, name).column_letter}{row}"]
 
 
 def update_commits(in_file: str, out_file: str) -> None:
     """Update each row with the 'Fixes' and distro information."""
-    wb, ws = get_workbook(in_file)
+    workbook, worksheet = get_workbook(in_file)
     commits = get_db_commits()
     distros = get_distros()
     for distro in distros:
         try:
-            get_column(ws, distro)
+            get_column(worksheet, distro)
         except StopIteration:
             print(f"No column with distro '{distro}', please fix spreadsheet!")
             sys.exit(1)
 
-    commit_column = get_column(ws, "Commit ID").column_letter
+    commit_column = get_column(worksheet, "Commit ID").column_letter
 
-    for commit_cell in ws[commit_column][1:]:  # Skip the header row
+    for commit_cell in worksheet[commit_column][1:]:  # Skip the header row
         commit = commit_cell.value
         if commit is None:
             continue  # Ignore empty rows.
 
         # Update “Fixes” column.
         if commit in commits:
-            get_cell(ws, "Fixes", commit_cell.row).value = get_fixed_patches(commit, commits)
+            get_cell(worksheet, "Fixes", commit_cell.row).value = get_fixed_patches(commit, commits)
 
         # Update all distro columns.
         for distro in distros:
             if commit in commits:
-                get_cell(ws, distro, commit_cell.row).value = get_revision(distro, commit, commits)
+                get_cell(worksheet, distro, commit_cell.row).value = get_revision(
+                    distro, commit, commits
+                )
             else:
-                get_cell(ws, distro, commit_cell.row).value = "Unknown"
+                get_cell(worksheet, distro, commit_cell.row).value = "Unknown"
 
-    wb.save(out_file)
+    workbook.save(out_file)
     print("Finished updating!")
