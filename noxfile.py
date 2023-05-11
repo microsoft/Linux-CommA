@@ -63,6 +63,15 @@ def flake8(session: nox.Session) -> None:
     session.run("flake8")
 
 
+@nox.session(python=CURRENT_PYTHON, tags=["lint", "all"])
+def pylint(session: nox.Session) -> None:
+    """Run pylint"""
+    session.install(
+        *OPTIONAL_DEPENDENCIES["pylint"], *DEPENDENCIES, *NOX_DEPENDENCIES, silent=False
+    )
+    session.run("pylint", "comma", "*.py")
+
+
 # --- Functional tests ---
 
 
@@ -184,6 +193,7 @@ def dev(session: nox.Session) -> None:
         *OPTIONAL_DEPENDENCIES["black"],
         *OPTIONAL_DEPENDENCIES["flake8"],
         *OPTIONAL_DEPENDENCIES["isort"],
+        *OPTIONAL_DEPENDENCIES["pylint"],
         *NOX_DEPENDENCIES,
         external=True,
     )
