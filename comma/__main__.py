@@ -5,25 +5,25 @@ import argparse
 import logging
 from typing import Optional
 
-from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
-from comma.DatabaseDriver.SqlClasses import Distros, MonitoringSubjects
-from comma.DownstreamTracker.MonitorDownstream import monitor_downstream
-from comma.UpstreamTracker.MonitorUpstream import monitor_upstream
-from comma.Util import Config
-from comma.Util.Spreadsheet import export_commits, import_commits, update_commits
-from comma.Util.Symbols import print_missing_symbols
-from comma.Util.Tracking import print_tracked_paths
+from comma.database.driver import DatabaseDriver
+from comma.database.model import Distros, MonitoringSubjects
+from comma.downstream.monitor import monitor_downstream
+from comma.upstream.monitor import monitor_upstream
+from comma.util import config
+from comma.util.spreadsheet import export_commits, import_commits, update_commits
+from comma.util.symbols import print_missing_symbols
+from comma.util.tracking import print_tracked_paths
 
 
 def run(args):
     if args.dry_run:
         with DatabaseDriver.get_session() as s:
             if s.query(Distros).first() is None:
-                s.add_all(Config.default_distros)
+                s.add_all(config.default_distros)
             if s.query(MonitoringSubjects).first() is None:
-                s.add_all(Config.default_monitoring_subjects)
+                s.add_all(config.default_monitoring_subjects)
     if args.section:
-        Config.sections = args.section
+        config.sections = args.section
     if args.print_tracked_paths:
         print_tracked_paths()
     if args.upstream:
@@ -96,8 +96,8 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
         "-s",
         "--since",
         action="store",
-        default=Config.since,
-        help=f"Parameter to pass to underlying Git commands, default is '{Config.since}'.",
+        default=config.since,
+        help=f"Parameter to pass to underlying Git commands, default is '{config.since}'.",
     )
 
     subparsers = parser.add_subparsers(title="subcommands")
@@ -122,7 +122,7 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
         "-s",
         "--section",
         action="append",
-        default=Config.sections,
+        default=config.sections,
         help="List of kernel section entries in MAINTAINERS file to analyze.",
     )
     run_parser.set_defaults(func=run)
@@ -233,10 +233,10 @@ def main(args: Optional[str] = None) -> None:
         datefmt="%m-%d %H:%M",
     )
 
-    Config.verbose = args.verbose
-    Config.dry_run = args.dry_run
-    Config.since = args.since
-    Config.fetch = not args.no_fetch
+    config.verbose = args.verbose
+    config.dry_run = args.dry_run
+    config.since = args.since
+    config.fetch = not args.no_fetch
 
     print("Welcome to Commit Analyzer!")
     args.func(args)

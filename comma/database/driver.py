@@ -6,9 +6,9 @@ from contextlib import contextmanager
 
 import sqlalchemy
 
-from comma.DatabaseDriver.Credentials import DatabaseCredentials
-from comma.DatabaseDriver.SqlClasses import Base
-from comma.Util import Config
+from comma.database.credentials import DatabaseCredentials
+from comma.database.model import Base
+from comma.util import config
 
 
 # TODO: Rename this class because it conflicts with the module name.
@@ -24,10 +24,10 @@ class DatabaseDriver:
         """
         Initialize Database connection
         """
-        if Config.dry_run:
+        if config.dry_run:
             db_file = "comma.db"
             logging.info(f"Using local SQLite database at '{db_file}'.")
-            engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=(Config.verbose > 2))
+            engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=(config.verbose > 2))
         else:
             logging.info("Connecting to remote database...")
             creds = DatabaseCredentials()
@@ -36,7 +36,7 @@ class DatabaseDriver:
             )
             engine = sqlalchemy.create_engine(
                 f"mssql+pyodbc:///?odbc_connect={params}",
-                echo=(Config.verbose > 2),
+                echo=(config.verbose > 2),
             )
             logging.info("Connected!")
         Base.metadata.bind = engine

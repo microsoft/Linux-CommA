@@ -5,17 +5,17 @@ import logging
 import approxidate
 from git import GitCommandError
 
-from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
-from comma.DatabaseDriver.SqlClasses import (
+from comma.database.driver import DatabaseDriver
+from comma.database.model import (
     Distros,
     MonitoringSubjects,
     MonitoringSubjectsMissingPatches,
     PatchData,
 )
-from comma.DownstreamTracker.DownstreamMatcher import patch_matches
-from comma.UpstreamTracker.ParseData import process_commits
-from comma.Util import Config
-from comma.Util.Tracking import get_linux_repo, get_tracked_paths, GitProgressPrinter
+from comma.downstream.matcher import patch_matches
+from comma.upstream.parser import process_commits
+from comma.util import config
+from comma.util.tracking import get_linux_repo, get_tracked_paths, GitProgressPrinter
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -93,7 +93,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         repo.git.log(
             "--no-merges",
             "--pretty=format:%H",
-            f"--since={Config.since}",
+            f"--since={config.since}",
             "origin/master",
             "--",
             get_tracked_paths(),
@@ -107,7 +107,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
             "--right-only",
             "--cherry-pick",
             "--pretty=format:%H",
-            f"--since={Config.since}",
+            f"--since={config.since}",
             f"{reference}...origin/master",
         ).splitlines()
     )
@@ -211,7 +211,7 @@ def monitor_downstream():
         for (distroID,) in s.query(Distros.distroID).all():
             update_tracked_revisions(distroID, repo)
 
-    approx_date_since = approxidate.approx(Config.since)
+    approx_date_since = approxidate.approx(config.since)
     with DatabaseDriver.get_session() as s:
         for subject in s.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
@@ -246,12 +246,12 @@ def monitor_downstream():
                     'Fetching ref %s from remote %s shallow since "%s"',
                     remote_ref,
                     subject.distroID,
-                    Config.since,
+                    config.since,
                 )
                 try:
                     remote.fetch(
                         remote_ref,
-                        shallow_since=Config.since,
+                        shallow_since=config.since,
                         verbose=True,
                         progress=GitProgressPrinter(),
                     )
@@ -269,7 +269,7 @@ def monitor_downstream():
                     'Newest commit for ref %s from remote %s is older than fetch window "%s"',
                     remote_ref,
                     subject.distroID,
-                    Config.since,
+                    config.since,
                 )
 
             # Create tag at FETCH_HEAD to preserve reference locally
