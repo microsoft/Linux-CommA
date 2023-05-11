@@ -2,10 +2,11 @@
 # Licensed under the MIT License.
 from comma.database.model import Distros, MonitoringSubjects
 
-dry_run = False
-fetch = True
-since = "4 years ago"
-verbose = 0
+
+dry_run = False  # pylint: disable=invalid-name
+fetch = True  # pylint: disable=invalid-name
+since = "4 years ago"  # pylint: disable=invalid-name
+verbose = 0  # pylint: disable=invalid-name
 
 sections = [
     "Hyper-V CORE AND DRIVERS",

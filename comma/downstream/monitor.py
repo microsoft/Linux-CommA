@@ -24,29 +24,31 @@ def update_revisions_for_distro(distro_id, revs):
 
     new_revisions: list of <revision>s to add under this distro_id
     """
-    with DatabaseDriver.get_session() as s:
+    with DatabaseDriver.get_session() as session:
         revs_to_delete = (
-            s.query(MonitoringSubjects)
+            session.query(MonitoringSubjects)
             .filter_by(distroID=distro_id)
             .filter(~MonitoringSubjects.revision.in_(revs))
         )
-        for r in revs_to_delete:
-            logging.info(f"For distro {distro_id}, deleting revision: {r.revision}")
+        for subject in revs_to_delete:
+            logging.info(f"For distro {distro_id}, deleting revision: {subject.revision}")
 
         # This is a bulk delete and we close the session immediately after.
         revs_to_delete.delete(synchronize_session=False)
 
-    with DatabaseDriver.get_session() as s:
+    with DatabaseDriver.get_session() as session:
         for rev in revs:
             # Only add if it doesn't already exist. We're dealing
             # with revisions on the scale of 1, so the number of
             # queries and inserts here doesn't matter.
             if (
-                s.query(MonitoringSubjects).filter_by(distroID=distro_id, revision=rev).first()
+                session.query(MonitoringSubjects)
+                .filter_by(distroID=distro_id, revision=rev)
+                .first()
                 is None
             ):
                 logging.info(f"For distro {distro_id}, adding revision: {rev}")
-                s.add(MonitoringSubjects(distroID=distro_id, revision=rev))
+                session.add(MonitoringSubjects(distroID=distro_id, revision=rev))
 
 
 def update_tracked_revisions(distro_id, repo):
@@ -118,9 +120,9 @@ def monitor_subject(monitoring_subject, repo, reference=None):
     logging.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
     # Run extra checks on these missing commits
-    with DatabaseDriver.get_session() as s:
+    with DatabaseDriver.get_session() as session:
         patches = (
-            s.query(PatchData)
+            session.query(PatchData)
             .filter(PatchData.commitID.in_(missing_cherries))
             .order_by(PatchData.commitTime)
             .all()
@@ -159,8 +161,8 @@ def monitor_subject(monitoring_subject, repo, reference=None):
     # NOTE: We do this in separate sessions in order to cleanly expire
     # their objects and commit the changes to the database. There is
     # surely another way to do this, but it works.
-    with DatabaseDriver.get_session() as s:
-        patches = s.query(MonitoringSubjectsMissingPatches).filter_by(
+    with DatabaseDriver.get_session() as session:
+        patches = session.query(MonitoringSubjectsMissingPatches).filter_by(
             monitoringSubjectID=subject_id
         )
         # Delete patches that are no longer missing: the patchID is
@@ -173,8 +175,8 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         patches_to_delete.delete(synchronize_session=False)
 
     # Add patches which are newly missing.
-    with DatabaseDriver.get_session() as s:
-        patches = s.query(MonitoringSubjectsMissingPatches).filter_by(
+    with DatabaseDriver.get_session() as session:
+        patches = session.query(MonitoringSubjectsMissingPatches).filter_by(
             monitoringSubjectID=subject_id
         )
         new_missing_patches = 0
@@ -184,7 +186,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
             # and inserts here doesn't matter.
             if patches.filter_by(patchID=patch_id).first() is None:
                 new_missing_patches += 1
-                s.add(
+                session.add(
                     MonitoringSubjectsMissingPatches(
                         monitoringSubjectID=subject_id, patchID=patch_id
                     )
@@ -198,22 +200,22 @@ def monitor_downstream():
 
     # Add repos as a remote origin if not already added
     current_remotes = repo.git.remote()
-    with DatabaseDriver.get_session() as s:
-        for distroID, repoLink in s.query(Distros.distroID, Distros.repoLink).all():
+    with DatabaseDriver.get_session() as session:
+        for distro_id, url in session.query(Distros.distroID, Distros.repoLink).all():
             # Debian we handle differently
-            if distroID not in current_remotes and not distroID.startswith("Debian"):
-                logging.debug("Adding remote origin for %s from %s", distroID, repoLink)
-                repo.create_remote(distroID, url=repoLink)
+            if distro_id not in current_remotes and not distro_id.startswith("Debian"):
+                logging.debug("Adding remote origin for %s from %s", distro_id, url)
+                repo.create_remote(distro_id, url=url)
 
     logging.info("Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
-    with DatabaseDriver.get_session() as s:
-        for (distroID,) in s.query(Distros.distroID).all():
-            update_tracked_revisions(distroID, repo)
+    with DatabaseDriver.get_session() as session:
+        for (distro_id,) in session.query(Distros.distroID).all():
+            update_tracked_revisions(distro_id, repo)
 
     approx_date_since = approxidate.approx(config.since)
-    with DatabaseDriver.get_session() as s:
-        for subject in s.query(MonitoringSubjects).all():
+    with DatabaseDriver.get_session() as session:
+        for subject in session.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
                 # TODO don't skip debian
                 logging.debug("skipping Debian")

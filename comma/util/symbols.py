@@ -68,8 +68,8 @@ def map_symbols_to_patch(commits, files, prev_commit="097c1bd5673edaf2a162724636
         print("Commit: " + commit + " -> " + "".join(diff_symbols))
 
         # save symbols into database
-        with DatabaseDriver.get_session() as s:
-            patch = s.query(PatchData).filter_by(commitID=commit).one()
+        with DatabaseDriver.get_session() as session:
+            patch = session.query(PatchData).filter_by(commitID=commit).one()
             patch.symbols = " ".join(diff_symbols)
         before_patch_apply = after_patch_apply
 
@@ -78,11 +78,15 @@ def get_hyperv_patch_symbols():
     """
     This function clones upstream and gets upstream commits, hyperV files
     """
-    with DatabaseDriver.get_session() as s:
-        # Only annoying thing with SQLAlchemy is that this always
-        # returns tuples which we need to unwrap.
-        commits = [c for c, in s.query(PatchData.commitID).order_by(PatchData.commitTime).all()]
-        map_symbols_to_patch(commits, get_tracked_paths())
+    with DatabaseDriver.get_session() as session:
+        # Only annoying thing with SQLAlchemy is this always returns tuples need to be unwrapped.
+        map_symbols_to_patch(
+            [
+                commit[0]
+                for commit in session.query(PatchData.commitID).order_by(PatchData.commitTime).all()
+            ],
+            get_tracked_paths(),
+        )
 
 
 def symbol_checker(symbol_file):
@@ -93,19 +97,15 @@ def symbol_checker(symbol_file):
     """
     list_of_symbols = [line.strip() for line in symbol_file]
     symbol_file.close()
-    with DatabaseDriver.get_session() as s:
-        symbols = (
-            s.query(PatchData.patchID, PatchData.symbols)
+    with DatabaseDriver.get_session() as session:
+        return sorted(
+            patch_id
+            for patch_id, symbols in session.query(PatchData.patchID, PatchData.symbols)
             .filter(PatchData.symbols != " ")
             .order_by(PatchData.commitTime)
             .all()
+            if len(list_diff(symbols.split(" "), list_of_symbols)) > 0
         )
-        symbol_map = dict((p, s.split(" ")) for p, s in symbols)
-        missing_symbol_patch = []
-        for patchID, symbols in symbol_map.items():
-            if len(list_diff(symbols, list_of_symbols)) > 0:
-                missing_symbol_patch.append(patchID)
-        return sorted(missing_symbol_patch)
 
 
 def print_missing_symbols(symbol_file):
