@@ -33,6 +33,7 @@ def get_repo(
     url: str = "https://github.com/torvalds/linux.git",
     shallow: bool = True,
     pull: bool = False,
+    repack: bool = False,
 ) -> git.Repo:
     """Clone and optionally update a repo, returning the object.
 
@@ -46,6 +47,11 @@ def get_repo(
     path = get_repo_path(name)
     if path.exists():
         repo = git.Repo(path)
+
+        if repack:
+            logging.info("Repacking '%s' repo", name)
+            repo.git.repack("-d")
+
         if name not in UPDATED_REPOS:
             if pull:
                 logging.info(f"Pulling '{name}' repo...")
@@ -53,17 +59,24 @@ def get_repo(
                 logging.info("Pulled!")
             elif Config.fetch:
                 logging.info(f"Fetching '{name}' repo...")
-                repo.remotes.origin.fetch(
-                    shallow_since=Config.since,
-                    verbose=True,
-                    progress=GitProgressPrinter(),
-                )
+                try:
+                    repo.remotes.origin.fetch(
+                        shallow_since=Config.since,
+                        verbose=True,
+                        progress=GitProgressPrinter(),
+                    )
+                except git.GitCommandError as e:
+                    # Sometimes a shallow-fetched repo will need repacking before fetching again
+                    if "fatal: error in object: unshallow" in e.stderr and not repack:
+                        logging.warning("Error with shallow clone. Repacking before retrying.")
+                        return get_repo(name, url=url, shallow=shallow, pull=pull, repack=True)
+                    raise
                 logging.info("Fetched!")
     else:
         logging.info(f"Cloning '{name}' repo from '{url}'...")
         args = {}
         if shallow:
-            args.update({"shallow_since": Config.since})
+            args["shallow_since"] = Config.since
         repo = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
         logging.info("Cloned!")
     # We either cloned, pulled, fetched, or purposefully skipped doing
