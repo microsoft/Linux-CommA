@@ -31,15 +31,15 @@ default_distros = [
         repoLink="https://salsa.debian.org/kernel-team/linux.git",
     ),
     Distros(
-        distroID="Ubuntu22.04",
-        repoLink="https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/jammy",
-    ),
-    Distros(
         distroID="Debian9-backport",
         repoLink="https://salsa.debian.org/kernel-team/linux.git",
     ),
     Distros(
         distroID="SUSE12",
+        repoLink="https://github.com/openSUSE/kernel",
+    ),
+    Distros(
+        distroID="SUSE15",
         repoLink="https://github.com/openSUSE/kernel",
     ),
 ]
@@ -49,7 +49,8 @@ default_distros = [
 default_monitoring_subjects = [
     MonitoringSubjects(distroID="Debian9-backport", revision="stretch-backports"),
     MonitoringSubjects(distroID="Debian10-backport", revision="bullseye-backports"),
-    MonitoringSubjects(distroID="SUSE12", revision="SUSE12/SLE12-SP5-AZURE"),
+    MonitoringSubjects(distroID="SUSE12", revision="SLE12-SP5-AZURE"),
+    MonitoringSubjects(distroID="SUSE15", revision="SLE15-SP4-AZURE"),
 ]
 
 """
