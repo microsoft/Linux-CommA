@@ -3,6 +3,7 @@
 import logging
 
 import approxidate
+from git import GitCommandError
 
 from comma.DatabaseDriver.DatabaseDriver import DatabaseDriver
 from comma.DatabaseDriver.SqlClasses import (
@@ -14,7 +15,7 @@ from comma.DatabaseDriver.SqlClasses import (
 from comma.DownstreamTracker.DownstreamMatcher import patch_matches
 from comma.UpstreamTracker.ParseData import process_commits
 from comma.Util import Config
-from comma.Util.Tracking import get_linux_repo, get_tracked_paths, GitProgressPrinter
+from comma.Util.Tracking import GitProgressPrinter, get_linux_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -237,12 +238,22 @@ def monitor_downstream():
                     subject.distroID,
                     Config.since,
                 )
-                remote.fetch(
-                    subject.revision,
-                    shallow_since=Config.since,
-                    verbose=True,
-                    progress=GitProgressPrinter(),
-                )
+                try:
+                    remote.fetch(
+                        subject.revision,
+                        shallow_since=Config.since,
+                        verbose=True,
+                        progress=GitProgressPrinter(),
+                    )
+                except GitCommandError as e:
+                    # ADO repos do not currently support --shallow-since, only depth
+                    if "Server does not support --shallow-since" in e.stderr:
+                        logging.warning(
+                            "Server does not support --shallow-since, retrying fetch without option."
+                        )
+                        remote.fetch(subject.revision, verbose=True, progress=GitProgressPrinter())
+                    else:
+                        raise
             else:
                 logging.info(
                     'Newest commit for ref %s from remote %s is older than fetch window "%s"',
