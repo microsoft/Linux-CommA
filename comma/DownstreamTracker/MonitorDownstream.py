@@ -65,7 +65,7 @@ def update_tracked_revisions(distro_id, repo):
     if distro_id.startswith("Ubuntu"):
         latest_two_kernels = []
         tag_lines = repo.git.ls_remote("--t", "--refs", "--sort=v:refname", distro_id).split("\n")
-        tag_names = [tag_line.rpartition("/")[-1] for tag_line in tag_lines]
+        tag_names = [tag_line.split("/", 1)[-1] for tag_line in tag_lines]
         # Filter out edge, and only include azure revisions
         tag_names = list(
             filter(
@@ -78,13 +78,15 @@ def update_tracked_revisions(distro_id, repo):
 
 
 # TODO: Refactor this function into a smaller set of pieces.
-def monitor_subject(monitoring_subject, repo):
+def monitor_subject(monitoring_subject, repo, reference=None):
     """
     Update the missing patches in the database for this monitoring_subject
 
     monitoring_subject: The MonitoringSubject we are updating
     repo: The git repo object pointing to relevant upstream linux repo
     """
+
+    reference = monitoring_subject.revision if reference is None else reference
 
     # Get all upstream commits on tracked paths within window
     upstream_commits = set(
@@ -106,7 +108,7 @@ def monitor_subject(monitoring_subject, repo):
             "--cherry-pick",
             "--pretty=format:%H",
             f"--since={Config.since}",
-            f"{monitoring_subject.revision}...origin/master",
+            f"{reference}...origin/master",
         ).splitlines()
     )
 
@@ -133,7 +135,7 @@ def monitor_subject(monitoring_subject, repo):
         #
         # NOTE: This is slow but necessary!
         downstream_patches = process_commits(
-            revision=monitoring_subject.revision,
+            revision=reference,
             since=earliest_commit_date,
         )
 
@@ -219,13 +221,21 @@ def monitor_downstream():
 
             remote = repo.remote(subject.distroID)
 
+            # Use distro name for local refs to prevent duplicates
+            if subject.revision.startswith(f"{subject.distroID}/"):
+                local_ref = subject.revision
+                remote_ref = subject.revision.split("/", 1)[-1]
+            else:
+                local_ref = f"{subject.distroID}/{subject.revision}"
+                remote_ref = subject.revision
+
             # Initially fetch revision at depth 1
             # TODO: Is there a better way to get the date of the last commit?
             logging.info(
-                f"Fetching remote ref {subject.revision} from remote {subject.distroID} at depth 1"
+                "Fetching remote ref %s from remote %s at depth 1", remote_ref, subject.distroID
             )
             fetch_info = remote.fetch(
-                subject.revision, depth=1, verbose=True, progress=GitProgressPrinter()
+                remote_ref, depth=1, verbose=True, progress=GitProgressPrinter()
             )
 
             # If last commit for revision is in the fetch window, expand depth
@@ -234,13 +244,13 @@ def monitor_downstream():
             if fetch_info[-1].commit.committed_date >= approx_date_since:
                 logging.info(
                     'Fetching ref %s from remote %s shallow since "%s"',
-                    subject.revision,
+                    remote_ref,
                     subject.distroID,
                     Config.since,
                 )
                 try:
                     remote.fetch(
-                        subject.revision,
+                        remote_ref,
                         shallow_since=Config.since,
                         verbose=True,
                         progress=GitProgressPrinter(),
@@ -251,25 +261,25 @@ def monitor_downstream():
                         logging.warning(
                             "Server does not support --shallow-since, retrying fetch without option."
                         )
-                        remote.fetch(subject.revision, verbose=True, progress=GitProgressPrinter())
+                        remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
                     else:
                         raise
             else:
                 logging.info(
                     'Newest commit for ref %s from remote %s is older than fetch window "%s"',
-                    subject.revision,
+                    remote_ref,
                     subject.distroID,
                     Config.since,
                 )
 
             # Create tag at FETCH_HEAD to preserve reference locally
-            if not hasattr(repo.references, subject.revision):
-                repo.create_tag(subject.revision, "FETCH_HEAD")
+            if not hasattr(repo.references, local_ref):
+                repo.create_tag(local_ref, "FETCH_HEAD")
 
             logging.info(
                 "Monitoring Script starting for Distro: %s, revision: %s",
                 subject.distroID,
-                subject.revision,
+                remote_ref,
             )
-            monitor_subject(subject, repo)
+            monitor_subject(subject, repo, local_ref)
     print("Finished monitoring downstream!")
