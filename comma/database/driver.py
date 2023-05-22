@@ -43,18 +43,19 @@ class DatabaseDriver:
         Base.metadata.create_all(engine)
         self._session = sqlalchemy.orm.sessionmaker(bind=engine)
 
-    @staticmethod
-    def get_instance():
+    @classmethod
+    def get_instance(cls):
         """
         Static access method
         """
-        if DatabaseDriver._instance is None:
-            DatabaseDriver._instance = DatabaseDriver()
-        return DatabaseDriver._instance
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
+    @classmethod
     @contextmanager
-    def get_session() -> sqlalchemy.orm.session.Session:
-        instance = DatabaseDriver.get_instance()
+    def get_session(cls) -> sqlalchemy.orm.session.Session:
+        instance = cls.get_instance()
         session = instance._session()
         try:
             yield session
