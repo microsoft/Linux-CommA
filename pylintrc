@@ -27,8 +27,6 @@ disable=
     # Potential Bugs
     global-statement,
     protected-access,
-    unused-argument,
-    unused-variable,
 
     # Syntax / Logic
     consider-using-f-string,

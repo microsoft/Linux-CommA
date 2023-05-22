@@ -78,7 +78,7 @@ def import_commits(in_file: str) -> None:
     upstream monitoring logic.
 
     """
-    print("Sorry, importing is not supported at this time!")
+    print(f"Sorry, importing is not supported at this time! filename: {in_file}")
     sys.exit(1)
     # TODO: Fix tracking to support commits which are manually added
     # to the database, and therefore affect untracked paths.
