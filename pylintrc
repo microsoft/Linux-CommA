@@ -29,7 +29,6 @@ disable=
     no-method-argument,
     protected-access,
     redefined-outer-name,
-    unreachable,
     unused-argument,
     unused-variable,
 
