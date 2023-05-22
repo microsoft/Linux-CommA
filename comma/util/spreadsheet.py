@@ -42,7 +42,7 @@ def get_workbook(in_file: str) -> Tuple[Workbook, Worksheet]:
     workbook = openpyxl.load_workbook(filename=in_file)
     # Force refresh of pivot table in “Pivot” worksheet.
     logging.debug("Finding worksheet named 'Pivot'...")
-    pivot = workbook["Pivot"]._pivots[0]
+    pivot = workbook["Pivot"]._pivots[0]  # pylint: disable=protected-access
     pivot.cache.refreshOnLoad = True
     # The worksheet is manually named “git log”.
     logging.debug("Finding worksheet named 'git log'...")

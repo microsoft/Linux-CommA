@@ -26,7 +26,6 @@ disable=
 
     # Potential Bugs
     global-statement,
-    protected-access,
 
     # Syntax / Logic
     consider-using-f-string,
