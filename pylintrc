@@ -25,7 +25,6 @@ good-names=
 disable=
 
     # Potential Bugs
-    dangerous-default-value,
     global-statement,
     global-variable-not-assigned,
     no-method-argument,
