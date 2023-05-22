@@ -28,7 +28,6 @@ disable=
     global-statement,
     no-method-argument,
     protected-access,
-    redefined-outer-name,
     unused-argument,
     unused-variable,
 
