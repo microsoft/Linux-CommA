@@ -41,7 +41,7 @@ def spreadsheet(args):
         update_commits(args.in_file, args.out_file)
 
 
-def get_distros(args):
+def get_distros():
     with DatabaseDriver.get_session() as session:
         print("DistroID\tRevision")
         for distro, revision in (
