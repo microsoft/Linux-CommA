@@ -16,7 +16,6 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects, PatchData
-from comma.upstream.parser import process_commits
 from comma.util import tracking
 
 
@@ -83,14 +82,15 @@ def import_commits(in_file: str) -> None:
     sys.exit(1)
     # TODO: Fix tracking to support commits which are manually added
     # to the database, and therefore affect untracked paths.
-    print(f"Importing commits from spreadsheet '{in_file}'...")
-    workbook, worksheet = get_workbook(in_file)
-    wb_commits = get_wb_commits(worksheet)
-    db_commits = get_db_commits()
-    missing_commits = wb_commits - db_commits.keys()
-    print(f"Adding {len(missing_commits)} commits to database...")
-    process_commits(commit_ids=missing_commits, add_to_database=True)
-    print("Finished importing!")
+    # from comma.upstream.parser import process_commits
+    # print(f"Importing commits from spreadsheet '{in_file}'...")
+    # workbook, worksheet = get_workbook(in_file)
+    # wb_commits = get_wb_commits(worksheet)
+    # db_commits = get_db_commits()
+    # missing_commits = wb_commits - db_commits.keys()
+    # print(f"Adding {len(missing_commits)} commits to database...")
+    # process_commits(commit_ids=missing_commits, add_to_database=True)
+    # print("Finished importing!")
 
 
 def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
