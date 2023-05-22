@@ -116,8 +116,7 @@ def demo(session: nox.Session) -> None:
 def symbols(session: nox.Session) -> None:
     """Print missing symbols"""
     session.install(".", silent=False)
-    temp_file = NamedTemporaryFile(delete=False, prefix="CommA_")
-    try:
+    with NamedTemporaryFile(prefix="CommA_") as temp_file:
         session.run(
             "comma",
             "--dry-run",
@@ -127,8 +126,6 @@ def symbols(session: nox.Session) -> None:
             "--file",
             temp_file.name,
         )
-    finally:
-        Path(temp_file.name).unlink()
 
 
 # --- Utility ---
