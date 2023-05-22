@@ -43,7 +43,6 @@ def get_repo(
     session, and only if told to do so.
 
     """
-    global UPDATED_REPOS
     repo = None
     path = get_repo_path(name)
     if path.exists():

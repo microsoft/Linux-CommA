@@ -26,7 +26,6 @@ disable=
 
     # Potential Bugs
     global-statement,
-    global-variable-not-assigned,
     no-method-argument,
     protected-access,
     redefined-outer-name,
