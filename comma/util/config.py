@@ -8,11 +8,11 @@ fetch = True  # pylint: disable=invalid-name
 since = "4 years ago"  # pylint: disable=invalid-name
 verbose = 0  # pylint: disable=invalid-name
 
-sections = [
+sections = (
     "Hyper-V CORE AND DRIVERS",
     "Hyper-V/Azure CORE AND DRIVERS",
     "DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE",
-]
+)
 
 default_distros = [
     Distros(
