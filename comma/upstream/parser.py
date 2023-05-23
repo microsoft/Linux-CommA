@@ -135,7 +135,7 @@ def process_commits(
         # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
         patch.commitDiffs = "\n".join(
             [
-                "%s\n%s" % (diff.a_path, parse_diff(diff.diff))
+                f"{diff.a_path}\n{parse_diff(diff.diff)}"
                 for diff in commit_diffs
                 if diff.a_path is not None
             ]
@@ -159,8 +159,8 @@ def process_commits(
         num_patches += 1
         # Log progress
         if num_patches % 250 == 0:
-            logging.debug(" %d commits processed..." % num_patches)
+            logging.debug(" %d commits processed...", num_patches)
 
     if add_to_database:
-        logging.info("%s patches added to database." % num_patches_added)
+        logging.info("%s patches added to database.", num_patches_added)
     return all_patches
