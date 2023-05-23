@@ -27,10 +27,6 @@ disable=
     # Potential Bugs
     global-statement,
 
-    # Logging
-    logging-fstring-interpolation,
-    logging-not-lazy,
-
     # Docstrings
     missing-class-docstring,
     missing-function-docstring,

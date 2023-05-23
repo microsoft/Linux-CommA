@@ -76,11 +76,11 @@ def process_commits(
             try:
                 commits.append(repo.commit(id_))
             except ValueError:
-                logging.warning(f"Commit '{id_}' does not exist in the repo! Skipping...")
+                logging.warning("Commit '%s' does not exist in the repo! Skipping...", id_)
 
     logging.info("Starting commit processing...")
     for commit in commits:
-        logging.debug(f"Parsing commit {commit.hexsha}")
+        logging.debug("Parsing commit %s", commit.hexsha)
         patch: PatchData = PatchData(
             commitID=commit.hexsha,
             author=commit.author.name,

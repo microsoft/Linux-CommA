@@ -57,13 +57,13 @@ def add_distro(args):
     with DatabaseDriver.get_session() as session:
         session.add(Distros(distroID=args.name, repoLink=args.url))
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
-    logging.info(f"Successfully added new distro: {args.name}")
+    logging.info("Successfully added new distro: %s", {args.name})
 
 
 def add_kernel(args):
     with DatabaseDriver.get_session() as session:
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
-    logging.info(f"Successfully added new revision '{args.revision}' for distro '{args.name}'")
+    logging.info("Successfully added new revision '%s' for distro '%s'", args.revision, args.name)
 
 
 def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:

@@ -37,7 +37,7 @@ def get_workbook(in_file: str) -> Tuple[Workbook, Worksheet]:
 
     """
     if not Path(in_file).exists():
-        logging.error(f"The file {in_file} does not exist")
+        logging.error("The file %s does not exist", in_file)
         sys.exit(1)
     workbook = openpyxl.load_workbook(filename=in_file)
     # Force refresh of pivot table in “Pivot” worksheet.
@@ -59,7 +59,7 @@ def get_column(worksheet: Worksheet, name: str) -> Cell:
     with 'row[get_column(ws, "Commit Title").column]'.
 
     """
-    logging.debug(f"Looking for column with name '{name}'...")
+    logging.debug("Looking for column with name '%s'...", name)
     return next(cell for cell in worksheet[1] if cell.value == name)
 
 
@@ -103,7 +103,7 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     try:
         commit = repo.commit(sha)
     except ValueError:
-        logging.warning(f"Commit '{sha}' not in repo!")
+        logging.warning("Commit '%s' not in repo!", sha)
         return False
     # Skip commits before the chosen base.
     if base_commit and not repo.is_ancestor(base_commit, commit):
@@ -112,7 +112,7 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     # Skip commits to tools.
     filenames = tracking.get_filenames(commit)
     if any(f.startswith("tools/hv/") for f in filenames):
-        logging.debug(f"Commit '{sha}' is to 'tools/hv/'!")
+        logging.debug("Commit '%s' is in 'tools/hv/'!", sha)
         return False
     return True
 
