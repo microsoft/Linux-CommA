@@ -27,9 +27,6 @@ disable=
     # Potential Bugs
     global-statement,
 
-    # Syntax / Logic
-    consider-using-f-string,
-
     # Logging
     logging-fstring-interpolation,
     logging-not-lazy,
