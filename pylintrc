@@ -29,7 +29,6 @@ disable=
 
     # Syntax / Logic
     consider-using-f-string,
-    superfluous-parens,
     unnecessary-comprehension,
     use-list-literal,
 

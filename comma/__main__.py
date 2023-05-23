@@ -135,7 +135,7 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
         default="symbols.txt",
         help="File with symbols to compare against.",
     )
-    symbol_parser.set_defaults(func=(lambda args: print_missing_symbols(args.file)))
+    symbol_parser.set_defaults(func=lambda args: print_missing_symbols(args.file))
 
     spreadsheet_parser = subparsers.add_parser(
         "spreadsheet",
