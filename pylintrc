@@ -29,8 +29,6 @@ disable=
 
     # Syntax / Logic
     consider-using-f-string,
-    unnecessary-comprehension,
-    use-list-literal,
 
     # Logging
     logging-fstring-interpolation,
