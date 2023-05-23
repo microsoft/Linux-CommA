@@ -126,11 +126,12 @@ def process_commits(
             # TODO revisit, maybe check against set hash of first commit?
             # Get code some other way? Unsure if first commit matters or not.
             continue
-        else:
-            # We are ignoring merges so all commits should have a single parent
-            commit_diffs = commit.tree.diff(
-                commit.parents[0], paths=get_tracked_paths(), create_patch=True
-            )
+
+        # We are ignoring merges so all commits should have a single parent
+        commit_diffs = commit.tree.diff(
+            commit.parents[0], paths=get_tracked_paths(), create_patch=True
+        )
+
         # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
         patch.commitDiffs = "\n".join(
             [
