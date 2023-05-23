@@ -31,7 +31,7 @@ def update_revisions_for_distro(distro_id, revs):
             .filter(~MonitoringSubjects.revision.in_(revs))
         )
         for subject in revs_to_delete:
-            logging.info(f"For distro {distro_id}, deleting revision: {subject.revision}")
+            logging.info("For distro %s, deleting revision: %s", distro_id, subject.revision)
 
         # This is a bulk delete and we close the session immediately after.
         revs_to_delete.delete(synchronize_session=False)
@@ -47,7 +47,7 @@ def update_revisions_for_distro(distro_id, revs):
                 .first()
                 is None
             ):
-                logging.info(f"For distro {distro_id}, adding revision: {rev}")
+                logging.info("For distro %s, adding revision: %s", distro_id, rev)
                 session.add(MonitoringSubjects(distroID=distro_id, revision=rev))
 
 
@@ -130,7 +130,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         # We only want to check downstream patches as old as the
         # oldest upstream missing patch, as an optimization.
         earliest_commit_date = min(p.commitTime for p in patches).isoformat()
-        logging.debug(f"Processing commits since {earliest_commit_date}")
+        logging.debug("Processing commits since %s", earliest_commit_date)
 
         # Get the downstream commits for this revision (these are
         # distinct from upstream because they’ve been cherry-picked).
@@ -141,7 +141,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
             since=earliest_commit_date,
         )
 
-        logging.info(f"Starting confidence matching for {len(patches)} upstream patches...")
+        logging.info("Starting confidence matching for %d upstream patches...", len(patches))
 
         # Double check the missing cherries using our fuzzy algorithm.
         missing_patches = [p for p in patches if not patch_matches(downstream_patches, p)]
@@ -170,7 +170,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         patches_to_delete = patches.filter(
             ~MonitoringSubjectsMissingPatches.patchID.in_(missing_patch_ids)
         )
-        logging.info(f"Deleting {patches_to_delete.count()} patches that are now present.")
+        logging.info("Deleting %d patches that are now present.", patches_to_delete.count())
         # This is a bulk delete and we close the session immediately after.
         patches_to_delete.delete(synchronize_session=False)
 
@@ -191,7 +191,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
                         monitoringSubjectID=subject_id, patchID=patch_id
                     )
                 )
-        logging.info(f"Adding {new_missing_patches} patches that are now missing.")
+        logging.info("Adding %d patches that are now missing.", new_missing_patches)
 
 
 def monitor_downstream():

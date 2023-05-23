@@ -54,11 +54,11 @@ def get_repo(
 
         if name not in UPDATED_REPOS:
             if pull:
-                logging.info(f"Pulling '{name}' repo...")
+                logging.info("Pulling '%s' repo...", name)
                 repo.remotes.origin.pull(progress=GitProgressPrinter())
                 logging.info("Pulled!")
             elif config.fetch:
-                logging.info(f"Fetching '{name}' repo...")
+                logging.info("Fetching '%s' repo...", name)
                 try:
                     repo.remotes.origin.fetch(
                         shallow_since=config.since,
@@ -73,7 +73,7 @@ def get_repo(
                     raise
                 logging.info("Fetched!")
     else:
-        logging.info(f"Cloning '{name}' repo from '{url}'...")
+        logging.info("Cloning '%s' repo from '%s'...", name, url)
         args = {}
         if shallow:
             args["shallow_since"] = config.since

@@ -28,7 +28,7 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
         _get_filepath_components(filepath) for filepath in upstream_filepaths
     ]
 
-    logging.debug(f"Upstream missing patch {upstream.commitID}")
+    logging.debug("Upstream missing patch, %s", upstream.commitID)
     for downstream in downstream_patches:
         # Calculate confidence that our upstream patch matches this downstream patch
 

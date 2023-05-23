@@ -26,7 +26,7 @@ def get_symbols(repo_dir, files):
     command = "ctags -R -x −−c−kinds=f {}".format(
         " ".join(files) + " | awk '{ if ($2 == \"function\") print $1 }'"
     )
-    logging.debug("Running command: " + command)
+    logging.debug("Running command: %s", command)
     process = subprocess.run(
         command,
         stdout=subprocess.PIPE,
