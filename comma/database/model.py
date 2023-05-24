@@ -6,9 +6,10 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+# pylint: disable=invalid-name
+
 
 class PatchData(Base):
-    # pylint: disable=invalid-name
     __tablename__ = "PatchData"
     patchID = Column(Integer, primary_key=True)
     subject = Column(String)
