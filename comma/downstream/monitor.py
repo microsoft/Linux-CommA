@@ -1,9 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+Functions for monitoring downstream repos for missing commits
+"""
+
 import logging
 
 import approxidate
-from git import GitCommandError
+import git
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import (
@@ -15,7 +19,7 @@ from comma.database.model import (
 from comma.downstream.matcher import patch_matches
 from comma.upstream.parser import process_commits
 from comma.util import config
-from comma.util.tracking import get_linux_repo, get_tracked_paths, GitProgressPrinter
+from comma.util.tracking import GitProgressPrinter, get_linux_repo, get_tracked_paths
 
 
 def update_revisions_for_distro(distro_id, revs):
@@ -59,36 +63,26 @@ def update_tracked_revisions(distro_id, repo):
     repo: the git repo object of whatever repo to check revisions in
     """
 
-    # TODO This is WRONG it's sorting by alphabetization,
-    # which happens to be correct currently but needs to be addressed
-    # git tag can sort by date, but can't specify remote. ls-remote can't naturally sort
-    # until git 1.2.18 - 1.2.17 is the latest version Ubuntu18.04 can get
+    # TODO This is WRONG. It's sorting alphabetically, which happens to be correct currently but
+    # needs to be addressed git tag can sort by date, but can't specify remote.
+    # ls-remote can naturally sort by date, but requires the object to be local
 
     if distro_id.startswith("Ubuntu"):
-        latest_two_kernels = []
-        tag_lines = repo.git.ls_remote("--t", "--refs", "--sort=v:refname", distro_id).split("\n")
-        tag_names = [tag_line.split("/", 1)[-1] for tag_line in tag_lines]
-        # Filter out edge, and only include azure revisions
-        tag_names = list(
-            filter(
-                lambda x: "azure" in x and "edge" not in x and "cvm" not in x and "fde" not in x,
-                tag_names,
-            )
-        )
-        latest_two_kernels = tag_names[-2:]
-        update_revisions_for_distro(distro_id, latest_two_kernels)
+        tag_names = []
+        for line in repo.git.ls_remote(
+            "--tags", "--refs", "--sort=v:refname", distro_id
+        ).splitlines():
+            name = line.split("/", 1)[-1]
+            if "azure" in name and all(label not in name for label in ("edge", "cvm", "fde")):
+                tag_names.append(name)
+
+        update_revisions_for_distro(distro_id, tag_names[-2:])
 
 
-# TODO: Refactor this function into a smaller set of pieces.
-def monitor_subject(monitoring_subject, repo, reference=None):
+def get_missing_cherries(repo, reference):
     """
-    Update the missing patches in the database for this monitoring_subject
-
-    monitoring_subject: The MonitoringSubject we are updating
-    repo: The git repo object pointing to relevant upstream linux repo
+    Get a list of cherry-picked commits missing from the downstream reference
     """
-
-    reference = monitoring_subject.revision if reference is None else reference
 
     # Get all upstream commits on tracked paths within window
     upstream_commits = set(
@@ -114,53 +108,30 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         ).splitlines()
     )
 
-    missing_cherries &= upstream_commits
-    del upstream_commits
+    return missing_cherries & upstream_commits
 
+
+def monitor_subject(monitoring_subject, repo, reference=None):
+    """
+    Update the missing patches in the database for this monitoring_subject
+
+    monitoring_subject: The MonitoringSubject we are updating
+    repo: The git repo object pointing to relevant upstream linux repo
+    """
+
+    reference = monitoring_subject.revision if reference is None else reference
+
+    missing_cherries = get_missing_cherries(repo, reference)
     logging.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
     # Run extra checks on these missing commits
-    with DatabaseDriver.get_session() as session:
-        patches = (
-            session.query(PatchData)
-            .filter(PatchData.commitID.in_(missing_cherries))
-            .order_by(PatchData.commitTime)
-            .all()
-        )
-        # We only want to check downstream patches as old as the
-        # oldest upstream missing patch, as an optimization.
-        earliest_commit_date = min(p.commitTime for p in patches).isoformat()
-        logging.debug("Processing commits since %s", earliest_commit_date)
-
-        # Get the downstream commits for this revision (these are
-        # distinct from upstream because they’ve been cherry-picked).
-        #
-        # NOTE: This is slow but necessary!
-        downstream_patches = process_commits(
-            revision=reference,
-            since=earliest_commit_date,
-        )
-
-        logging.info("Starting confidence matching for %d upstream patches...", len(patches))
-
-        # Double check the missing cherries using our fuzzy algorithm.
-        missing_patches = [p for p in patches if not patch_matches(downstream_patches, p)]
-
-        missing_patch_ids = [p.patchID for p in missing_patches]
-
-        logging.info(
-            "Identified %d missing patches:\n  %s",
-            len(missing_patch_ids),
-            "\n  ".join(sorted(patch.commitID for patch in missing_patches)),
-        )
-
-    subject_id = monitoring_subject.monitoringSubjectID
+    missing_patch_ids = get_missing_patch_ids(missing_cherries, reference)
+    logging.info("Identified %d missing patches", len(missing_patch_ids))
 
     # Delete patches that are no longer missing.
-    #
-    # NOTE: We do this in separate sessions in order to cleanly expire
-    # their objects and commit the changes to the database. There is
-    # surely another way to do this, but it works.
+    # NOTE: We do this in separate sessions in order to cleanly expire their objects and commit the
+    # changes to the database. There is surely another way to do this, but it works.
+    subject_id = monitoring_subject.monitoringSubjectID
     with DatabaseDriver.get_session() as session:
         patches = session.query(MonitoringSubjectsMissingPatches).filter_by(
             monitoringSubjectID=subject_id
@@ -181,9 +152,8 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         )
         new_missing_patches = 0
         for patch_id in missing_patch_ids:
-            # Only add if it doesn't already exist. We're dealing with
-            # patches on the scale of 100, so the number of queries
-            # and inserts here doesn't matter.
+            # Only add if it doesn't already exist. We're dealing with patches on the scale of 100,
+            # so the number of queries and inserts here doesn't matter.
             if patches.filter_by(patchID=patch_id).first() is None:
                 new_missing_patches += 1
                 session.add(
@@ -194,34 +164,112 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         logging.info("Adding %d patches that are now missing.", new_missing_patches)
 
 
+def get_missing_patch_ids(missing_cherries, reference):
+    """
+    Attempt to determine which patches are missing from a list of missing cherries
+    """
+
+    with DatabaseDriver.get_session() as session:
+        patches = (
+            session.query(PatchData)
+            .filter(PatchData.commitID.in_(missing_cherries))
+            .order_by(PatchData.commitTime)
+            .all()
+        )
+        # We only want to check downstream patches as old as the oldest upstream missing patch
+        earliest_commit_date = min(patch.commitTime for patch in patches).isoformat()
+        logging.debug("Processing commits since %s", earliest_commit_date)
+
+        # Get the downstream commits for this revision (these are distinct from upstream because
+        # they’ve been cherry-picked). This is slow but necessary!
+        downstream_patches = process_commits(revision=reference, since=earliest_commit_date)
+
+        # Double check the missing cherries using our fuzzy algorithm.
+        logging.info("Starting confidence matching for %d upstream patches...", len(patches))
+        missing_patches = [p.patchID for p in patches if not patch_matches(downstream_patches, p)]
+
+    return missing_patches
+
+
+def fetch_remote_ref(repo: git.Repo, name: str, local_ref: str, remote_ref: str) -> None:
+    """
+    Shallow fetch remote reference so it is available locally
+    """
+
+    remote = repo.remote(name)
+
+    # Initially fetch revision at depth 1
+    # TODO: Is there a better way to get the date of the last commit?
+    logging.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
+    fetch_info = remote.fetch(remote_ref, depth=1, verbose=True, progress=GitProgressPrinter())
+
+    # If last commit for revision is in the fetch window, expand depth
+    # This check is necessary because some servers will throw an error when there are
+    # no commits in the fetch window
+    if fetch_info[-1].commit.committed_date >= approxidate.approx(config.since):
+        logging.info(
+            'Fetching ref %s from remote %s shallow since "%s"',
+            remote_ref,
+            remote,
+            config.since,
+        )
+        try:
+            remote.fetch(
+                remote_ref,
+                shallow_since=config.since,
+                verbose=True,
+                progress=GitProgressPrinter(),
+            )
+        except git.GitCommandError as e:
+            # ADO repos do not currently support --shallow-since, only depth
+            if "Server does not support --shallow-since" in e.stderr:
+                logging.warning(
+                    "Server does not support --shallow-since, retrying fetch without option."
+                )
+                remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
+            else:
+                raise
+    else:
+        logging.info(
+            'Newest commit for ref %s from remote %s is older than fetch window "%s"',
+            remote_ref,
+            remote,
+            config.since,
+        )
+
+    # Create tag at FETCH_HEAD to preserve reference locally
+    if not hasattr(repo.references, local_ref):
+        repo.create_tag(local_ref, "FETCH_HEAD")
+
+
 def monitor_downstream():
+    """
+    Cycle through downstream remotes and search for missing commits
+    """
+
     print("Monitoring downstream...")
     repo = get_linux_repo()
 
-    # Add repos as a remote origin if not already added
-    current_remotes = repo.git.remote()
+    # Add repos as a remote if not already added
     with DatabaseDriver.get_session() as session:
         for distro_id, url in session.query(Distros.distroID, Distros.repoLink).all():
-            # Debian we handle differently
-            if distro_id not in current_remotes and not distro_id.startswith("Debian"):
-                logging.debug("Adding remote origin for %s from %s", distro_id, url)
+            # Skip Debian for now
+            if distro_id not in repo.remotes and not distro_id.startswith("Debian"):
+                logging.debug("Adding remote %s from %s", distro_id, url)
                 repo.create_remote(distro_id, url=url)
 
-    logging.info("Updating tracked revisions for each repo.")
     # Update stored revisions for repos as appropriate
+    logging.info("Updating tracked revisions for each repo.")
     with DatabaseDriver.get_session() as session:
         for (distro_id,) in session.query(Distros.distroID).all():
             update_tracked_revisions(distro_id, repo)
 
-    approx_date_since = approxidate.approx(config.since)
     with DatabaseDriver.get_session() as session:
         for subject in session.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
                 # TODO don't skip debian
                 logging.debug("skipping Debian")
                 continue
-
-            remote = repo.remote(subject.distroID)
 
             # Use distro name for local refs to prevent duplicates
             if subject.revision.startswith(f"{subject.distroID}/"):
@@ -231,52 +279,7 @@ def monitor_downstream():
                 local_ref = f"{subject.distroID}/{subject.revision}"
                 remote_ref = subject.revision
 
-            # Initially fetch revision at depth 1
-            # TODO: Is there a better way to get the date of the last commit?
-            logging.info(
-                "Fetching remote ref %s from remote %s at depth 1", remote_ref, subject.distroID
-            )
-            fetch_info = remote.fetch(
-                remote_ref, depth=1, verbose=True, progress=GitProgressPrinter()
-            )
-
-            # If last commit for revision is in the fetch window, expand depth
-            # This check is necessary because some servers will throw an error when there are
-            # no commits in the fetch window
-            if fetch_info[-1].commit.committed_date >= approx_date_since:
-                logging.info(
-                    'Fetching ref %s from remote %s shallow since "%s"',
-                    remote_ref,
-                    subject.distroID,
-                    config.since,
-                )
-                try:
-                    remote.fetch(
-                        remote_ref,
-                        shallow_since=config.since,
-                        verbose=True,
-                        progress=GitProgressPrinter(),
-                    )
-                except GitCommandError as e:
-                    # ADO repos do not currently support --shallow-since, only depth
-                    if "Server does not support --shallow-since" in e.stderr:
-                        logging.warning(
-                            "Server does not support --shallow-since, retrying fetch without option."
-                        )
-                        remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
-                    else:
-                        raise
-            else:
-                logging.info(
-                    'Newest commit for ref %s from remote %s is older than fetch window "%s"',
-                    remote_ref,
-                    subject.distroID,
-                    config.since,
-                )
-
-            # Create tag at FETCH_HEAD to preserve reference locally
-            if not hasattr(repo.references, local_ref):
-                repo.create_tag(local_ref, "FETCH_HEAD")
+            fetch_remote_ref(repo, subject.distroID, local_ref, remote_ref)
 
             logging.info(
                 "Monitoring Script starting for Distro: %s, revision: %s",
@@ -284,4 +287,5 @@ def monitor_downstream():
                 remote_ref,
             )
             monitor_subject(subject, repo, local_ref)
+
     print("Finished monitoring downstream!")
