@@ -1,10 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-import itertools
+"""
+Functions and classes for fetching and parsing data from Git
+"""
+
+import functools
 import logging
 import pathlib
 import re
-from typing import List, Set
+from typing import List, Iterable, Set
 
 import git
 
@@ -12,7 +16,11 @@ from comma.util import config
 
 
 def get_filenames(commit: git.Commit) -> List[str]:
-    if len(commit.parents) == 0:
+    """
+    Get all paths affected by a given commit
+    """
+
+    if commit.parents:
         return []
     diffs = commit.tree.diff(commit.parents[0])
     # Sometimes a path is in A and not B but we want all filenames.
@@ -22,81 +30,99 @@ def get_filenames(commit: git.Commit) -> List[str]:
     )
 
 
-def get_repo_path(name: str) -> pathlib.Path:
-    return pathlib.Path("Repos", name).resolve()
-
-
-UPDATED_REPOS = set()
-
-
-def get_repo(
-    name: str,
-    url: str = "https://github.com/torvalds/linux.git",
-    shallow: bool = True,
-    pull: bool = False,
-    repack: bool = False,
-) -> git.Repo:
-    """Clone and optionally update a repo, returning the object.
-
-    By default this clones the Linux repo to 'name' from 'url', and
-    returns the 'git.Repo' object. It only fetches or pulls once per
-    session, and only if told to do so.
-
+class Session:
     """
-    repo = None
-    path = get_repo_path(name)
-    if path.exists():
-        repo = git.Repo(path)
+    Container for session data to avoid duplicate actions
+    """
+
+    def __init__(self) -> None:
+        self.repos: dict = {}
+
+    def get_repo(
+        self,
+        name: str,
+        url: str,
+        shallow: bool = True,
+        pull: bool = False,
+    ) -> git.Repo:
+        """Clone and optionally update a repo, returning the object.
+
+        By default this clones the Linux repo to 'name' from 'url', and returns the 'git.Repo'
+        object. It only fetches or pulls once per session, and only if told to do so.
+        """
+
+        path = pathlib.Path("Repos", name).resolve()
+        if not path.exists():
+            # No local repo, clone from source
+            return self.clone_repo(name, path=path, url=url, shallow=shallow)
+
+        if name in self.repos:
+            # Repo has been cloned, fetched, or pulled already in this session
+            return self.repos[name]
+
+        repo = self.repos[name] = git.Repo(path)
+        if pull:
+            logging.info("Pulling '%s' repo.", name)
+            repo.remotes.origin.pull(progress=GitProgressPrinter())
+            logging.info("Completed pulling %s", name)
+        else:
+            self.fetch_repo(name, repo)
+
+        return repo
+
+    def fetch_repo(self, name: str, repo: git.Repo, repack: bool = False):
+        """Fetch an existing repo"""
 
         if repack:
             logging.info("Repacking '%s' repo", name)
             repo.git.repack("-d")
 
-        if name not in UPDATED_REPOS:
-            if pull:
-                logging.info("Pulling '%s' repo...", name)
-                repo.remotes.origin.pull(progress=GitProgressPrinter())
-                logging.info("Pulled!")
-            elif config.fetch:
-                logging.info("Fetching '%s' repo...", name)
-                try:
-                    repo.remotes.origin.fetch(
-                        shallow_since=config.since,
-                        verbose=True,
-                        progress=GitProgressPrinter(),
-                    )
-                except git.GitCommandError as e:
-                    # Sometimes a shallow-fetched repo will need repacking before fetching again
-                    if "fatal: error in object: unshallow" in e.stderr and not repack:
-                        logging.warning("Error with shallow clone. Repacking before retrying.")
-                        return get_repo(name, url=url, shallow=shallow, pull=pull, repack=True)
-                    raise
-                logging.info("Fetched!")
-    else:
-        logging.info("Cloning '%s' repo from '%s'...", name, url)
-        args = {}
-        if shallow:
-            args["shallow_since"] = config.since
-        repo = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
-        logging.info("Cloned!")
-    # We either cloned, pulled, fetched, or purposefully skipped doing
-    # so. Don't update the repo again this session.
-    UPDATED_REPOS.add(name)
-    return repo
+        logging.info("Fetching '%s' repo since %s", name, config.since)
+        try:
+            repo.remotes.origin.fetch(
+                shallow_since=config.since,
+                verbose=True,
+                progress=GitProgressPrinter(),
+            )
+            logging.info("Completed fetching %s", name)
+        except git.GitCommandError as e:
+            # Sometimes a shallow-fetched repo will need repacking before fetching again
+            if "fatal: error in object: unshallow" in e.stderr and not repack:
+                logging.warning("Error with shallow clone. Repacking before retrying.")
+                self.fetch_repo(name, repo=repo, repack=True)
+            else:
+                raise
+
+    def clone_repo(self, name: str, path: pathlib.Path, url: str, shallow: bool = True):
+        """Clone a repo from the given url"""
+
+        logging.info("Cloning '%s' repo from '%s'.", name, url)
+        args = {"shallow_since": config.since} if shallow else {}
+        self.repos[name] = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
+        logging.info("Completed cloning %s", name)
+        return self.repos[name]
 
 
-LINUX_REPO: git.Repo = None
+# TODO: Move session creation to main program logic
+SESSION = Session()
 
 
-def get_linux_repo() -> git.Repo:
-    global LINUX_REPO
-    if LINUX_REPO is None:
-        LINUX_REPO = get_repo("linux.git")
-    return LINUX_REPO
+def get_linux_repo(
+    name: str = "linux.git",
+    url: str = "https://github.com/torvalds/linux.git",
+    shallow: bool = True,
+    pull: bool = False,
+) -> git.Repo:
+    """
+    Shortcut for getting linux repo
+    """
+
+    return SESSION.get_repo(name, url, shallow=shallow, pull=pull)
 
 
-def get_files(section: str, content: List[str]) -> Set[str]:
-    """Get list of files under section.
+def extract_paths(sections: Iterable, content: str) -> Set[str]:
+    """
+    Get set of files under the given sections.
 
     The MAINTAINERS file sections look like:
 
@@ -112,41 +138,62 @@ def get_files(section: str, content: List[str]) -> Set[str]:
 
     Each section ends with a blank line.
     """
-    # Drop until we reach start of section.
-    content = itertools.dropwhile(lambda x: section not in x, content)
-    # Take until we reach end of section.
-    content = itertools.takewhile(lambda x: x.strip() != "", content)
-    # Extract file paths from section.
-    paths = {x.strip().split()[-1] for x in content if x.startswith("F:")}
-    # Drop Documentation and return everything else.
-    return {x for x in paths if not x.startswith("Documentation")}
+
+    remaining = set(sections)
+    in_section = False
+    paths = set()
+    for line in content.splitlines():
+        if in_section:
+            # Section ends with a blank line
+            if not line.strip():
+                in_section = False
+
+                # If there are no more sections, end now
+                if not remaining:
+                    break
+
+            # Extract Paths
+            if line.startswith("F:"):
+                path = line.strip().split(maxsplit=1)[-1]
+
+                # Skip Documentation
+                if not path.startswith("Documentation"):
+                    paths.add(path)
+
+        # Look for start of a section
+        elif current := next((section for section in remaining if section in line), None):
+            in_section = True
+            remaining.remove(current)
+
+    return paths
 
 
-TRACKED_PATHS: List[str] = None
-
-
+@functools.cache
 def get_tracked_paths(sections=config.sections) -> List[str]:
     """Get list of files from MAINTAINERS for given sections."""
-    global TRACKED_PATHS
-    if TRACKED_PATHS is not None:
-        return TRACKED_PATHS
+
     logging.debug("Parsing MAINTAINERS file...")
     repo = get_linux_repo()
     paths = set()
-    # All tag commits starting with v4, also master.
-    tags = repo.git.tag("v[^123]*", list=True).split()
-    commits = [c for c in tags if re.match(r"v[0-9]+\.[0-9]+$", c)]
-    commits.append("origin/master")
-    for commit in commits:
-        maintainers = repo.git.show(f"{commit}:MAINTAINERS").split("\n")
-        for section in sections:
-            paths |= get_files(section, maintainers)
+
+    # All tags starting with v4, also master.
+    refs = [
+        tag for tag in repo.git.tag("v[^123]*", list=True).split() if re.match(r"v\d+\.+$", tag)
+    ]
+    refs.append("origin/master")
+
+    for ref in refs:
+        paths |= extract_paths(sections, repo.git.show(f"{ref}:MAINTAINERS"))
+
     logging.debug("Parsed!")
-    TRACKED_PATHS = sorted(paths)
-    return TRACKED_PATHS
+    return sorted(paths)
 
 
 def print_tracked_paths():
+    """
+    Utility function for printing tracked paths
+    """
+
     for path in get_tracked_paths():
         print(path)
 
