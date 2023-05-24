@@ -5,7 +5,7 @@ import subprocess
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import PatchData
-from comma.util.tracking import get_repo, get_tracked_paths
+from comma.util.tracking import get_linux_repo, get_tracked_paths
 
 
 def list_diff(list1, list2):
@@ -48,7 +48,7 @@ def map_symbols_to_patch(commits, files, prev_commit="097c1bd5673edaf2a162724636
     commits: SHA of all commits in database
     fileNames: hyperV files
     """
-    repo = get_repo(name="linux-sym", shallow=False, pull=True)
+    repo = get_linux_repo(name="linux-sym", shallow=False, pull=True)
     repo.head.reference = repo.commit(prev_commit)
     repo.head.reset(index=True, working_tree=True)
     before_patch_apply = None

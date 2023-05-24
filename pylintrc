@@ -24,9 +24,6 @@ good-names=
 # --disable=W".
 disable=
 
-    # Potential Bugs
-    global-statement,
-
     # Docstrings
     missing-class-docstring,
     missing-function-docstring,
