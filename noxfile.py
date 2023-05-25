@@ -8,11 +8,13 @@ See https://nox.thea.codes/en/stable/config.html
 
 import platform
 import sys
+from glob import glob
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import nox
 import toml
+
 
 CURRENT_PYTHON = sys.executable or f"{sys.version_info.major}.{sys.version_info.minor}"
 ON_WINDOWS = platform.system() == "Windows"
@@ -45,7 +47,7 @@ def black(session: nox.Session) -> None:
 def isort(session: nox.Session) -> None:
     """Run isort"""
     session.install(*OPTIONAL_DEPENDENCIES["isort"], silent=False)
-    session.run("isort", ".")
+    session.run("isort", "comma", *glob("*.py"))
 
 
 # --- Linting ---

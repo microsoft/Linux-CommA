@@ -63,9 +63,7 @@ homepage = "https://github.com/microsoft/Linux-CommA"
 line-length = 100
 
 [tool.flake8]
-max-line-length = 100
-select = ["C", "E", "F", "W", "B"]
-ignore = ["E203", "E501", "W503"]
+max-line-length = 140  # Enfoced by black and pylint, only for extremely long lines
 extend-exclude = [
   "build",
   "Repos",
@@ -73,12 +71,14 @@ extend-exclude = [
 ]
 
 [tool.isort]
-multi_line_output = 3
-include_trailing_comma = true
 force_grid_wrap = 0
-use_parentheses = true
+include_trailing_comma = true
 line_length = 100
+lines_after_imports = 2
+multi_line_output = 3
+py_version=38
 skip_gitignore = true
+use_parentheses = true
 
 [tool.setuptools.packages.find]
 include = ["comma*"]

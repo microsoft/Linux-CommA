@@ -8,7 +8,7 @@ import functools
 import logging
 import pathlib
 import re
-from typing import List, Iterable, Set
+from typing import Iterable, List, Set
 
 import git
 
