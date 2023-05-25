@@ -1,8 +1,3 @@
-[FORMAT]
-
-# Regexp for a line that is allowed to be longer than the limit.
-# URLs and pure strings, or since argument assignments to pure strings
-ignore-long-lines=^\s*(# )?<?https?://\S+>?$|^\s*([^=]+=)?[f|r]?b?[\"\'\`].+[\"\'\`],?$
 
 [BASIC]
 
@@ -10,6 +5,14 @@ ignore-long-lines=^\s*(# )?<?https?://\S+>?$|^\s*([^=]+=)?[f|r]?b?[\"\'\`].+[\"\
 good-names=
     e,
     _,
+
+
+[FORMAT]
+
+# Regexp for a line that is allowed to be longer than the limit.
+# URLs and pure strings, or since argument assignments to pure strings
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$|^\s*([^=]+=)?[f|r]?b?[\"\'\`].+[\"\'\`],?$
+
 
 [DESIGN]
 
@@ -36,6 +39,46 @@ disable=
 
     # Ignore
     fixme,
+
+# Enable the message, report, category or checker with the given id(s). You can
+# either give multiple identifier separated by comma (,) or put this option
+# multiple time (only on the command line, not in the configuration file where
+# it should appear only once). See also the "--disable" option for examples.
+enable=
+    c-extension-no-member,
+    bad-inline-option,
+    file-ignored,
+    useless-suppression,
+    deprecated-pragma,
+    use-symbolic-message-instead,
+
+
+[MAIN]
+
+# List of plugins (as comma separated values of python module names) to load,
+# usually to register additional checkers.
+load-plugins=
+    pylint.extensions.bad_builtin,
+    pylint.extensions.check_elif,
+    pylint.extensions.comparetozero,
+    pylint.extensions.comparison_placement,
+    pylint.extensions.consider_refactoring_into_while_condition,
+    pylint.extensions.dict_init_mutate,
+    pylint.extensions.dunder,
+    pylint.extensions.empty_comment,
+    pylint.extensions.emptystring,
+    pylint.extensions.for_any_all,
+    pylint.extensions.no_self_use,
+    pylint.extensions.overlapping_exceptions,
+    pylint.extensions.private_import,
+    pylint.extensions.redefined_loop_name,
+    pylint.extensions.redefined_variable_type,
+    pylint.extensions.set_membership,
+
+# Minimum Python version to use for version dependent checks. Will default to
+# the version used to run pylint.
+py-version=3.8
+
 
 [REPORTS]
 

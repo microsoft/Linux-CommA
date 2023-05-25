@@ -53,7 +53,7 @@ def create_patch(commit) -> PatchData:
     description = []
     fixed_patches = []
     for num, line in enumerate(commit.message.splitlines()):
-        line = line.strip()
+        line = line.strip()  # pylint: disable=redefined-loop-name
         if not num:
             patch.subject = line
             continue
