@@ -13,6 +13,7 @@ from fuzzywuzzy import fuzz
 from comma.database.model import PatchData
 from comma.util import PatchDiff
 
+
 # Confidence weights
 AUTHOR_WEIGHT = 0.2
 AUTHOR_DATE_WEIGHT = 0.01  # This addresses some edge cases of identical other fields
