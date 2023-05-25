@@ -1,12 +1,18 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+Provide a class for managing database connections and sessions
+"""
+
+
 import logging
+import os
+import sys
 import urllib
 from contextlib import contextmanager
 
 import sqlalchemy
 
-from comma.database.credentials import DatabaseCredentials
 from comma.database.model import Base
 from comma.util import config
 
@@ -14,48 +20,65 @@ from comma.util import config
 # TODO: Rename this class because it conflicts with the module name.
 class DatabaseDriver:
     """
-    Database driver class for connections
+    Database driver managing connections
     """
 
     _instance = None
 
     def __init__(self):
-        """
-        Initialize Database connection
-        """
         if config.dry_run:
             db_file = "comma.db"
             logging.info("Using local SQLite database at '%s'.", db_file)
             engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=config.verbose > 2)
         else:
             logging.info("Connecting to remote database...")
-            creds = DatabaseCredentials()
-            params = urllib.parse.quote_plus(
-                f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={creds.server};DATABASE={creds.name};UID={creds.user};PWD={creds.password}"
-            )
-            engine = sqlalchemy.create_engine(
-                f"mssql+pyodbc:///?odbc_connect={params}",
-                echo=(config.verbose > 2),
-            )
+            engine = self._get_mssql_engine()
             logging.info("Connected!")
+
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)
         self.session = sqlalchemy.orm.sessionmaker(bind=engine)
 
-    @classmethod
-    def get_instance(cls):
+    @staticmethod
+    def _get_mssql_engine() -> sqlalchemy.engine.Engine:
         """
-        Static access method
+        Create a connection string for MS SQL server and create engine instance
         """
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
+
+        # Verify credentials are available
+        for envvar in ("COMMA_DB_URL", "COMMA_DB_NAME", "COMMA_DB_USERNAME", "COMMA_DB_PW"):
+            if not os.environ.get(envvar):
+                sys.exit(f"{envvar}is not defined in the current environment")
+
+        params = urllib.parse.quote_plus(
+            ";".join(
+                (
+                    "DRIVER={ODBC Driver 17 for SQL Server}",
+                    f"SERVER={os.environ['COMMA_DB_URL']}",
+                    f"DATABASE={os.environ['COMMA_DB_NAME']}",
+                    f"UID={os.environ['COMMA_DB_USERNAME']}",
+                    f"PWD={os.environ['COMMA_DB_PW']}",
+                )
+            )
+        )
+
+        return sqlalchemy.create_engine(
+            f"mssql+pyodbc:///?odbc_connect={params}",
+            echo=(config.verbose > 2),
+        )
 
     @classmethod
     @contextmanager
     def get_session(cls) -> sqlalchemy.orm.session.Session:
-        instance = cls.get_instance()
-        session = instance.session()
+        """
+        Context manager for getting a database session
+        """
+
+        # Only support a single instance
+        if cls._instance is None:
+            cls._instance = cls()
+        session = cls._instance.session()
+
         try:
             yield session
             session.commit()
