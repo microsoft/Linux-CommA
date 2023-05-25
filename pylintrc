@@ -5,11 +5,16 @@
 ignore-long-lines=^\s*(# )?<?https?://\S+>?$|^\s*([^=]+=)?[f|r]?b?[\"\'\`].+[\"\'\`],?$
 
 [BASIC]
+
 # Good variable names which should always be accepted, separated by a comma.
 good-names=
     e,
     _,
 
+[DESIGN]
+
+# Minimum number of public methods for a class (see R0903).
+min-public-methods=1
 
 [MESSAGES CONTROL]
 
@@ -28,11 +33,6 @@ disable=
     missing-class-docstring,
     missing-function-docstring,
     missing-module-docstring,
-
-    # Refactoring
-    too-few-public-methods,
-    too-many-branches,
-    too-many-locals,
 
     # Ignore
     fixme,
