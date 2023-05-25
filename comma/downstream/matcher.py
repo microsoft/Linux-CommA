@@ -11,7 +11,7 @@ from typing import Iterable, List
 from fuzzywuzzy import fuzz
 
 from comma.database.model import PatchData
-from comma.util.patch_diffs import PatchDiffs
+from comma.util import PatchDiff
 
 # Confidence weights
 AUTHOR_WEIGHT = 0.2
@@ -93,8 +93,8 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
 
     # TODO just do this part?...
     # Check for code matching
-    upstream_diffs = PatchDiffs(upstream.commitDiffs)
+    upstream_diffs = PatchDiff(upstream.commitDiffs)
     return any(
-        upstream_diffs.percent_present_in(PatchDiffs(downstream.commitDiffs)) > CONFIDENCE_THRESHOLD
+        upstream_diffs.percent_present_in(PatchDiff(downstream.commitDiffs)) > CONFIDENCE_THRESHOLD
         for downstream in downstream_patches
     )
