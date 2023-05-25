@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,too-few-public-methods
 
 
 class PatchData(Base):
