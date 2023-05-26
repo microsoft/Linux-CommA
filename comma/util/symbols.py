@@ -1,5 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+Functions for generating symbol maps
+"""
+
 import logging
 import subprocess
 
@@ -109,6 +113,10 @@ def symbol_checker(symbol_file):
 
 
 def print_missing_symbols(symbol_file):
+    """
+    Utility function for printing missing symbols
+    """
+
     print("Starting the Symbol Checker...")
     get_hyperv_patch_symbols()
     missing_symbols = symbol_checker(symbol_file)
