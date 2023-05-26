@@ -1,5 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+Configuration module
+"""
+
 from comma.database.model import Distros, MonitoringSubjects
 
 

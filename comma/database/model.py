@@ -1,5 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+ORM models for database objects
+"""
+
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -11,6 +15,10 @@ Base = declarative_base()
 
 
 class PatchData(Base):
+    """
+    Data and metadata for a patch/commit
+    """
+
     __tablename__ = "PatchData"
     patchID = Column(Integer, primary_key=True)
     subject = Column(String)
@@ -40,6 +48,10 @@ class PatchData(Base):
 
 
 class PatchDataMeta(Base):
+    """
+    Holds the priority for a patch
+    """
+
     __tablename__ = "PatchDataMeta"
     patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
     priority = Column(Integer)
@@ -47,6 +59,10 @@ class PatchDataMeta(Base):
 
 
 class UpstreamPatchStatuses(Base):
+    """
+    Holds the status for a patch
+    """
+
     __tablename__ = "UpstreamPatchStatuses"
     patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)
     status = Column(String)
@@ -54,6 +70,10 @@ class UpstreamPatchStatuses(Base):
 
 
 class Distros(Base):
+    """
+    Downstream distro and URL for downstream repo
+    """
+
     # TODO: Rename this class and table to "Distro"
     __tablename__ = "Distros"
     distroID = Column(String, primary_key=True)
@@ -62,6 +82,10 @@ class Distros(Base):
 
 
 class MonitoringSubjects(Base):
+    """
+    Reference and distro pair to monitor
+    """
+
     __tablename__ = "MonitoringSubjects"
     monitoringSubjectID = Column(Integer, primary_key=True)
     distroID = Column(String, ForeignKey("Distros.distroID"))
@@ -75,6 +99,10 @@ class MonitoringSubjects(Base):
 
 
 class MonitoringSubjectsMissingPatches(Base):
+    """
+    Patches missing for a given monitoring subject
+    """
+
     # TODO: Rename this table.
     __tablename__ = "MonitoringSubjectsMissingPatches"
     monitoringSubjectID = Column(
@@ -85,8 +113,7 @@ class MonitoringSubjectsMissingPatches(Base):
         back_populates="missingPatches",
         single_parent=True,
         # This ensures that when we delete a parent monitoring subject
-        # (as referenced by the foreign key above), that this is
-        # deleted too.
+        # (as referenced by the foreign key above), that this is deleted too.
         cascade="all, delete-orphan",
     )
     patchID = Column(Integer, ForeignKey("PatchData.patchID"), primary_key=True)

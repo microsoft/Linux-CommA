@@ -1,5 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+Functions for exporting data to Excel spreadsheets
+"""
+
 import logging
 import re
 import sys

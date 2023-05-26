@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+"""
+Main entry point for program
+"""
+
 import argparse
 import logging
 from typing import Optional
@@ -8,7 +12,7 @@ from typing import Optional
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream.monitor import monitor_downstream
-from comma.upstream.monitor import monitor_upstream
+from comma.upstream.parser import process_commits
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
 from comma.util.symbols import print_missing_symbols
@@ -16,6 +20,10 @@ from comma.util.tracking import print_tracked_paths
 
 
 def run(args):
+    """
+    Analyze commits
+    """
+
     if args.dry_run:
         with DatabaseDriver.get_session() as session:
             if session.query(Distros).first() is None:
@@ -27,12 +35,19 @@ def run(args):
     if args.print_tracked_paths:
         print_tracked_paths()
     if args.upstream:
-        monitor_upstream()
+        print("Monitoring upstream...")
+        logging.info("Starting patch scraping from files...")
+        process_commits(add_to_database=True)
+        print("Finishing monitoring upstream!")
     if args.downstream:
         monitor_downstream()
 
 
 def spreadsheet(args):
+    """
+    Export data to an Excel spreadsheet
+    """
+
     if args.import_commits:
         import_commits(args.in_file)
     if args.export_commits:
@@ -42,6 +57,10 @@ def spreadsheet(args):
 
 
 def get_distros():
+    """
+    Print distro and references being tracked
+    """
+
     with DatabaseDriver.get_session() as session:
         print("DistroID\tRevision")
         for distro, revision in (
@@ -54,6 +73,10 @@ def get_distros():
 
 
 def add_distro(args):
+    """
+    Add a disto to the the database
+    """
+
     with DatabaseDriver.get_session() as session:
         session.add(Distros(distroID=args.name, repoLink=args.url))
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
@@ -61,6 +84,10 @@ def add_distro(args):
 
 
 def add_kernel(args):
+    """
+    Add a reference to track for an existing distro
+    """
+
     with DatabaseDriver.get_session() as session:
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
     logging.info("Successfully added new revision '%s' for distro '%s'", args.revision, args.name)

@@ -32,11 +32,6 @@ min-public-methods=1
 # --disable=W".
 disable=
 
-    # Docstrings
-    missing-class-docstring,
-    missing-function-docstring,
-    missing-module-docstring,
-
     # Ignore
     fixme,
 
