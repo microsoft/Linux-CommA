@@ -12,7 +12,7 @@ from typing import Optional
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream.monitor import monitor_downstream
-from comma.upstream.parser import process_commits
+from comma.upstream import process_commits
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
 from comma.util.symbols import print_missing_symbols

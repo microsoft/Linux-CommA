@@ -17,7 +17,7 @@ from comma.database.model import (
     PatchData,
 )
 from comma.downstream.matcher import patch_matches
-from comma.upstream.parser import process_commits
+from comma.upstream import process_commits
 from comma.util import config
 from comma.util.tracking import GitProgressPrinter, get_linux_repo, get_tracked_paths
 
