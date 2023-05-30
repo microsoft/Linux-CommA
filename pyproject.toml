@@ -53,7 +53,7 @@ isort = [
 ]
 
 pylint = [
-  "pylint",
+  "pylint[spelling]",
 ]
 
 [project.urls]

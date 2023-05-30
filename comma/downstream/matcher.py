@@ -30,7 +30,7 @@ def calculate_filenames_confidence(
 ) -> float:
     """
     Calculate filenames confidence
-    Roughly the percent of upstream filepaths present in downstream filepaths
+    Roughly the percent of upstream file paths present in downstream file paths
     """
 
     # If they are the same, for example empty, confidence is high
@@ -48,12 +48,12 @@ def calculate_filenames_confidence(
         os.path.split(filepath) for filepath in upstream_filepaths
     ):
         max_match = 0.0
-        # Find best matching downstream filepath
+        # Find best matching downstream file path
         for downstream_path, downstream_name in downstream_file_components:
             if upstream_name != downstream_name:
                 continue
             # 0.5 for matching filename
-            # The paths are fuzzymatched scaled 0.0-0.5 for remaining match
+            # The paths are fuzzy-matched scaled 0.0-0.5 for remaining match
             match = 0.5 + (fuzz.partial_ratio(upstream_path, downstream_path) / 200.0)
             if match > max_match:
                 max_match = match

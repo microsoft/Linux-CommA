@@ -74,7 +74,7 @@ def get_distros():
 
 def add_distro(args):
     """
-    Add a disto to the the database
+    Add a distro to the the database
     """
 
     with DatabaseDriver.get_session() as session:
@@ -98,8 +98,6 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
     Parse CLI options and return a namespace
     """
 
-    # TODO: We have a lot of parsers and could refactor them into their
-    # own modules.
     parser = argparse.ArgumentParser(description="Linux Commit Analyzer.")
     parser.add_argument(
         "-n",
@@ -249,7 +247,7 @@ def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
 
 def main(args: Optional[str] = None) -> None:
     """
-    Main entrypoint for CLI
+    Main entry point for CLI
     """
 
     args = get_cli_options(args)

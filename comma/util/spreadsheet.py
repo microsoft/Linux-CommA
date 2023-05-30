@@ -103,7 +103,7 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     if sha is None:
         logging.warning("Given SHA was 'None'!")
         return False
-    # Skip commits that aren’t in the repo.
+    # Skip commits that are not in the repo.
     try:
         commit = repo.commit(sha)
     except ValueError:
@@ -126,7 +126,7 @@ def get_release(sha: str, repo: git.Repo) -> str:
     try:
         # NOTE: This must be ordered “--contains <SHA>” for Git.
         tag = repo.git.describe("--contains", sha)
-        # Use "(v[^-~]+(-rc[0-9]+)?)[-~]" to include ‘-rcX’
+        # Use "(v[^-~]+(-rc[0-9]+)?)[-~]" to include ‘-rcX’  # pylint: disable=wrong-spelling-in-comment
         return re.search(r"(v[^-~]*)[-~]", tag)[1]
     except git.GitCommandError:
         return "N/A"
@@ -215,9 +215,8 @@ def get_fixed_patches(commit: str, commits: Dict[str, int]) -> str:
 
 def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
     """Get the kernel revision which includes commit or 'Absent'."""
-    # NOTE: For some distros (e.g. Ubuntu), we continually add new
-    # revisions (Git tags) as they become available, so we need the
-    # max ID, which is the most recent.
+    # NOTE: For some distros (e.g. Ubuntu), we continually add new revisions (Git tags) as they
+    # become available, so we need the max ID, which is the most recent.
     with DatabaseDriver.get_session() as session:
         subject, _ = (
             session.query(
@@ -228,9 +227,8 @@ def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
             .one()
         )
 
-        # TODO: We could try to simplify this using the
-        # ‘monitoringSubject’ relationship on the ‘PatchData’ table,
-        # but because the database tracks what’s missing, it becomes
+        # TODO: We could try to simplify this using the ‘monitoringSubject’ relationship on the
+        # ‘PatchData’ table, but because the database tracks what’s missing, it becomes
         # hard to state where the patch is present.
         missing_patch = subject.missingPatches.filter_by(patchID=commits[commit]).one_or_none()
 
