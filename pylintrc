@@ -81,3 +81,23 @@ py-version=3.8
 # and msvs (visual studio). You can also give a reporter class, e.g.
 # mypackage.mymodule.MyReporterClass.
 output-format=colorized
+
+
+[SPELLING]
+
+# Spelling dictionary name. Available dictionaries: en_US (myspell).
+spelling-dict=en_US
+
+# List of comma separated words that should not be checked.
+spelling-ignore-words=
+    CLI, commit's, ctags,
+    distro, distros,
+    HyperV, isort,
+    monitoringSubject,
+    namespace, Nox,
+    ORM,
+    PatchData, preprocessing,
+    repo, repos,
+    setuptools, SHA, subclassed,
+    untracked,
+    virtualenv,

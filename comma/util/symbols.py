@@ -12,15 +12,6 @@ from comma.database.model import PatchData
 from comma.util.tracking import get_linux_repo, get_tracked_paths
 
 
-def list_diff(list1, list2):
-    """
-    list_diff gives list1 - list2=items in list1 which are not present in list2
-    params: 2 lists
-    return: list
-    """
-    return list(set(list1) - set(list2))
-
-
 def get_symbols(repo_dir, files):
     """
     get_symbols: This function returns a list of symbols for given files
@@ -40,8 +31,7 @@ def get_symbols(repo_dir, files):
         check=True,
         universal_newlines=True,
     )
-    symbol_list = process.stdout.splitlines()
-    return symbol_list
+    return process.stdout.splitlines()
 
 
 def map_symbols_to_patch(commits, files, prev_commit="097c1bd5673edaf2a162724636858b71f658fdd2"):
@@ -56,25 +46,30 @@ def map_symbols_to_patch(commits, files, prev_commit="097c1bd5673edaf2a162724636
     repo.head.reference = repo.commit(prev_commit)
     repo.head.reset(index=True, working_tree=True)
     before_patch_apply = None
-    # iterate
-    for commit in commits:
-        # get symbols
-        if before_patch_apply is None:
-            before_patch_apply = get_symbols(repo.working_tree_dir, files)
 
+    # Iterate through commits
+    for commit in commits:
+        # Get symbols before patch is applied
+        if before_patch_apply is None:
+            before_patch_apply = set(get_symbols(repo.working_tree_dir, files))
+
+        # Checkout commit
         repo.head.reference = repo.commit(commit)
         repo.head.reset(index=True, working_tree=True)
 
-        after_patch_apply = get_symbols(repo.working_tree_dir, files)
+        # Get symbols after patch is applied
+        after_patch_apply = set(get_symbols(repo.working_tree_dir, files))
 
-        # compare
-        diff_symbols = list_diff(after_patch_apply, before_patch_apply)
-        print("Commit: " + commit + " -> " + "".join(diff_symbols))
+        # Compare symbols before and after patch
+        diff_symbols = after_patch_apply - before_patch_apply
+        print(f"Commit: {commit} -> {''.join(diff_symbols)}")
 
-        # save symbols into database
+        # Save symbols to database
         with DatabaseDriver.get_session() as session:
             patch = session.query(PatchData).filter_by(commitID=commit).one()
             patch.symbols = " ".join(diff_symbols)
+
+        # Use symbols from current commit to compare to next commit
         before_patch_apply = after_patch_apply
 
 
@@ -99,7 +94,7 @@ def symbol_checker(symbol_file):
     symbol_file: file containing symbols to run against database
     return missing_symbols_patch: list of missing symbols from given list
     """
-    list_of_symbols = [line.strip() for line in symbol_file]
+    symbols_in_file = {line.strip() for line in symbol_file}
     symbol_file.close()
     with DatabaseDriver.get_session() as session:
         return sorted(
@@ -108,7 +103,7 @@ def symbol_checker(symbol_file):
             .filter(PatchData.symbols != " ")
             .order_by(PatchData.commitTime)
             .all()
-            if len(list_diff(symbols.split(" "), list_of_symbols)) > 0
+            if len(set(symbols.split(" ")) - symbols_in_file) > 0
         )
 
 

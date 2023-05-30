@@ -82,7 +82,7 @@ def demo(session: nox.Session) -> None:
     """Functional test"""
     session.install(".", silent=False)
 
-    # Remove existing sqlite datebase to avoid unique key error
+    # Remove existing SQLite database to avoid unique key error
     Path("comma.db").unlink(missing_ok=True)
 
     session.run(
@@ -183,7 +183,7 @@ def dev(session: nox.Session) -> None:
         external=True,
     )
 
-    # Install dev tools
+    # Install development tools
     session.run(
         venv_python,
         "-m",

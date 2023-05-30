@@ -116,7 +116,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
     Update the missing patches in the database for this monitoring_subject
 
     monitoring_subject: The MonitoringSubject we are updating
-    repo: The git repo object pointing to relevant upstream linux repo
+    repo: The git repo object pointing to relevant upstream Linux repo
     """
 
     reference = monitoring_subject.revision if reference is None else reference
@@ -181,7 +181,7 @@ def get_missing_patch_ids(missing_cherries, reference):
         logging.debug("Processing commits since %s", earliest_commit_date)
 
         # Get the downstream commits for this revision (these are distinct from upstream because
-        # they’ve been cherry-picked). This is slow but necessary!
+        # they have been cherry-picked). This is slow but necessary!
         downstream_patches = process_commits(revision=reference, since=earliest_commit_date)
 
         # Double check the missing cherries using our fuzzy algorithm.
@@ -267,7 +267,7 @@ def monitor_downstream():
     with DatabaseDriver.get_session() as session:
         for subject in session.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
-                # TODO don't skip debian
+                # TODO don't skip Debian
                 logging.debug("skipping Debian")
                 continue
 

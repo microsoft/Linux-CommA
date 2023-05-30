@@ -45,10 +45,10 @@ class Session:
         shallow: bool = True,
         pull: bool = False,
     ) -> git.Repo:
-        """Clone and optionally update a repo, returning the object.
+        """
+        Clone and optionally update a repo, returning the object.
 
-        By default this clones the Linux repo to 'name' from 'url', and returns the 'git.Repo'
-        object. It only fetches or pulls once per session, and only if told to do so.
+        Only clones, fetches, or pulls once per session
         """
 
         path = pathlib.Path("Repos", name).resolve()
@@ -94,7 +94,7 @@ class Session:
                 raise
 
     def clone_repo(self, name: str, path: pathlib.Path, url: str, shallow: bool = True):
-        """Clone a repo from the given url"""
+        """Clone a repo from the given URL"""
 
         logging.info("Cloning '%s' repo from '%s'.", name, url)
         args = {"shallow_since": config.since} if shallow else {}
@@ -114,13 +114,14 @@ def get_linux_repo(
     pull: bool = False,
 ) -> git.Repo:
     """
-    Shortcut for getting linux repo
+    Shortcut for getting Linux repo
     """
 
     return SESSION.get_repo(name, url, shallow=shallow, pull=pull)
 
 
 def extract_paths(sections: Iterable, content: str) -> Set[str]:
+    # pylint: disable=wrong-spelling-in-docstring
     """
     Get set of files under the given sections.
 
