@@ -103,7 +103,7 @@ class Session:
         return self.repos[name]
 
 
-# TODO: Move session creation to main program logic
+# TODO (Issue 56): Move session creation to main program logic
 SESSION = Session()
 
 

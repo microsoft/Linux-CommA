@@ -62,10 +62,9 @@ def update_tracked_revisions(distro_id, repo):
 
     repo: the git repo object of whatever repo to check revisions in
     """
-
-    # TODO This is WRONG. It's sorting alphabetically, which happens to be correct currently but
-    # needs to be addressed git tag can sort by date, but can't specify remote.
-    # ls-remote can naturally sort by date, but requires the object to be local
+    # This sorts alphabetically and not by the actual date
+    # While technically wrong, this is preferred
+    # ls-remote could naturally sort by date, but that would require all the objects to be local
 
     if distro_id.startswith("Ubuntu"):
         tag_names = []
@@ -199,7 +198,6 @@ def fetch_remote_ref(repo: git.Repo, name: str, local_ref: str, remote_ref: str)
     remote = repo.remote(name)
 
     # Initially fetch revision at depth 1
-    # TODO: Is there a better way to get the date of the last commit?
     logging.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
     fetch_info = remote.fetch(remote_ref, depth=1, verbose=True, progress=GitProgressPrinter())
 
@@ -267,7 +265,7 @@ def monitor_downstream():
     with DatabaseDriver.get_session() as session:
         for subject in session.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
-                # TODO don't skip Debian
+                # TODO (Issue 51): Don't skip Debian
                 logging.debug("skipping Debian")
                 continue
 

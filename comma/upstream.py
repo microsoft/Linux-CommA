@@ -119,16 +119,13 @@ def process_commits(
     all_patches = []
     num_patches_added = 0
     for num, commit in enumerate(commits, 1):
-        # First ever commit, we don't need to store this as it'll be present in any distro
-        # TODO revisit, maybe check against set hash of first commit?
-        # Get code some other way? Unsure if first commit matters or not.
+        # Skip root (initial) commit since it should always be present
+        # TODO (Issue 54): This can probably be removed
         if commit.parents:
             logging.debug("Parsing commit %s", commit.hexsha)
             patch: PatchData = create_patch(commit)
 
             if add_to_database:
-                # TODO is this check needed if we start on only patches we haven't processed before?
-                # If we DO want to keep this check, let's move before parsing everything
                 with DatabaseDriver.get_session() as session:
                     if (
                         session.query(PatchData.commitID)
