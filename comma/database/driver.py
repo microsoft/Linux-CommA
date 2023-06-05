@@ -17,7 +17,6 @@ from comma.database.model import Base
 from comma.util import config
 
 
-# TODO: Rename this class because it conflicts with the module name.
 class DatabaseDriver:
     """
     Database driver managing connections

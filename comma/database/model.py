@@ -27,18 +27,18 @@ class PatchData(Base):
     author = Column(String)
     authorEmail = Column(String)
     authorTime = Column(DateTime())
-    # TODO: What about committer and their email?
+    # TODO (Issue 40): What about committer and their email?
     commitTime = Column(DateTime())
-    # TODO: Should we have a filenames table?
+    # TODO (Issue 40): Should we have a filenames table?
     affectedFilenames = Column(String)
     commitDiffs = Column(String)
-    # TODO: Should we have a symbols table?
+    # TODO (Issue 40): Should we have a symbols table?
     symbols = Column(String)
-    # TODO: Should this reference a patchID?
+    # TODO (Issue 40): Should this reference a patchID?
     fixedPatches = Column(String)
-    # TODO: If this 1-1, why isn't `priority` just a column on `PatchData`?
+    # TODO (Issue 40): If this 1-1, why isn't `priority` just a column on `PatchData`?
     metaData = relationship("PatchDataMeta", uselist=False, back_populates="patch")
-    # TODO: If this 1-1, why isn't `status` just a column on `PatchData`?
+    # TODO (Issue 40): If this 1-1, why isn't `status` just a column on `PatchData`?
     upstreamStatus = relationship("UpstreamPatchStatuses", uselist=False, back_populates="patch")
     monitoringSubject = relationship(
         "MonitoringSubjectsMissingPatches",
@@ -74,7 +74,7 @@ class Distros(Base):
     Downstream distro and URL for downstream repo
     """
 
-    # TODO: Rename this class and table to "Distro"
+    # TODO (Issue 40): Rename this class and table to "Distro"
     __tablename__ = "Distros"
     distroID = Column(String, primary_key=True)
     repoLink = Column(String)
@@ -103,7 +103,7 @@ class MonitoringSubjectsMissingPatches(Base):
     Patches missing for a given monitoring subject
     """
 
-    # TODO: Rename this table.
+    # TODO (Issue 40): Rename this table.
     __tablename__ = "MonitoringSubjectsMissingPatches"
     monitoringSubjectID = Column(
         Integer, ForeignKey("MonitoringSubjects.monitoringSubjectID"), primary_key=True

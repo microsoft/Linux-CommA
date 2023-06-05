@@ -92,7 +92,7 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
         ) >= CONFIDENCE_THRESHOLD:
             return True
 
-    # TODO just do this part?...
+    # TODO (Issue 53): just do this part?
     # Check for code matching
     upstream_diffs = PatchDiff(upstream.commitDiffs)
     return any(

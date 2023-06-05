@@ -94,7 +94,6 @@ ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$|^\\s*([^=]+=)?[f|r]?b?[\\\"\\'
 min-public-methods = 1
 
 [tool.pylint."messages control"]
-disable = ["fixme"]
 enable = [
   "bad-inline-option",
   "c-extension-no-member",
@@ -129,6 +128,14 @@ load-plugins = [
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.
 py-version = "3.8"
+
+[tool.pylint.miscellaneous]
+# List of note tags to take in consideration, separated by a comma
+# See https://github.com/pylint-dev/pylint/issues/8734
+notes=["SomethingThatWillNotBeFound"]
+
+# Regular expression of note tags to take in consideration.
+notes-rgx="TODO(?! \\(Issue \\d+\\))"
 
 [tool.pylint.reports]
 output-format = "colorized"

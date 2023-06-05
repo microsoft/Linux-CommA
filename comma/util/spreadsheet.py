@@ -84,7 +84,7 @@ def import_commits(in_file: str) -> None:
     """
     print(f"Sorry, importing is not supported at this time! filename: {in_file}")
     sys.exit(1)
-    # TODO: Fix tracking to support commits which are manually added
+    # TODO (Issue 55): Implement import from database
     # to the database, and therefore affect untracked paths.
     # from comma.upstream import process_commits
     # print(f"Importing commits from spreadsheet '{in_file}'...")
@@ -135,7 +135,7 @@ def get_release(sha: str, repo: git.Repo) -> str:
 def create_commit_row(sha: str, repo: git.Repo, worksheet: Worksheet) -> Dict[str, Any]:
     """Create a row with the commit's SHA, date, release and title."""
     commit = repo.commit(sha)
-    # TODO: Some (but not all) of this info is available in the
+    # TODO (Issue 40): Some (but not all) of this info is available in the
     # database, so if add the release to the database we can skip
     # using the commit here.
     date = datetime.utcfromtimestamp(commit.authored_date).date()
@@ -186,7 +186,6 @@ def export_commits(in_file: str, out_file: str) -> None:
     # worksheet.
     print(f"Exporting {len(missing_commits)} commits to {out_file}...")
     for commit in missing_commits:
-        # TODO: Set fonts of the cells.
         worksheet.append(create_commit_row(commit, repo, worksheet))
 
     workbook.save(out_file)
@@ -196,7 +195,7 @@ def export_commits(in_file: str, out_file: str) -> None:
 def get_distros() -> List[str]:
     """Collect the distros we’re tracking in the database."""
     with DatabaseDriver.get_session() as session:
-        # TODO: Handle Debian.
+        # TODO (Issue 51): Handle Debian.
         return [
             distro
             for (distro,) in session.query(Distros.distroID)
@@ -227,8 +226,8 @@ def get_revision(distro: str, commit: str, commits: Dict[str, int]) -> str:
             .one()
         )
 
-        # TODO: We could try to simplify this using the ‘monitoringSubject’ relationship on the
-        # ‘PatchData’ table, but because the database tracks what’s missing, it becomes
+        # TODO (Issue 40): We could try to simplify this using the ‘monitoringSubject’ relationship
+        # on the ‘PatchData’ table, but because the database tracks what’s missing, it becomes
         # hard to state where the patch is present.
         missing_patch = subject.missingPatches.filter_by(patchID=commits[commit]).one_or_none()
 
