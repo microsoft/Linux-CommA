@@ -248,7 +248,6 @@ def monitor_downstream():
     Cycle through downstream remotes and search for missing commits
     """
 
-    print("Monitoring downstream...")
     repo = get_linux_repo()
 
     # Add repos as a remote if not already added
@@ -288,5 +287,3 @@ def monitor_downstream():
                 remote_ref,
             )
             monitor_subject(subject, repo, local_ref)
-
-    print("Finished monitoring downstream!")

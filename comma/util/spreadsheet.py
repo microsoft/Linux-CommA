@@ -85,19 +85,19 @@ def import_commits(in_file: str) -> None:
     upstream monitoring logic.
 
     """
-    print(f"Sorry, importing is not supported at this time! filename: {in_file}")
+    LOGGER.error("Importing is not supported at this time! filename: %s", in_file)
     sys.exit(1)
     # TODO (Issue 55): Implement import from database
     # to the database, and therefore affect untracked paths.
     # from comma.upstream import process_commits
-    # print(f"Importing commits from spreadsheet '{in_file}'...")
+    # LOGGER.info(f"Importing commits from spreadsheet '{in_file}'...")
     # workbook, worksheet = get_workbook(in_file)
     # wb_commits = get_wb_commits(worksheet)
     # db_commits = get_db_commits()
     # missing_commits = wb_commits - db_commits.keys()
-    # print(f"Adding {len(missing_commits)} commits to database...")
+    # LOGGER.info(f"Adding {len(missing_commits)} commits to database...")
     # process_commits(commit_ids=missing_commits, add_to_database=True)
-    # print("Finished importing!")
+    # LOGGER.info("Finished importing!")
 
 
 def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
@@ -187,12 +187,12 @@ def export_commits(in_file: str, out_file: str) -> None:
 
     # Append each missing commit as a new row to the commits
     # worksheet.
-    print(f"Exporting {len(missing_commits)} commits to {out_file}...")
+    LOGGER.info("Exporting %d commits to %s", len(missing_commits), out_file)
     for commit in missing_commits:
         worksheet.append(create_commit_row(commit, repo, worksheet))
 
     workbook.save(out_file)
-    print("Finished exporting!")
+    LOGGER.info("Finished exporting!")
 
 
 def get_distros() -> List[str]:
@@ -251,7 +251,7 @@ def update_commits(in_file: str, out_file: str) -> None:
         try:
             get_column(worksheet, distro)
         except StopIteration:
-            print(f"No column with distro '{distro}', please fix spreadsheet!")
+            LOGGER.ERROR(f"No column with distro '{distro}', please fix spreadsheet!")
             sys.exit(1)
 
     commit_column = get_column(worksheet, "Commit ID").column_letter
@@ -275,4 +275,4 @@ def update_commits(in_file: str, out_file: str) -> None:
                 get_cell(worksheet, distro, commit_cell.row).value = "Unknown"
 
     workbook.save(out_file)
-    print("Finished updating!")
+    LOGGER.info("Finished updating!")
