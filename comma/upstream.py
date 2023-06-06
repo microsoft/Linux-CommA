@@ -97,8 +97,8 @@ def process_commits(
     repo = get_linux_repo()
 
     if commit_ids is None:
-        # We use `--min-parents=1 --max-parents=1` to avoid both
-        # merges and graft commits.
+        # We use `--min-parents=1 --max-parents=1` to avoid both merges and graft commits.
+        LOGGER.info("Determining commits from tracked files")
         commits = repo.iter_commits(
             rev=revision,
             paths=get_tracked_paths(),

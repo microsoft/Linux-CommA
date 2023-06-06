@@ -81,7 +81,7 @@ def get_hyperv_patch_symbols():
     This function clones upstream and gets upstream commits, hyperV files
     """
     with DatabaseDriver.get_session() as session:
-        # Only annoying thing with SQLAlchemy is this always returns tuples need to be unwrapped.
+        # SQLAlchemy returns tuples which need to be unwrapped
         map_symbols_to_patch(
             [
                 commit[0]
@@ -108,15 +108,3 @@ def symbol_checker(symbol_file):
             .all()
             if len(set(symbols.split(" ")) - symbols_in_file) > 0
         )
-
-
-def print_missing_symbols(symbol_file):
-    """
-    Utility function for printing missing symbols
-    """
-
-    print("Starting the Symbol Checker...")
-    get_hyperv_patch_symbols()
-    missing_symbols = symbol_checker(symbol_file)
-    print("Missing symbols:")
-    print(*missing_symbols)

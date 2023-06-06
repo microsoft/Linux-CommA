@@ -15,8 +15,8 @@ from comma.downstream.monitor import monitor_downstream
 from comma.upstream import process_commits
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
-from comma.util.symbols import print_missing_symbols
-from comma.util.tracking import print_tracked_paths
+from comma.util.symbols import get_hyperv_patch_symbols, symbol_checker
+from comma.util.tracking import get_tracked_paths
 
 
 LOGGER = logging.getLogger(__name__.split(".", 1)[0])
@@ -33,17 +33,23 @@ def run(args):
                 session.add_all(config.default_distros)
             if session.query(MonitoringSubjects).first() is None:
                 session.add_all(config.default_monitoring_subjects)
+
     if args.section:
         config.sections = args.section
+
     if args.print_tracked_paths:
-        print_tracked_paths()
+        for path in get_tracked_paths():
+            print(path)
+
     if args.upstream:
-        print("Monitoring upstream...")
-        LOGGER.info("Starting patch scraping from files...")
+        LOGGER.info("Begin monitoring upstream")
         process_commits(add_to_database=True)
-        print("Finishing monitoring upstream!")
+        LOGGER.info("Finishing monitoring upstream")
+
     if args.downstream:
+        LOGGER.info("Begin monitoring downstream")
         monitor_downstream()
+        LOGGER.info("Finishing monitoring downstream")
 
 
 def spreadsheet(args):
@@ -94,6 +100,16 @@ def add_kernel(args):
     with DatabaseDriver.get_session() as session:
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
     LOGGER.info("Successfully added new revision '%s' for distro '%s'", args.revision, args.name)
+
+
+def print_missing_symbols(symbol_file):
+    """
+    Utility function for printing missing symbols
+    """
+
+    LOGGER.info("Starting Symbol Checker")
+    get_hyperv_patch_symbols()
+    print(f"Missing symbols:\n{symbol_checker(symbol_file)}")
 
 
 def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
@@ -266,9 +282,7 @@ def main(args: Optional[str] = None) -> None:
     config.since = args.since
     config.fetch = not args.no_fetch
 
-    print("Welcome to Commit Analyzer!")
     args.func(args)
-    print("Commit Analyzer completed!")
 
 
 if __name__ == "__main__":

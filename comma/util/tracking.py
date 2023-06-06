@@ -193,15 +193,6 @@ def get_tracked_paths(sections=config.sections) -> List[str]:
     return sorted(paths)
 
 
-def print_tracked_paths():
-    """
-    Utility function for printing tracked paths
-    """
-
-    for path in get_tracked_paths():
-        print(path)
-
-
 class GitProgressPrinter(git.RemoteProgress):
     """
     Simple status printer for GitPython
