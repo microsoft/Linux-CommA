@@ -17,6 +17,9 @@ from comma.database.model import Base
 from comma.util import config
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class DatabaseDriver:
     """
     Database driver managing connections
@@ -27,12 +30,12 @@ class DatabaseDriver:
     def __init__(self):
         if config.dry_run:
             db_file = "comma.db"
-            logging.info("Using local SQLite database at '%s'.", db_file)
+            LOGGER.info("Using local SQLite database at '%s'.", db_file)
             engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=config.verbose > 2)
         else:
-            logging.info("Connecting to remote database...")
+            LOGGER.info("Connecting to remote database...")
             engine = self._get_mssql_engine()
-            logging.info("Connected!")
+            LOGGER.info("Connected!")
 
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)

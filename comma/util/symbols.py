@@ -12,6 +12,9 @@ from comma.database.model import PatchData
 from comma.util.tracking import get_linux_repo, get_tracked_paths
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def get_symbols(repo_dir, files):
     """
     get_symbols: This function returns a list of symbols for given files
@@ -21,7 +24,7 @@ def get_symbols(repo_dir, files):
     command = "ctags -R -x −−c−kinds=f {}".format(
         " ".join(files) + " | awk '{ if ($2 == \"function\") print $1 }'"
     )
-    logging.debug("Running command: %s", command)
+    LOGGER.debug("Running command: %s", command)
     process = subprocess.run(
         command,
         stdout=subprocess.PIPE,

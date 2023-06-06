@@ -15,6 +15,9 @@ import git
 from comma.util import config
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def get_filenames(commit: git.Commit) -> List[str]:
     """
     Get all paths affected by a given commit
@@ -62,9 +65,9 @@ class Session:
 
         repo = self.repos[name] = git.Repo(path)
         if pull:
-            logging.info("Pulling '%s' repo.", name)
+            LOGGER.info("Pulling '%s' repo.", name)
             repo.remotes.origin.pull(progress=GitProgressPrinter())
-            logging.info("Completed pulling %s", name)
+            LOGGER.info("Completed pulling %s", name)
         else:
             self.fetch_repo(name, repo)
 
@@ -74,21 +77,21 @@ class Session:
         """Fetch an existing repo"""
 
         if repack:
-            logging.info("Repacking '%s' repo", name)
+            LOGGER.info("Repacking '%s' repo", name)
             repo.git.repack("-d")
 
-        logging.info("Fetching '%s' repo since %s", name, config.since)
+        LOGGER.info("Fetching '%s' repo since %s", name, config.since)
         try:
             repo.remotes.origin.fetch(
                 shallow_since=config.since,
                 verbose=True,
                 progress=GitProgressPrinter(),
             )
-            logging.info("Completed fetching %s", name)
+            LOGGER.info("Completed fetching %s", name)
         except git.GitCommandError as e:
             # Sometimes a shallow-fetched repo will need repacking before fetching again
             if "fatal: error in object: unshallow" in e.stderr and not repack:
-                logging.warning("Error with shallow clone. Repacking before retrying.")
+                LOGGER.warning("Error with shallow clone. Repacking before retrying.")
                 self.fetch_repo(name, repo=repo, repack=True)
             else:
                 raise
@@ -96,10 +99,10 @@ class Session:
     def clone_repo(self, name: str, path: pathlib.Path, url: str, shallow: bool = True):
         """Clone a repo from the given URL"""
 
-        logging.info("Cloning '%s' repo from '%s'.", name, url)
+        LOGGER.info("Cloning '%s' repo from '%s'.", name, url)
         args = {"shallow_since": config.since} if shallow else {}
         self.repos[name] = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
-        logging.info("Completed cloning %s", name)
+        LOGGER.info("Completed cloning %s", name)
         return self.repos[name]
 
 
@@ -173,7 +176,7 @@ def extract_paths(sections: Iterable, content: str) -> Set[str]:
 def get_tracked_paths(sections=config.sections) -> List[str]:
     """Get list of files from MAINTAINERS for given sections."""
 
-    logging.debug("Parsing MAINTAINERS file...")
+    LOGGER.debug("Parsing MAINTAINERS file...")
     repo = get_linux_repo()
     paths = set()
 
@@ -186,7 +189,7 @@ def get_tracked_paths(sections=config.sections) -> List[str]:
     for ref in refs:
         paths |= extract_paths(sections, repo.git.show(f"{ref}:MAINTAINERS"))
 
-    logging.debug("Parsed!")
+    LOGGER.debug("Parsed!")
     return sorted(paths)
 
 

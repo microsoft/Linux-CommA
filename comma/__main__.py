@@ -19,6 +19,9 @@ from comma.util.symbols import print_missing_symbols
 from comma.util.tracking import print_tracked_paths
 
 
+LOGGER = logging.getLogger(__name__.split(".", 1)[0])
+
+
 def run(args):
     """
     Analyze commits
@@ -36,7 +39,7 @@ def run(args):
         print_tracked_paths()
     if args.upstream:
         print("Monitoring upstream...")
-        logging.info("Starting patch scraping from files...")
+        LOGGER.info("Starting patch scraping from files...")
         process_commits(add_to_database=True)
         print("Finishing monitoring upstream!")
     if args.downstream:
@@ -69,7 +72,7 @@ def get_distros():
             .all()
         ):
             print(f"{distro}\t{revision}")
-    logging.debug("Successfully printed revisions")
+    LOGGER.debug("Successfully printed revisions")
 
 
 def add_distro(args):
@@ -80,7 +83,7 @@ def add_distro(args):
     with DatabaseDriver.get_session() as session:
         session.add(Distros(distroID=args.name, repoLink=args.url))
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
-    logging.info("Successfully added new distro: %s", {args.name})
+    LOGGER.info("Successfully added new distro: %s", {args.name})
 
 
 def add_kernel(args):
@@ -90,7 +93,7 @@ def add_kernel(args):
 
     with DatabaseDriver.get_session() as session:
         session.add(MonitoringSubjects(distroID=args.name, revision=args.revision))
-    logging.info("Successfully added new revision '%s' for distro '%s'", args.revision, args.name)
+    LOGGER.info("Successfully added new revision '%s' for distro '%s'", args.revision, args.name)
 
 
 def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:

@@ -14,6 +14,8 @@ from comma.database.model import PatchData
 from comma.util import PatchDiff
 
 
+LOGGER = logging.getLogger(__name__)
+
 # Confidence weights
 AUTHOR_WEIGHT = 0.2
 AUTHOR_DATE_WEIGHT = 0.01  # This addresses some edge cases of identical other fields
@@ -68,7 +70,7 @@ def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> b
     # Preprocessing for matching filenames
     upstream_filepaths = upstream.affectedFilenames.split(" ")
 
-    logging.debug("Upstream missing patch, %s", upstream.commitID)
+    LOGGER.debug("Upstream missing patch, %s", upstream.commitID)
     for downstream in downstream_patches:
         # Calculate confidence that our upstream patch matches this downstream patch
 
