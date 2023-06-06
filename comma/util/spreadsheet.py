@@ -23,6 +23,9 @@ from comma.database.model import Distros, MonitoringSubjects, PatchData
 from comma.util import tracking
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def get_db_commits() -> Dict[str, int]:
     """Query the 'PatchData' table for all commit hashes and IDs."""
     with DatabaseDriver.get_session() as session:  # type: sqlalchemy.orm.session.Session
@@ -41,15 +44,15 @@ def get_workbook(in_file: str) -> Tuple[Workbook, Worksheet]:
 
     """
     if not Path(in_file).exists():
-        logging.error("The file %s does not exist", in_file)
+        LOGGER.error("The file %s does not exist", in_file)
         sys.exit(1)
     workbook = openpyxl.load_workbook(filename=in_file)
     # Force refresh of pivot table in “Pivot” worksheet.
-    logging.debug("Finding worksheet named 'Pivot'...")
+    LOGGER.debug("Finding worksheet named 'Pivot'...")
     pivot = workbook["Pivot"]._pivots[0]  # pylint: disable=protected-access
     pivot.cache.refreshOnLoad = True
     # The worksheet is manually named “git log”.
-    logging.debug("Finding worksheet named 'git log'...")
+    LOGGER.debug("Finding worksheet named 'git log'...")
     worksheet = workbook["git log"]
     return (workbook, worksheet)
 
@@ -63,7 +66,7 @@ def get_column(worksheet: Worksheet, name: str) -> Cell:
     with 'row[get_column(ws, "Commit Title").column]'.
 
     """
-    logging.debug("Looking for column with name '%s'...", name)
+    LOGGER.debug("Looking for column with name '%s'...", name)
     return next(cell for cell in worksheet[1] if cell.value == name)
 
 
@@ -101,22 +104,22 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     """Determine if we should export the commit."""
     # Skip empty values (such as if ‘cell.value’ was passed).
     if sha is None:
-        logging.warning("Given SHA was 'None'!")
+        LOGGER.warning("Given SHA was 'None'!")
         return False
     # Skip commits that are not in the repo.
     try:
         commit = repo.commit(sha)
     except ValueError:
-        logging.warning("Commit '%s' not in repo!", sha)
+        LOGGER.warning("Commit '%s' not in repo!", sha)
         return False
     # Skip commits before the chosen base.
     if base_commit and not repo.is_ancestor(base_commit, commit):
-        logging.debug("Commit '%s' is too old!", sha)
+        LOGGER.debug("Commit '%s' is too old!", sha)
         return False
     # Skip commits to tools.
     filenames = tracking.get_filenames(commit)
     if any(f.startswith("tools/hv/") for f in filenames):
-        logging.debug("Commit '%s' is in 'tools/hv/'!", sha)
+        LOGGER.debug("Commit '%s' is in 'tools/hv/'!", sha)
         return False
     return True
 
@@ -171,10 +174,10 @@ def export_commits(in_file: str, out_file: str) -> None:
     repo = tracking.get_linux_repo()
     tag = "v4.15"
     if tag in repo.references:
-        logging.info("Skipping commits before tag '%s'!", tag)
+        LOGGER.info("Skipping commits before tag '%s'!", tag)
         base_commit = repo.commit(tag)
     else:
-        logging.warning("Tag '%s' not in local repo, not limiting commits by age", tag)
+        LOGGER.warning("Tag '%s' not in local repo, not limiting commits by age", tag)
         base_commit = None
     missing_commits = [
         commit

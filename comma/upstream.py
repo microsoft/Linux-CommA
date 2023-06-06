@@ -15,6 +15,7 @@ from comma.util.tracking import get_filenames, get_linux_repo, get_tracked_paths
 
 
 IGNORED_FIELDS = "reported-by:", "signed-off-by:", "reviewed-by:", "acked-by:", "cc:"
+LOGGER = logging.getLogger(__name__)
 
 
 def format_diffs(commit):
@@ -112,9 +113,9 @@ def process_commits(
             try:
                 commits.append(repo.commit(id_))
             except ValueError:
-                logging.warning("Commit '%s' does not exist in the repo! Skipping...", id_)
+                LOGGER.warning("Commit '%s' does not exist in the repo! Skipping...", id_)
 
-    logging.info("Starting commit processing...")
+    LOGGER.info("Starting commit processing...")
 
     all_patches = []
     num_patches_added = 0
@@ -122,7 +123,7 @@ def process_commits(
         # Skip root (initial) commit since it should always be present
         # TODO (Issue 54): This can probably be removed
         if commit.parents:
-            logging.debug("Parsing commit %s", commit.hexsha)
+            LOGGER.debug("Parsing commit %s", commit.hexsha)
             patch: PatchData = create_patch(commit)
 
             if add_to_database:
@@ -139,9 +140,9 @@ def process_commits(
                 all_patches.append(patch)
 
         if not num % 250:
-            logging.debug(" %d commits processed...", num)
+            LOGGER.debug(" %d commits processed...", num)
 
     if add_to_database:
-        logging.info("%d patches added to database.", num_patches_added)
+        LOGGER.info("%d patches added to database.", num_patches_added)
 
     return all_patches

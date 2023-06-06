@@ -22,6 +22,9 @@ from comma.util import config
 from comma.util.tracking import GitProgressPrinter, get_linux_repo, get_tracked_paths
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 def update_revisions_for_distro(distro_id, revs):
     """
     Updates the database with the given revisions
@@ -35,7 +38,7 @@ def update_revisions_for_distro(distro_id, revs):
             .filter(~MonitoringSubjects.revision.in_(revs))
         )
         for subject in revs_to_delete:
-            logging.info("For distro %s, deleting revision: %s", distro_id, subject.revision)
+            LOGGER.info("For distro %s, deleting revision: %s", distro_id, subject.revision)
 
         # This is a bulk delete and we close the session immediately after.
         revs_to_delete.delete(synchronize_session=False)
@@ -51,7 +54,7 @@ def update_revisions_for_distro(distro_id, revs):
                 .first()
                 is None
             ):
-                logging.info("For distro %s, adding revision: %s", distro_id, rev)
+                LOGGER.info("For distro %s, adding revision: %s", distro_id, rev)
                 session.add(MonitoringSubjects(distroID=distro_id, revision=rev))
 
 
@@ -121,11 +124,11 @@ def monitor_subject(monitoring_subject, repo, reference=None):
     reference = monitoring_subject.revision if reference is None else reference
 
     missing_cherries = get_missing_cherries(repo, reference)
-    logging.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
+    LOGGER.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
     # Run extra checks on these missing commits
     missing_patch_ids = get_missing_patch_ids(missing_cherries, reference)
-    logging.info("Identified %d missing patches", len(missing_patch_ids))
+    LOGGER.info("Identified %d missing patches", len(missing_patch_ids))
 
     # Delete patches that are no longer missing.
     # NOTE: We do this in separate sessions in order to cleanly expire their objects and commit the
@@ -140,7 +143,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
         patches_to_delete = patches.filter(
             ~MonitoringSubjectsMissingPatches.patchID.in_(missing_patch_ids)
         )
-        logging.info("Deleting %d patches that are now present.", patches_to_delete.count())
+        LOGGER.info("Deleting %d patches that are now present.", patches_to_delete.count())
         # This is a bulk delete and we close the session immediately after.
         patches_to_delete.delete(synchronize_session=False)
 
@@ -160,7 +163,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
                         monitoringSubjectID=subject_id, patchID=patch_id
                     )
                 )
-        logging.info("Adding %d patches that are now missing.", new_missing_patches)
+        LOGGER.info("Adding %d patches that are now missing.", new_missing_patches)
 
 
 def get_missing_patch_ids(missing_cherries, reference):
@@ -177,14 +180,14 @@ def get_missing_patch_ids(missing_cherries, reference):
         )
         # We only want to check downstream patches as old as the oldest upstream missing patch
         earliest_commit_date = min(patch.commitTime for patch in patches).isoformat()
-        logging.debug("Processing commits since %s", earliest_commit_date)
+        LOGGER.debug("Processing commits since %s", earliest_commit_date)
 
         # Get the downstream commits for this revision (these are distinct from upstream because
         # they have been cherry-picked). This is slow but necessary!
         downstream_patches = process_commits(revision=reference, since=earliest_commit_date)
 
         # Double check the missing cherries using our fuzzy algorithm.
-        logging.info("Starting confidence matching for %d upstream patches...", len(patches))
+        LOGGER.info("Starting confidence matching for %d upstream patches...", len(patches))
         missing_patches = [p.patchID for p in patches if not patch_matches(downstream_patches, p)]
 
     return missing_patches
@@ -198,14 +201,14 @@ def fetch_remote_ref(repo: git.Repo, name: str, local_ref: str, remote_ref: str)
     remote = repo.remote(name)
 
     # Initially fetch revision at depth 1
-    logging.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
+    LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
     fetch_info = remote.fetch(remote_ref, depth=1, verbose=True, progress=GitProgressPrinter())
 
     # If last commit for revision is in the fetch window, expand depth
     # This check is necessary because some servers will throw an error when there are
     # no commits in the fetch window
     if fetch_info[-1].commit.committed_date >= approxidate.approx(config.since):
-        logging.info(
+        LOGGER.info(
             'Fetching ref %s from remote %s shallow since "%s"',
             remote_ref,
             remote,
@@ -221,14 +224,14 @@ def fetch_remote_ref(repo: git.Repo, name: str, local_ref: str, remote_ref: str)
         except git.GitCommandError as e:
             # ADO repos do not currently support --shallow-since, only depth
             if "Server does not support --shallow-since" in e.stderr:
-                logging.warning(
+                LOGGER.warning(
                     "Server does not support --shallow-since, retrying fetch without option."
                 )
                 remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
             else:
                 raise
     else:
-        logging.info(
+        LOGGER.info(
             'Newest commit for ref %s from remote %s is older than fetch window "%s"',
             remote_ref,
             remote,
@@ -253,11 +256,11 @@ def monitor_downstream():
         for distro_id, url in session.query(Distros.distroID, Distros.repoLink).all():
             # Skip Debian for now
             if distro_id not in repo.remotes and not distro_id.startswith("Debian"):
-                logging.debug("Adding remote %s from %s", distro_id, url)
+                LOGGER.debug("Adding remote %s from %s", distro_id, url)
                 repo.create_remote(distro_id, url=url)
 
     # Update stored revisions for repos as appropriate
-    logging.info("Updating tracked revisions for each repo.")
+    LOGGER.info("Updating tracked revisions for each repo.")
     with DatabaseDriver.get_session() as session:
         for (distro_id,) in session.query(Distros.distroID).all():
             update_tracked_revisions(distro_id, repo)
@@ -266,7 +269,7 @@ def monitor_downstream():
         for subject in session.query(MonitoringSubjects).all():
             if subject.distroID.startswith("Debian"):
                 # TODO (Issue 51): Don't skip Debian
-                logging.debug("skipping Debian")
+                LOGGER.debug("skipping Debian")
                 continue
 
             # Use distro name for local refs to prevent duplicates
@@ -279,7 +282,7 @@ def monitor_downstream():
 
             fetch_remote_ref(repo, subject.distroID, local_ref, remote_ref)
 
-            logging.info(
+            LOGGER.info(
                 "Monitoring Script starting for Distro: %s, revision: %s",
                 subject.distroID,
                 remote_ref,
