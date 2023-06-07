@@ -265,7 +265,10 @@ def monitor_downstream():
             update_tracked_revisions(distro_id, repo)
 
     with DatabaseDriver.get_session() as session:
-        for subject in session.query(MonitoringSubjects).all():
+        subjects = session.query(MonitoringSubjects).all()
+        total = len(subjects)
+
+        for num, subject in enumerate(subjects, 1):
             if subject.distroID.startswith("Debian"):
                 # TODO (Issue 51): Don't skip Debian
                 LOGGER.debug("skipping Debian")
@@ -279,10 +282,19 @@ def monitor_downstream():
                 local_ref = f"{subject.distroID}/{subject.revision}"
                 remote_ref = subject.revision
 
+            LOGGER.info(
+                "(%d of %d) Fetching remote ref %s from remote %s",
+                num,
+                total,
+                remote_ref,
+                subject.distroID,
+            )
             fetch_remote_ref(repo, subject.distroID, local_ref, remote_ref)
 
             LOGGER.info(
-                "Monitoring Script starting for Distro: %s, revision: %s",
+                "(%d of %d) Monitoring Script starting for distro: %s, revision: %s",
+                num,
+                total,
                 subject.distroID,
                 remote_ref,
             )
