@@ -19,7 +19,7 @@ from comma.database.model import (
 from comma.downstream.matcher import patch_matches
 from comma.upstream import process_commits
 from comma.util import config
-from comma.util.tracking import GitProgressPrinter, get_linux_repo, get_tracked_paths
+from comma.util.tracking import GitProgressPrinter, Repo, get_linux_repo
 
 
 LOGGER = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def get_missing_cherries(repo, reference):
             f"--since={config.since}",
             "origin/master",
             "--",
-            get_tracked_paths(),
+            repo.get_tracked_paths(),
         ).splitlines()
     )
 
@@ -193,7 +193,7 @@ def get_missing_patch_ids(missing_cherries, reference):
     return missing_patches
 
 
-def fetch_remote_ref(repo: git.Repo, name: str, local_ref: str, remote_ref: str) -> None:
+def fetch_remote_ref(repo: Repo, name: str, local_ref: str, remote_ref: str) -> None:
     """
     Shallow fetch remote reference so it is available locally
     """

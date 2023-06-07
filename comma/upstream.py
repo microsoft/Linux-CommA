@@ -11,21 +11,21 @@ from typing import List, Optional, Set
 from comma.database.driver import DatabaseDriver
 from comma.database.model import PatchData
 from comma.util import config
-from comma.util.tracking import get_filenames, get_linux_repo, get_tracked_paths
+from comma.util.tracking import get_filenames, get_linux_repo
 
 
 IGNORED_FIELDS = "reported-by:", "signed-off-by:", "reviewed-by:", "acked-by:", "cc:"
 LOGGER = logging.getLogger(__name__)
 
 
-def format_diffs(commit):
+def format_diffs(commit, paths):
     """
     Format diffs from commit object into string
     """
 
     diffs = []
     # We are ignoring merges so all commits should have a single parent
-    for diff in commit.tree.diff(commit.parents[0], paths=get_tracked_paths(), create_patch=True):
+    for diff in commit.tree.diff(commit.parents[0], paths=paths, create_patch=True):
         if diff.a_path is not None:
             # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
             lines = "\n".join(
@@ -38,7 +38,7 @@ def format_diffs(commit):
     return "\n".join(diffs)
 
 
-def create_patch(commit) -> PatchData:
+def create_patch(commit, paths) -> PatchData:
     """
     Create patch object from a commit object
     """
@@ -73,7 +73,7 @@ def create_patch(commit) -> PatchData:
     patch.description = "\n".join(description)
     patch.fixedPatches = " ".join(fixed_patches)  # e.g. "SHA1 SHA2 SHA3"
     patch.affectedFilenames = " ".join(get_filenames(commit))
-    patch.commitDiffs = format_diffs(commit)
+    patch.commitDiffs = format_diffs(commit, paths)
 
     return patch
 
@@ -87,27 +87,27 @@ def process_commits(
     """
     Look at all commits in the given repo and handle based on distro.
 
-    repo: Git.Repo object of the repository where we want to parse commits
-    rev: revision we want to see the commits of, or None
-    paths: list of filenames to check commits for
+    commit_ids: Set of commits to process
+    revision: revision we want to see the commits of, or None
     add_to_database: whether or not to add to database (side-effect)
     since: if provided, will only process commits after this commit
     """
 
     repo = get_linux_repo()
+    paths = repo.get_tracked_paths()
 
     if commit_ids is None:
         # We use `--min-parents=1 --max-parents=1` to avoid both merges and graft commits.
         LOGGER.info("Determining commits from tracked files")
         commits = repo.iter_commits(
             rev=revision,
-            paths=get_tracked_paths(),
+            paths=paths,
             min_parents=1,
             max_parents=1,
             since=since,
         )
     else:
-        # If given a list of commit SHAs, get the commit objects.
+        # If given a set of commit SHAs, get the commit objects.
         commits = []
         for id_ in commit_ids:
             try:
@@ -124,7 +124,7 @@ def process_commits(
         # TODO (Issue 54): This can probably be removed
         if commit.parents:
             LOGGER.debug("Parsing commit %s", commit.hexsha)
-            patch: PatchData = create_patch(commit)
+            patch: PatchData = create_patch(commit, paths)
 
             if add_to_database:
                 with DatabaseDriver.get_session() as session:
