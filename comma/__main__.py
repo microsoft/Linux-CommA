@@ -16,7 +16,7 @@ from comma.upstream import process_commits
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
 from comma.util.symbols import get_hyperv_patch_symbols, symbol_checker
-from comma.util.tracking import get_tracked_paths
+from comma.util.tracking import get_linux_repo
 
 
 LOGGER = logging.getLogger(__name__.split(".", 1)[0])
@@ -38,7 +38,7 @@ def run(args):
         config.sections = args.section
 
     if args.print_tracked_paths:
-        for path in get_tracked_paths():
+        for path in get_linux_repo().get_tracked_paths():
             print(path)
 
     if args.upstream:

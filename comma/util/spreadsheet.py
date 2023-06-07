@@ -100,7 +100,7 @@ def import_commits(in_file: str) -> None:
     # LOGGER.info("Finished importing!")
 
 
-def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
+def include_commit(sha: str, repo: tracking.Repo, base_commit: git.Commit) -> bool:
     """Determine if we should export the commit."""
     # Skip empty values (such as if ‘cell.value’ was passed).
     if sha is None:
@@ -124,7 +124,7 @@ def include_commit(sha: str, repo: git.Repo, base_commit: git.Commit) -> bool:
     return True
 
 
-def get_release(sha: str, repo: git.Repo) -> str:
+def get_release(sha: str, repo: tracking.Repo) -> str:
     """Get the ‘v5.7’ from ‘v5.7-rc1-2-gc81992e7f’."""
     try:
         # NOTE: This must be ordered “--contains <SHA>” for Git.
@@ -135,7 +135,7 @@ def get_release(sha: str, repo: git.Repo) -> str:
         return "N/A"
 
 
-def create_commit_row(sha: str, repo: git.Repo, worksheet: Worksheet) -> Dict[str, Any]:
+def create_commit_row(sha: str, repo: tracking.Repo, worksheet: Worksheet) -> Dict[str, Any]:
     """Create a row with the commit's SHA, date, release and title."""
     commit = repo.commit(sha)
     # TODO (Issue 40): Some (but not all) of this info is available in the

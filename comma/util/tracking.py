@@ -4,11 +4,10 @@
 Functions and classes for fetching and parsing data from Git
 """
 
-import functools
 import logging
 import pathlib
 import re
-from typing import Iterable, List, Set
+from typing import Any, Iterable, List, Optional, Set, Tuple
 
 import git
 
@@ -33,6 +32,90 @@ def get_filenames(commit: git.Commit) -> List[str]:
     )
 
 
+class Repo:
+    """
+    Common repository operations
+    Wraps git.Repo, so unimplemented methods are passed to self.obj
+    """
+
+    def __init__(self, name: str, url: str) -> None:
+        self.name: str = name
+        self.url: str = url
+        self.path = path = pathlib.Path("Repos", name).resolve()
+        self.obj: Optional[git.Repo] = git.Repo(path) if path.exists() else None
+        self._tracked_paths: Optional[tuple] = None
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.obj, name)
+
+    def fetch(self, repack: bool = False):
+        """Fetch repo"""
+
+        if repack:
+            LOGGER.info("Repacking '%s' repo", self.name)
+            self.obj.git.repack("-d")
+
+        LOGGER.info("Fetching '%s' repo since %s", self.name, config.since)
+        try:
+            self.obj.remotes.origin.fetch(
+                shallow_since=config.since,
+                verbose=True,
+                progress=GitProgressPrinter(),
+            )
+            LOGGER.info("Completed fetching %s", self.name)
+        except git.GitCommandError as e:
+            # Sometimes a shallow-fetched repo will need repacking before fetching again
+            if "fatal: error in object: unshallow" in e.stderr and not repack:
+                LOGGER.warning("Error with shallow clone. Repacking before retrying.")
+                self.fetch(repack=True)
+            else:
+                raise
+
+    def clone(self, shallow: bool = True):
+        """Clone repo"""
+
+        LOGGER.info("Cloning '%s' repo from '%s'.", self.name, self.url)
+        args = {"shallow_since": config.since} if shallow else {}
+        self.obj = git.Repo.clone_from(self.url, self.path, **args, progress=GitProgressPrinter())
+        LOGGER.info("Completed cloning %s", self.name)
+
+    def pull(self):
+        """Pull repo"""
+        LOGGER.info("Pulling '%s' repo.", self.name)
+        self.obj.remotes.origin.pull(progress=GitProgressPrinter())
+        LOGGER.info("Completed pulling %s", self.name)
+
+    @property
+    def exists(self):
+        """Convenience property to see if repo abject has been populated"""
+        return self.obj is not None
+
+    def get_tracked_paths(self, sections=config.sections) -> Tuple[str]:
+        """Get list of files from MAINTAINERS for given sections."""
+
+        if self._tracked_paths is not None:
+            return self._tracked_paths
+
+        LOGGER.debug("Parsing MAINTAINERS file for %s", self.name)
+        paths = set()
+
+        # All tags starting with v4, also master.
+        refs = [
+            tag
+            for tag in self.obj.git.tag("v[^123]*", list=True).split()
+            if re.match(r"v\d+\.+$", tag)
+        ]
+        refs.append("origin/HEAD")  # Include default branch (Usually master or main)
+
+        for ref in refs:
+            paths |= extract_paths(sections, self.obj.git.show(f"{ref}:MAINTAINERS"))
+
+        LOGGER.debug("Completed parsing MAINTAINERS file for %s", self.name)
+        self._tracked_paths = tuple(sorted(paths))
+
+        return self._tracked_paths
+
+
 class Session:
     """
     Container for session data to avoid duplicate actions
@@ -47,63 +130,28 @@ class Session:
         url: str,
         shallow: bool = True,
         pull: bool = False,
-    ) -> git.Repo:
+    ) -> Repo:
         """
         Clone and optionally update a repo, returning the object.
 
         Only clones, fetches, or pulls once per session
         """
 
-        path = pathlib.Path("Repos", name).resolve()
-        if not path.exists():
-            # No local repo, clone from source
-            return self.clone_repo(name, path=path, url=url, shallow=shallow)
-
         if name in self.repos:
             # Repo has been cloned, fetched, or pulled already in this session
             return self.repos[name]
 
-        repo = self.repos[name] = git.Repo(path)
-        if pull:
-            LOGGER.info("Pulling '%s' repo.", name)
-            repo.remotes.origin.pull(progress=GitProgressPrinter())
-            LOGGER.info("Completed pulling %s", name)
+        repo = self.repos[name] = Repo(name, url)
+        if not repo.exists:
+            # No local repo, clone from source
+            repo.clone(shallow)
+
+        elif pull:
+            repo.pull()
         else:
-            self.fetch_repo(name, repo)
+            repo.fetch()
 
         return repo
-
-    def fetch_repo(self, name: str, repo: git.Repo, repack: bool = False):
-        """Fetch an existing repo"""
-
-        if repack:
-            LOGGER.info("Repacking '%s' repo", name)
-            repo.git.repack("-d")
-
-        LOGGER.info("Fetching '%s' repo since %s", name, config.since)
-        try:
-            repo.remotes.origin.fetch(
-                shallow_since=config.since,
-                verbose=True,
-                progress=GitProgressPrinter(),
-            )
-            LOGGER.info("Completed fetching %s", name)
-        except git.GitCommandError as e:
-            # Sometimes a shallow-fetched repo will need repacking before fetching again
-            if "fatal: error in object: unshallow" in e.stderr and not repack:
-                LOGGER.warning("Error with shallow clone. Repacking before retrying.")
-                self.fetch_repo(name, repo=repo, repack=True)
-            else:
-                raise
-
-    def clone_repo(self, name: str, path: pathlib.Path, url: str, shallow: bool = True):
-        """Clone a repo from the given URL"""
-
-        LOGGER.info("Cloning '%s' repo from '%s'.", name, url)
-        args = {"shallow_since": config.since} if shallow else {}
-        self.repos[name] = git.Repo.clone_from(url, path, **args, progress=GitProgressPrinter())
-        LOGGER.info("Completed cloning %s", name)
-        return self.repos[name]
 
 
 # TODO (Issue 56): Move session creation to main program logic
@@ -115,7 +163,7 @@ def get_linux_repo(
     url: str = "https://github.com/torvalds/linux.git",
     shallow: bool = True,
     pull: bool = False,
-) -> git.Repo:
+) -> Repo:
     """
     Shortcut for getting Linux repo
     """
@@ -170,27 +218,6 @@ def extract_paths(sections: Iterable, content: str) -> Set[str]:
             remaining.remove(current)
 
     return paths
-
-
-@functools.cache
-def get_tracked_paths(sections=config.sections) -> List[str]:
-    """Get list of files from MAINTAINERS for given sections."""
-
-    LOGGER.debug("Parsing MAINTAINERS file...")
-    repo = get_linux_repo()
-    paths = set()
-
-    # All tags starting with v4, also master.
-    refs = [
-        tag for tag in repo.git.tag("v[^123]*", list=True).split() if re.match(r"v\d+\.+$", tag)
-    ]
-    refs.append("origin/master")
-
-    for ref in refs:
-        paths |= extract_paths(sections, repo.git.show(f"{ref}:MAINTAINERS"))
-
-    LOGGER.debug("Parsed!")
-    return sorted(paths)
 
 
 class GitProgressPrinter(git.RemoteProgress):
