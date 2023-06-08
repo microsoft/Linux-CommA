@@ -48,6 +48,8 @@ def map_symbols_to_patch(
     prev_commit: SHA of start of HyperV patch to track
     """
 
+    LOGGER.info("Mapping symbols to commits")
+
     # Preserve initial reference
     initial_reference = repo.head.reference
 
@@ -71,7 +73,8 @@ def map_symbols_to_patch(
 
             # Compare symbols before and after patch
             diff_symbols = after_patch_apply - before_patch_apply
-            print(f"Commit: {commit} -> {''.join(diff_symbols)}")
+            if diff_symbols:
+                print(f"Commit: {commit} -> {' '.join(diff_symbols)}")
 
             # Save symbols to database
             with DatabaseDriver.get_session() as session:
