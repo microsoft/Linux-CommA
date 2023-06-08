@@ -148,7 +148,8 @@ spelling-dict = "en_US"
 spelling-ignore-words = [
   "CLI", "commit's", "ctags",
   "distro", "distros",
-  "HyperV", "isort",
+  "HyperV",
+  "iterable", "isort",
   "monitoringSubject",
   "namespace", "Nox",
   "ORM",

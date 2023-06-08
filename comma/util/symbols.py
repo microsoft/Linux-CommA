@@ -17,9 +17,9 @@ LOGGER = logging.getLogger(__name__)
 
 def get_symbols(repo_dir, files):
     """
-    get_symbols: This function returns a list of symbols for given files
-    files: HyperV files list
-    @return symbol_list: list of symbols generated through ctags
+    Returns a set of symbols for given files
+    files: iterable of files
+    returns: set of symbols generated through ctags
     """
     command = "ctags -R -x −−c−kinds=f {}".format(
         " ".join(files) + " | awk '{ if ($2 == \"function\") print $1 }'"
@@ -34,7 +34,7 @@ def get_symbols(repo_dir, files):
         check=True,
         universal_newlines=True,
     )
-    return process.stdout.splitlines()
+    return set(process.stdout.splitlines())
 
 
 def map_symbols_to_patch(
@@ -62,14 +62,14 @@ def map_symbols_to_patch(
         for commit in commits:
             # Get symbols before patch is applied
             if before_patch_apply is None:
-                before_patch_apply = set(get_symbols(repo.working_tree_dir, files))
+                before_patch_apply = get_symbols(repo.working_tree_dir, files)
 
             # Checkout commit
             repo.head.reference = repo.commit(commit)
             repo.head.reset(index=True, working_tree=True)
 
             # Get symbols after patch is applied
-            after_patch_apply = set(get_symbols(repo.working_tree_dir, files))
+            after_patch_apply = get_symbols(repo.working_tree_dir, files)
 
             # Compare symbols before and after patch
             diff_symbols = after_patch_apply - before_patch_apply
