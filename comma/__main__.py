@@ -109,7 +109,8 @@ def print_missing_symbols(symbol_file):
 
     LOGGER.info("Starting Symbol Checker")
     get_hyperv_patch_symbols()
-    print(f"Missing symbols:\n{symbol_checker(symbol_file)}")
+    LOGGER.info("Detecting missing symbols")
+    print(f"Missing symbols:\n{' '.join(str(sym) for sym in symbol_checker(symbol_file))}")
 
 
 def get_cli_options(args: Optional[str] = None) -> argparse.Namespace:
