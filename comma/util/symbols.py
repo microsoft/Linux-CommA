@@ -6,6 +6,7 @@ Functions for generating symbol maps
 
 import logging
 import subprocess
+from pathlib import Path
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import PatchData
@@ -109,20 +110,30 @@ def get_hyperv_patch_symbols():
         )
 
 
-def symbol_checker(symbol_file):
+def symbol_checker(filepath: Path):
     """
     This function returns missing symbols by comparing database patch symbols with given symbols
     symbol_file: file containing symbols to run against database
     return missing_symbols_patch: list of missing symbols from given list
     """
-    symbols_in_file = {line.strip() for line in symbol_file}
-    symbol_file.close()
+    with open(filepath, "r", encoding="utf-8") as symbol_file:
+        symbols_in_file = {line.strip() for line in symbol_file}
+
     with DatabaseDriver.get_session() as session:
         return sorted(
-            patch_id
-            for patch_id, symbols in session.query(PatchData.patchID, PatchData.symbols)
+            commitID
+            for commitID, symbols in session.query(PatchData.commitID, PatchData.symbols)
             .filter(PatchData.symbols != " ")
             .order_by(PatchData.commitTime)
             .all()
             if len(set(symbols.split(" ")) - symbols_in_file) > 0
         )
+
+
+def get_missing_commits(symbol_file):
+    """Returns a sorted list of commit IDs whose symbols are missing from the given file"""
+
+    LOGGER.info("Starting Symbol Checker")
+    get_hyperv_patch_symbols()
+    LOGGER.info("Detecting missing symbols")
+    return symbol_checker(symbol_file)

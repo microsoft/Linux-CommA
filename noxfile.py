@@ -87,11 +87,10 @@ def demo(session: nox.Session) -> None:
 
     session.run(
         "comma",
-        "--dry-run",
-        "--since",
-        "6 months ago",
+        "downstream",
+        "--add",
         "--verbose",
-        "add-distro",
+        "--dry-run",
         "--name",
         "Ubuntu22.04",
         "--url",
@@ -103,11 +102,11 @@ def demo(session: nox.Session) -> None:
 
     session.run(
         "comma",
+        "run",
+        "--verbose",
         "--dry-run",
         "--since",
         "6 months ago",
-        "--verbose",
-        "run",
         "--upstream",
         "--downstream",
         silent=False,
@@ -121,11 +120,9 @@ def symbols(session: nox.Session) -> None:
     with NamedTemporaryFile(prefix="CommA_") as temp_file:
         session.run(
             "comma",
-            "--dry-run",
-            "--no-fetch",
+            "symbols",
             "--verbose",
-            "print-symbols",
-            "--file",
+            "--dry-run",
             temp_file.name,
         )
 
