@@ -50,7 +50,7 @@ class DatabaseDriver:
         # Verify credentials are available
         for envvar in ("COMMA_DB_URL", "COMMA_DB_NAME", "COMMA_DB_USERNAME", "COMMA_DB_PW"):
             if not os.environ.get(envvar):
-                sys.exit(f"{envvar}is not defined in the current environment")
+                sys.exit(f"{envvar} is not defined in the current environment")
 
         params = urllib.parse.quote_plus(
             ";".join(

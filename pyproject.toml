@@ -33,7 +33,7 @@ authors = [
 ]
 
 [project.scripts]
-comma = "comma.__main__:main"
+comma = "comma.cli:main"
 
 [project.optional-dependencies]
 flake8 = [
@@ -153,9 +153,9 @@ spelling-ignore-words = [
   "monitoringSubject",
   "namespace", "Nox",
   "ORM",
-  "PatchData", "preprocessing",
+  "parsers", "PatchData", "preprocessing",
   "repo", "repos",
-  "setuptools", "SHA", "subclassed",
+  "setuptools", "SHA", "subclassed", "subcommand", "subcommands",
   "untracked",
   "virtualenv",
 ]
