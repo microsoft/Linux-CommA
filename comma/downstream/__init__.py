@@ -15,7 +15,6 @@ from comma.database.model import (
     PatchData,
 )
 from comma.downstream.matcher import patch_matches
-from comma.upstream import process_commits
 from comma.util.tracking import get_linux_repo
 
 
@@ -186,6 +185,8 @@ class Downstream:
         Attempt to determine which patches are missing from a list of missing cherries
         """
 
+        paths = self.repo.get_tracked_paths(self.config.sections)
+
         with self.database.get_session() as session:
             patches = (
                 session.query(PatchData)
@@ -199,7 +200,19 @@ class Downstream:
 
             # Get the downstream commits for this revision (these are distinct from upstream because
             # they have been cherry-picked). This is slow but necessary!
-            downstream_patches = process_commits(revision=reference, since=earliest_commit_date)
+
+            LOGGER.info("Determining downstream commits from tracked files")
+            # We use `--min-parents=1 --max-parents=1` to avoid both merges and graft commits
+            downstream_patches = tuple(
+                PatchData.create(commit, paths)
+                for commit in self.repo.iter_commits(
+                    rev=reference,
+                    paths=paths,
+                    min_parents=1,
+                    max_parents=1,
+                    since=earliest_commit_date,
+                )
+            )
 
             # Double check the missing cherries using our fuzzy algorithm.
             LOGGER.info("Starting confidence matching for %d upstream patches...", len(patches))

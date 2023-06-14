@@ -11,7 +11,7 @@ from comma.cli.parser import parse_args
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream import Downstream
-from comma.upstream import process_commits
+from comma.upstream import Upstream
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
 from comma.util.symbols import get_missing_commits
@@ -39,7 +39,7 @@ def run(options):
 
     if options.upstream:
         LOGGER.info("Begin monitoring upstream")
-        process_commits(add_to_database=True, since=config.since)
+        Upstream(config, DatabaseDriver()).process_commits()
         LOGGER.info("Finishing monitoring upstream")
 
     if options.downstream:

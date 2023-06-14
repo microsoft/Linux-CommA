@@ -4,10 +4,18 @@
 ORM models for database objects
 """
 
+from datetime import datetime
+
+import git
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
+from comma.util import format_diffs
+from comma.util.tracking import get_filenames
+
+
+IGNORED_IN_CMSG = "reported-by:", "signed-off-by:", "reviewed-by:", "acked-by:", "cc:"
 
 Base = declarative_base()
 
@@ -45,6 +53,46 @@ class PatchData(Base):
         back_populates="patches",
         lazy="dynamic",
     )
+
+    @classmethod
+    def create(cls, commit: git.Commit, paths) -> "PatchData":
+        """
+        Create patch object from a commit object
+        """
+
+        patch = cls(
+            commitID=commit.hexsha,
+            author=commit.author.name,
+            authorEmail=commit.author.email,
+            authorTime=datetime.utcfromtimestamp(commit.authored_date),
+            commitTime=datetime.utcfromtimestamp(commit.committed_date),
+        )
+
+        description = []
+        fixed_patches = []
+        for num, line in enumerate(commit.message.splitlines()):
+            line = line.strip()  # pylint: disable=redefined-loop-name
+            if not num:
+                patch.subject = line
+                continue
+
+            if line.lower().startswith(IGNORED_IN_CMSG):
+                continue
+
+            description.append(line)
+
+            # Check if this patch fixes other patches
+            if line.lower().startswith("fixes:"):
+                words = line.split(" ")
+                if len(words) > 1:
+                    fixed_patches.append(words[1])
+
+        patch.description = "\n".join(description)
+        patch.fixedPatches = " ".join(fixed_patches)  # e.g. "SHA1 SHA2 SHA3"
+        patch.affectedFilenames = " ".join(get_filenames(commit))
+        patch.commitDiffs = format_diffs(commit, paths)
+
+        return patch
 
 
 class PatchDataMeta(Base):

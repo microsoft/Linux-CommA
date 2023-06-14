@@ -6,7 +6,7 @@ Functions to compare commits for similarities
 
 import logging
 import os
-from typing import Iterable, List
+from typing import Iterable
 
 from fuzzywuzzy import fuzz
 
@@ -64,7 +64,7 @@ def calculate_filenames_confidence(
     return total_filepaths_match / len(upstream_filepaths)
 
 
-def patch_matches(downstream_patches: List[PatchData], upstream: PatchData) -> bool:
+def patch_matches(downstream_patches: Iterable[PatchData], upstream: PatchData) -> bool:
     """Check if 'upstream' has an equivalent in 'downstream_patches'."""
 
     # Preprocessing for matching filenames

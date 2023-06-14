@@ -5,6 +5,26 @@ Utility functions and classes
 """
 
 
+def format_diffs(commit, paths):
+    """
+    Format diffs from commit object into string
+    """
+
+    diffs = []
+    # We are ignoring merges so all commits should have a single parent
+    for diff in commit.tree.diff(commit.parents[0], paths=paths, create_patch=True):
+        if diff.a_path is not None:
+            # The patch commit diffs are stored as "(filename1)\n(diff1)\n(filename2)\n(diff2)..."
+            lines = "\n".join(
+                line
+                for line in diff.diff.decode("utf-8").splitlines()
+                if line.startswith(("+", "-"))
+            )
+            diffs.append(f"{diff.a_path}\n{lines}")
+
+    return "\n".join(diffs)
+
+
 class PatchDiff:
     """
     Representation of code changes in a patch
