@@ -55,8 +55,7 @@ def map_symbols_to_patch(
     initial_reference = repo.head.reference
 
     try:
-        repo.head.reference = repo.commit(prev_commit)
-        repo.head.reset(index=True, working_tree=True)
+        repo.checkout(prev_commit)
         before_patch_apply = None
 
         # Iterate through commits
@@ -66,8 +65,7 @@ def map_symbols_to_patch(
                 before_patch_apply = get_symbols(repo.working_tree_dir, files)
 
             # Checkout commit
-            repo.head.reference = repo.commit(commit)
-            repo.head.reset(index=True, working_tree=True)
+            repo.checkout(commit)
 
             # Get symbols after patch is applied
             after_patch_apply = get_symbols(repo.working_tree_dir, files)
@@ -87,8 +85,7 @@ def map_symbols_to_patch(
 
     finally:
         # Reset reference
-        repo.head.reference = initial_reference
-        repo.head.reset(index=True, working_tree=True)
+        repo.checkout(initial_reference)
 
 
 def get_hyperv_patch_symbols():

@@ -6,9 +6,6 @@ Functions for monitoring downstream repos for missing commits
 
 import logging
 
-import approxidate
-import git
-
 from comma.database.driver import DatabaseDriver
 from comma.database.model import (
     Distros,
@@ -18,8 +15,7 @@ from comma.database.model import (
 )
 from comma.downstream.matcher import patch_matches
 from comma.upstream import process_commits
-from comma.util import config
-from comma.util.tracking import GitProgressPrinter, Repo, get_linux_repo
+from comma.util.tracking import get_linux_repo
 
 
 LOGGER = logging.getLogger(__name__)
@@ -70,47 +66,12 @@ def update_tracked_revisions(distro_id, repo):
     # ls-remote could naturally sort by date, but that would require all the objects to be local
 
     if distro_id.startswith("Ubuntu"):
-        tag_names = []
-        for line in repo.git.ls_remote(
-            "--tags", "--refs", "--sort=v:refname", distro_id
-        ).splitlines():
-            name = line.split("/", 1)[-1]
-            if "azure" in name and all(label not in name for label in ("edge", "cvm", "fde")):
-                tag_names.append(name)
-
+        tag_names = tuple(
+            tag
+            for tag in repo.get_remote_tags(distro_id)
+            if "azure" in tag and all(label not in tag for label in ("edge", "cvm", "fde"))
+        )
         update_revisions_for_distro(distro_id, tag_names[-2:])
-
-
-def get_missing_cherries(repo, reference):
-    """
-    Get a list of cherry-picked commits missing from the downstream reference
-    """
-
-    # Get all upstream commits on tracked paths within window
-    upstream_commits = set(
-        repo.git.log(
-            "--no-merges",
-            "--pretty=format:%H",
-            f"--since={config.since}",
-            "origin/master",
-            "--",
-            repo.get_tracked_paths(),
-        ).splitlines()
-    )
-
-    # Get missing cherries for all paths, but don't filter by path since it takes forever
-    missing_cherries = set(
-        repo.git.log(
-            "--no-merges",
-            "--right-only",
-            "--cherry-pick",
-            "--pretty=format:%H",
-            f"--since={config.since}",
-            f"{reference}...origin/master",
-        ).splitlines()
-    )
-
-    return missing_cherries & upstream_commits
 
 
 def monitor_subject(monitoring_subject, repo, reference=None):
@@ -123,7 +84,7 @@ def monitor_subject(monitoring_subject, repo, reference=None):
 
     reference = monitoring_subject.revision if reference is None else reference
 
-    missing_cherries = get_missing_cherries(repo, reference)
+    missing_cherries = repo.get_missing_cherries(reference, repo.get_tracked_paths())
     LOGGER.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
     # Run extra checks on these missing commits
@@ -193,56 +154,6 @@ def get_missing_patch_ids(missing_cherries, reference):
     return missing_patches
 
 
-def fetch_remote_ref(repo: Repo, name: str, local_ref: str, remote_ref: str) -> None:
-    """
-    Shallow fetch remote reference so it is available locally
-    """
-
-    remote = repo.remote(name)
-
-    # Initially fetch revision at depth 1
-    LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
-    fetch_info = remote.fetch(remote_ref, depth=1, verbose=True, progress=GitProgressPrinter())
-
-    # If last commit for revision is in the fetch window, expand depth
-    # This check is necessary because some servers will throw an error when there are
-    # no commits in the fetch window
-    if fetch_info[-1].commit.committed_date >= approxidate.approx(config.since):
-        LOGGER.info(
-            'Fetching ref %s from remote %s shallow since "%s"',
-            remote_ref,
-            remote,
-            config.since,
-        )
-        try:
-            remote.fetch(
-                remote_ref,
-                shallow_since=config.since,
-                verbose=True,
-                progress=GitProgressPrinter(),
-            )
-        except git.GitCommandError as e:
-            # ADO repos do not currently support --shallow-since, only depth
-            if "Server does not support --shallow-since" in e.stderr:
-                LOGGER.warning(
-                    "Server does not support --shallow-since, retrying fetch without option."
-                )
-                remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
-            else:
-                raise
-    else:
-        LOGGER.info(
-            'Newest commit for ref %s from remote %s is older than fetch window "%s"',
-            remote_ref,
-            remote,
-            config.since,
-        )
-
-    # Create tag at FETCH_HEAD to preserve reference locally
-    if not hasattr(repo.references, local_ref):
-        repo.create_tag(local_ref, "FETCH_HEAD")
-
-
 def monitor_downstream():
     """
     Cycle through downstream remotes and search for missing commits
@@ -289,7 +200,7 @@ def monitor_downstream():
                 remote_ref,
                 subject.distroID,
             )
-            fetch_remote_ref(repo, subject.distroID, local_ref, remote_ref)
+            repo.fetch_remote_ref(subject.distroID, local_ref, remote_ref)
 
             LOGGER.info(
                 "(%d of %d) Monitoring Script starting for distro: %s, revision: %s",

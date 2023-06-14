@@ -9,6 +9,7 @@ import pathlib
 import re
 from typing import Any, Iterable, List, Optional, Set, Tuple
 
+import approxidate
 import git
 
 from comma.util import config
@@ -114,6 +115,106 @@ class Repo:
         self._tracked_paths = tuple(sorted(paths))
 
         return self._tracked_paths
+
+    def fetch_remote_ref(self, remote: str, local_ref: str, remote_ref: str) -> None:
+        """
+        Shallow fetch remote reference so it is available locally
+        """
+
+        remote = self.obj.remote(remote)
+
+        # Initially fetch revision at depth 1
+        LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
+        fetch_info = remote.fetch(remote_ref, depth=1, verbose=True, progress=GitProgressPrinter())
+
+        # If last commit for revision is in the fetch window, expand depth
+        # This check is necessary because some servers will throw an error when there are
+        # no commits in the fetch window
+        if fetch_info[-1].commit.committed_date >= approxidate.approx(config.since):
+            LOGGER.info(
+                'Fetching ref %s from remote %s shallow since "%s"',
+                remote_ref,
+                remote,
+                config.since,
+            )
+            try:
+                remote.fetch(
+                    remote_ref,
+                    shallow_since=config.since,
+                    verbose=True,
+                    progress=GitProgressPrinter(),
+                )
+            except git.GitCommandError as e:
+                # ADO repos do not currently support --shallow-since, only depth
+                if "Server does not support --shallow-since" in e.stderr:
+                    LOGGER.warning(
+                        "Server does not support --shallow-since, retrying fetch without option."
+                    )
+                    remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
+                else:
+                    raise
+        else:
+            LOGGER.info(
+                'Newest commit for ref %s from remote %s is older than fetch window "%s"',
+                remote_ref,
+                remote,
+                config.since,
+            )
+
+        # Create tag at FETCH_HEAD to preserve reference locally
+        if not hasattr(self.obj.references, local_ref):
+            self.obj.create_tag(local_ref, "FETCH_HEAD")
+
+    def get_missing_cherries(self, reference, paths):
+        """
+        Get a list of cherry-picked commits missing from the downstream reference
+        """
+
+        # Get all upstream commits on tracked paths within window
+        upstream_commits = set(
+            self.obj.git.log(
+                "--no-merges",
+                "--pretty=format:%H",
+                f"--since={config.since}",
+                "origin/master",
+                "--",
+                paths,
+            ).splitlines()
+        )
+
+        # Get missing cherries for all paths, but don't filter by path since it takes forever
+        missing_cherries = set(
+            self.obj.git.log(
+                "--no-merges",
+                "--right-only",
+                "--cherry-pick",
+                "--pretty=format:%H",
+                f"--since={config.since}",
+                f"{reference}...origin/master",
+            ).splitlines()
+        )
+
+        return missing_cherries & upstream_commits
+
+    def get_remote_tags(self, remote: str):
+        """
+        List tags for a given remote in the format tags/TAGNAME
+        """
+
+        return tuple(
+            line.split("/", 1)[-1]
+            for line in self.obj.git.ls_remote(
+                "--tags", "--refs", "--sort=v:refname", remote
+            ).splitlines()
+        )
+
+    def checkout(self, reference):
+        """
+        Checkout the given reference
+        """
+
+        self.obj.head.reference = self.obj.commit(reference)
+        self.obj.head.reset(index=True, working_tree=True)
 
 
 class Session:
