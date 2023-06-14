@@ -13,7 +13,7 @@ from contextlib import contextmanager
 
 import sqlalchemy
 
-from comma.database.model import Base
+from comma.database.model import Base, MonitoringSubjects
 from comma.util import config
 
 
@@ -89,3 +89,35 @@ class DatabaseDriver:
             raise
         finally:
             session.close()
+
+    def update_revisions_for_distro(self, distro_id, revs):
+        """
+        Updates the database with the given revisions
+
+        new_revisions: list of <revision>s to add under this distro_id
+        """
+        with self.get_session() as session:
+            revs_to_delete = (
+                session.query(MonitoringSubjects)
+                .filter_by(distroID=distro_id)
+                .filter(~MonitoringSubjects.revision.in_(revs))
+            )
+            for subject in revs_to_delete:
+                LOGGER.info("For distro %s, deleting revision: %s", distro_id, subject.revision)
+
+            # This is a bulk delete and we close the session immediately after.
+            revs_to_delete.delete(synchronize_session=False)
+
+        with self.get_session() as session:
+            for rev in revs:
+                # Only add if it doesn't already exist. We're dealing
+                # with revisions on the scale of 1, so the number of
+                # queries and inserts here doesn't matter.
+                if (
+                    session.query(MonitoringSubjects)
+                    .filter_by(distroID=distro_id, revision=rev)
+                    .first()
+                    is None
+                ):
+                    LOGGER.info("For distro %s, adding revision: %s", distro_id, rev)
+                    session.add(MonitoringSubjects(distroID=distro_id, revision=rev))
