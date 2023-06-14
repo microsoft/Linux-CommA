@@ -10,8 +10,7 @@ from typing import Optional, Sequence
 from comma.cli.parser import parse_args
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
-from comma.downstream import add_downstream_target, list_downstream
-from comma.downstream.monitor import monitor_downstream
+from comma.downstream import Downstream
 from comma.upstream import process_commits
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
@@ -45,7 +44,7 @@ def run(options):
 
     if options.downstream:
         LOGGER.info("Begin monitoring downstream")
-        monitor_downstream()
+        Downstream(config, DatabaseDriver()).monitor_downstream()
         LOGGER.info("Finishing monitoring downstream")
 
 
@@ -75,13 +74,14 @@ def main(args: Optional[Sequence[str]] = None):
             print(f"  {commit}")
 
     if options.subcommand == "downstream":
+        downstream = Downstream(config, DatabaseDriver())
         # Print current targets in database
         if options.action in {"list", None}:
-            list_downstream()
+            downstream.list_targets()
 
         # Add downstream target
         if options.action == "add":
-            add_downstream_target(options)
+            downstream.add_target(options.name, options.url, options.revision)
 
     if options.subcommand == "run":
         run(options)
