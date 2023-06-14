@@ -20,7 +20,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects, PatchData
-from comma.util import tracking
+from comma.util import config, tracking
 
 
 LOGGER = logging.getLogger(__name__)
@@ -171,7 +171,7 @@ def export_commits(in_file: str, out_file: str) -> None:
     # Collect the commits in the database which are not in the
     # workbook, but that we want to include.
     db_commits = get_db_commits()
-    repo = tracking.get_linux_repo()
+    repo = tracking.get_linux_repo(since=config.since)
     tag = "v4.15"
     if tag in repo.references:
         LOGGER.info("Skipping commits before tag '%s'!", tag)

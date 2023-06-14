@@ -12,8 +12,6 @@ from typing import Any, Iterable, List, Optional, Set, Tuple
 import approxidate
 import git
 
-from comma.util import config
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,20 +47,22 @@ class Repo:
     def __getattr__(self, name: str) -> Any:
         return getattr(self.obj, name)
 
-    def fetch(self, repack: bool = False):
+    def fetch(self, since: Optional[str] = None, repack: bool = False):
         """Fetch repo"""
 
         if repack:
             LOGGER.info("Repacking '%s' repo", self.name)
             self.obj.git.repack("-d")
 
-        LOGGER.info("Fetching '%s' repo since %s", self.name, config.since)
+        if since:
+            LOGGER.info("Fetching '%s' repo since %s", self.name, since)
+            kwargs = {"shallow_since": since}
+        else:
+            LOGGER.info("Fetching '%s' repo", self.name)
+            kwargs = {}
+
         try:
-            self.obj.remotes.origin.fetch(
-                shallow_since=config.since,
-                verbose=True,
-                progress=GitProgressPrinter(),
-            )
+            self.obj.remotes.origin.fetch(verbose=True, progress=GitProgressPrinter(), **kwargs)
             LOGGER.info("Completed fetching %s", self.name)
         except git.GitCommandError as e:
             # Sometimes a shallow-fetched repo will need repacking before fetching again
@@ -72,11 +72,11 @@ class Repo:
             else:
                 raise
 
-    def clone(self, shallow: bool = True):
+    def clone(self, since: Optional[str] = None):
         """Clone repo"""
 
         LOGGER.info("Cloning '%s' repo from '%s'.", self.name, self.url)
-        args = {"shallow_since": config.since} if shallow else {}
+        args = {"shallow_since": since} if since else {}
         self.obj = git.Repo.clone_from(self.url, self.path, **args, progress=GitProgressPrinter())
         LOGGER.info("Completed cloning %s", self.name)
 
@@ -91,7 +91,7 @@ class Repo:
         """Convenience property to see if repo abject has been populated"""
         return self.obj is not None
 
-    def get_tracked_paths(self, sections=config.sections) -> Tuple[str]:
+    def get_tracked_paths(self, sections) -> Tuple[str]:
         """Get list of files from MAINTAINERS for given sections."""
 
         if self._tracked_paths is not None:
@@ -116,12 +116,20 @@ class Repo:
 
         return self._tracked_paths
 
-    def fetch_remote_ref(self, remote: str, local_ref: str, remote_ref: str) -> None:
+    def fetch_remote_ref(
+        self, remote: str, local_ref: str, remote_ref: str, since: Optional[str] = None
+    ) -> None:
         """
         Shallow fetch remote reference so it is available locally
         """
 
         remote = self.obj.remote(remote)
+
+        # No fetch window specified
+        if not since:
+            LOGGER.info("Fetching ref %s from remote %s", remote_ref, remote)
+            remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
+            return
 
         # Initially fetch revision at depth 1
         LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
@@ -130,17 +138,17 @@ class Repo:
         # If last commit for revision is in the fetch window, expand depth
         # This check is necessary because some servers will throw an error when there are
         # no commits in the fetch window
-        if fetch_info[-1].commit.committed_date >= approxidate.approx(config.since):
+        if fetch_info[-1].commit.committed_date >= approxidate.approx(since):
             LOGGER.info(
                 'Fetching ref %s from remote %s shallow since "%s"',
                 remote_ref,
                 remote,
-                config.since,
+                since,
             )
             try:
                 remote.fetch(
                     remote_ref,
-                    shallow_since=config.since,
+                    shallow_since=since,
                     verbose=True,
                     progress=GitProgressPrinter(),
                 )
@@ -158,14 +166,14 @@ class Repo:
                 'Newest commit for ref %s from remote %s is older than fetch window "%s"',
                 remote_ref,
                 remote,
-                config.since,
+                since,
             )
 
         # Create tag at FETCH_HEAD to preserve reference locally
         if not hasattr(self.obj.references, local_ref):
             self.obj.create_tag(local_ref, "FETCH_HEAD")
 
-    def get_missing_cherries(self, reference, paths):
+    def get_missing_cherries(self, reference, paths, since: Optional[str] = None):
         """
         Get a list of cherry-picked commits missing from the downstream reference
         """
@@ -175,7 +183,7 @@ class Repo:
             self.obj.git.log(
                 "--no-merges",
                 "--pretty=format:%H",
-                f"--since={config.since}",
+                f"--since={since}",
                 "origin/master",
                 "--",
                 paths,
@@ -189,7 +197,7 @@ class Repo:
                 "--right-only",
                 "--cherry-pick",
                 "--pretty=format:%H",
-                f"--since={config.since}",
+                f"--since={since}",
                 f"{reference}...origin/master",
             ).splitlines()
         )
@@ -229,7 +237,7 @@ class Session:
         self,
         name: str,
         url: str,
-        shallow: bool = True,
+        since: Optional[str] = None,
         pull: bool = False,
     ) -> Repo:
         """
@@ -245,12 +253,12 @@ class Session:
         repo = self.repos[name] = Repo(name, url)
         if not repo.exists:
             # No local repo, clone from source
-            repo.clone(shallow)
+            repo.clone(since)
 
         elif pull:
             repo.pull()
         else:
-            repo.fetch()
+            repo.fetch(since)
 
         return repo
 
@@ -262,14 +270,14 @@ SESSION = Session()
 def get_linux_repo(
     name: str = "linux.git",
     url: str = "https://github.com/torvalds/linux.git",
-    shallow: bool = True,
+    since: Optional[str] = None,
     pull: bool = False,
 ) -> Repo:
     """
     Shortcut for getting Linux repo
     """
 
-    return SESSION.get_repo(name, url, shallow=shallow, pull=pull)
+    return SESSION.get_repo(name, url, since=since, pull=pull)
 
 
 def extract_paths(sections: Iterable, content: str) -> Set[str]:
@@ -330,7 +338,7 @@ class GitProgressPrinter(git.RemoteProgress):
         """
         Subclassed from parent. Called for each line in output.
         """
-        if not config.verbose:
+        if not LOGGER.isEnabledFor(logging.INFO):
             return
 
         print(f"  {self._cur_line}", end="    ")

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from comma.database.driver import DatabaseDriver
 from comma.database.model import PatchData
+from comma.util import config
 from comma.util.tracking import get_linux_repo
 
 
@@ -93,7 +94,7 @@ def get_hyperv_patch_symbols():
     This function clones upstream and gets upstream commits, hyperV files
     """
 
-    repo = get_linux_repo(name="linux-sym", shallow=False, pull=True)
+    repo = get_linux_repo(name="linux-sym", pull=True)
 
     with DatabaseDriver.get_session() as session:
         # SQLAlchemy returns tuples which need to be unwrapped
@@ -103,7 +104,7 @@ def get_hyperv_patch_symbols():
                 commit[0]
                 for commit in session.query(PatchData.commitID).order_by(PatchData.commitTime).all()
             ],
-            repo.get_tracked_paths(),
+            repo.get_tracked_paths(config.sections),
         )
 
 

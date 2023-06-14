@@ -34,12 +34,12 @@ def run(options):
                 session.add_all(config.default_monitoring_subjects)
 
     if options.print_tracked_paths:
-        for path in get_linux_repo().get_tracked_paths():
+        for path in get_linux_repo(since=config.since).get_tracked_paths(config.sections):
             print(path)
 
     if options.upstream:
         LOGGER.info("Begin monitoring upstream")
-        process_commits(add_to_database=True)
+        process_commits(add_to_database=True, since=config.since)
         LOGGER.info("Finishing monitoring upstream")
 
     if options.downstream:

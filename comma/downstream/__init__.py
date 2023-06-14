@@ -36,7 +36,7 @@ class Downstream:
         """
         Get repo when first accessed
         """
-        return get_linux_repo()
+        return get_linux_repo(since=self.config.since)
 
     def list_targets(
         self,
@@ -116,7 +116,9 @@ class Downstream:
                     remote_ref,
                     subject.distroID,
                 )
-                repo.fetch_remote_ref(subject.distroID, local_ref, remote_ref)
+                repo.fetch_remote_ref(
+                    subject.distroID, local_ref, remote_ref, since=self.config.since
+                )
 
                 LOGGER.info(
                     "(%d of %d) Monitoring Script starting for distro: %s, revision: %s",
@@ -135,7 +137,9 @@ class Downstream:
         reference: Git reference to monitor
         """
 
-        missing_cherries = self.repo.get_missing_cherries(reference, self.repo.get_tracked_paths())
+        missing_cherries = self.repo.get_missing_cherries(
+            reference, self.repo.get_tracked_paths(self.config.sections), since=self.config.since
+        )
         LOGGER.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
         # Run extra checks on these missing commits
