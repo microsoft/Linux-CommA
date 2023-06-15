@@ -14,7 +14,7 @@ from comma.downstream import Downstream
 from comma.upstream import Upstream
 from comma.util import config
 from comma.util.spreadsheet import export_commits, import_commits, update_commits
-from comma.util.symbols import get_missing_commits
+from comma.util.symbols import Symbols
 from comma.util.tracking import get_linux_repo
 
 
@@ -68,7 +68,7 @@ def main(args: Optional[Sequence[str]] = None):
     # TODO(Issue 25: resolve configuration
 
     if options.subcommand == "symbols":
-        missing = get_missing_commits(options.file)
+        missing = Symbols(config, DatabaseDriver()).get_missing_commits(options.file)
         print("Missing symbols from:")
         for commit in missing:
             print(f"  {commit}")
