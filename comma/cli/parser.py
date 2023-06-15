@@ -84,12 +84,6 @@ def get_spreadsheet_parser():
         "spreadsheet", description="Export to Excel spreadsheet", parents=BASE_PARSERS.values()
     )
     parser.add_argument(
-        "-i",
-        "--import-commits",
-        action="store_true",
-        help="Import commits from spreadsheet into database.",
-    )
-    parser.add_argument(
         "-e",
         "--export-commits",
         action="store_true",

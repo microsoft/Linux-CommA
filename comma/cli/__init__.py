@@ -13,7 +13,7 @@ from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream import Downstream
 from comma.upstream import Upstream
 from comma.util import config
-from comma.util.spreadsheet import export_commits, import_commits, update_commits
+from comma.util.spreadsheet import Spreadsheet
 from comma.util.symbols import Symbols
 from comma.util.tracking import get_linux_repo
 
@@ -87,12 +87,11 @@ def main(args: Optional[Sequence[str]] = None):
         run(options)
 
     if options.subcommand == "spreadsheet":
-        if args.import_commits:
-            import_commits(args.in_file)
+        spreadsheet = Spreadsheet(config, DatabaseDriver())
         if args.export_commits:
-            export_commits(args.in_file, args.out_file)
+            spreadsheet.export_commits(args.in_file, args.out_file)
         if args.update_commits:
-            update_commits(args.in_file, args.out_file)
+            spreadsheet.update_commits(args.in_file, args.out_file)
 
 
 if __name__ == "__main__":
