@@ -13,7 +13,7 @@ from contextlib import contextmanager
 
 import sqlalchemy
 
-from comma.database.model import Base, MonitoringSubjects
+from comma.database.model import Base, Distros, MonitoringSubjects
 
 
 LOGGER = logging.getLogger(__name__)
@@ -113,3 +113,32 @@ class DatabaseDriver:
                 ):
                     LOGGER.info("For distro %s, adding revision: %s", distro_id, rev)
                     session.add(MonitoringSubjects(distroID=distro_id, revision=rev))
+
+    def iter_downstream_targets(
+        self,
+    ):
+        """List downstream targets"""
+
+        with self.get_session() as session:
+            yield from session.query(Distros.distroID, MonitoringSubjects.revision).outerjoin(
+                MonitoringSubjects, Distros.distroID == MonitoringSubjects.distroID
+            ).all()
+
+    def add_downstream_target(self, name, url, revision):
+        """
+        Add a downstream target
+        """
+
+        with self.get_session() as session:
+            # Add repo
+            if url:
+                session.add(Distros(distroID=name, repoLink=url))
+                LOGGER.info("Successfully added new repo %s at %s", name, url)
+
+            # If URL wasn't given, make sure repo is in database
+            elif (name,) not in session.query(Distros.distroID).all():
+                sys.exit(f"Repository '{name}' given without URL not found in database")
+
+            # Add target
+            session.add(MonitoringSubjects(distroID=name, revision=revision))
+            LOGGER.info("Successfully added new revision '%s' for distro '%s'", revision, name)

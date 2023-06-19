@@ -28,7 +28,7 @@ class Upstream:
         """
         Get repo when first accessed
         """
-        return get_linux_repo(since=self.config.since)
+        return get_linux_repo(since=self.config.upstream_since)
 
     def process_commits(self):
         """
@@ -46,7 +46,7 @@ class Upstream:
             paths=paths,
             min_parents=1,
             max_parents=1,
-            since=self.config.since,
+            since=self.config.upstream_since,
         ):
             total += 1
             with self.database.get_session() as session:

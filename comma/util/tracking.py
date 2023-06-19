@@ -75,8 +75,13 @@ class Repo:
     def clone(self, since: Optional[str] = None):
         """Clone repo"""
 
-        LOGGER.info("Cloning '%s' repo from '%s'.", self.name, self.url)
-        args = {"shallow_since": since} if since else {}
+        if since:
+            LOGGER.info("Cloning '%s' repo from '%s' shallow since %s", self.name, self.url, since)
+            args = {"shallow_since": since}
+        else:
+            LOGGER.info("Cloning '%s' repo from '%s'.", self.name, self.url)
+            args = {}
+
         self.obj = git.Repo.clone_from(self.url, self.path, **args, progress=GitProgressPrinter())
         LOGGER.info("Completed cloning %s", self.name)
 
@@ -178,12 +183,14 @@ class Repo:
         Get a list of cherry-picked commits missing from the downstream reference
         """
 
+        args = ["--no-merges", "--pretty=format:%H"]
+        if since:
+            args.append(f"--since={since}")
+
         # Get all upstream commits on tracked paths within window
         upstream_commits = set(
             self.obj.git.log(
-                "--no-merges",
-                "--pretty=format:%H",
-                f"--since={since}",
+                *args,
                 "origin/master",
                 "--",
                 paths,
@@ -193,11 +200,9 @@ class Repo:
         # Get missing cherries for all paths, but don't filter by path since it takes forever
         missing_cherries = set(
             self.obj.git.log(
-                "--no-merges",
+                *args,
                 "--right-only",
                 "--cherry-pick",
-                "--pretty=format:%H",
-                f"--since={since}",
                 f"{reference}...origin/master",
             ).splitlines()
         )

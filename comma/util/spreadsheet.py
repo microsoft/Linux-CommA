@@ -81,7 +81,7 @@ class Spreadsheet:
         """
         Get repo when first accessed
         """
-        return get_linux_repo(since=self.config.since)
+        return get_linux_repo(since=self.config.upstream_since)
 
     def get_db_commits(self) -> Dict[str, int]:
         """Query the 'PatchData' table for all commit hashes and IDs."""

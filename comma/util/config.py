@@ -7,10 +7,8 @@ Configuration module
 from comma.database.model import Distros, MonitoringSubjects
 
 
-dry_run = False  # pylint: disable=invalid-name
-fetch = True  # pylint: disable=invalid-name
-since = "4 years ago"  # pylint: disable=invalid-name
-verbose = 0  # pylint: disable=invalid-name
+downstream_since = None  # pylint: disable=invalid-name
+upstream_since = None  # pylint: disable=invalid-name
 
 sections = (
     "Hyper-V/Azure CORE AND DRIVERS",

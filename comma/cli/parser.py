@@ -8,8 +8,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, Sequence
 
-from comma.util import config
-
 
 def get_base_parsers():
     """
@@ -35,11 +33,10 @@ def get_base_parsers():
         help="Increase output verbosity",
     )
     parsers["repo"].add_argument(
-        "-s",
-        "--since",
-        action="store",
-        default=config.since,
-        help=f"Parameter to pass to underlying Git commands, default is '{config.since}'",
+        "-U",
+        "--upstream-since",
+        metavar="APPROXIDATE",
+        help="Passed to underlying git commands. By default, the history is not limited",
     )
 
     return parsers
@@ -72,6 +69,13 @@ def get_run_parser():
         action="store_true",
         help="Print the paths that would be analyzed",
     )
+    parser.add_argument(
+        "-D",
+        "--downstream-since",
+        metavar="APPROXIDATE",
+        help="Passed to underlying git commands. By default, the history is not limited",
+    )
+
     return parser
 
 
