@@ -5,7 +5,6 @@ Operations for downstream targets
 """
 
 import logging
-import sys
 from functools import cached_property
 
 from comma.database.model import (
@@ -35,41 +34,9 @@ class Downstream:
         """
         Get repo when first accessed
         """
-        return get_linux_repo(since=self.config.since)
+        return get_linux_repo(since=self.config.upstream_since)
 
-    def list_targets(
-        self,
-    ):
-        """List downstream targets"""
-
-        with self.database.get_session() as session:
-            for distro, revision in (
-                session.query(Distros.distroID, MonitoringSubjects.revision)
-                .outerjoin(MonitoringSubjects, Distros.distroID == MonitoringSubjects.distroID)
-                .all()
-            ):
-                print(f"{distro}\t{revision}")
-
-    def add_target(self, name, url, revision):
-        """
-        Add a downstream target
-        """
-
-        with self.database.get_session() as session:
-            # Add repo
-            if url:
-                session.add(Distros(distroID=name, repoLink=url))
-                LOGGER.info("Successfully added new repo %s at %s", name, url)
-
-            # If URL wasn't given, make sure repo is in database
-            elif (name,) not in session.query(Distros.distroID).all():
-                sys.exit(f"Repository '{name}' given without URL not found in database")
-
-            # Add target
-            session.add(MonitoringSubjects(distroID=name, revision=revision))
-            LOGGER.info("Successfully added new revision '%s' for distro '%s'", revision, name)
-
-    def monitor_downstream(self):
+    def monitor(self):
         """
         Cycle through downstream remotes and search for missing commits
         """
@@ -116,7 +83,7 @@ class Downstream:
                     subject.distroID,
                 )
                 repo.fetch_remote_ref(
-                    subject.distroID, local_ref, remote_ref, since=self.config.since
+                    subject.distroID, local_ref, remote_ref, since=self.config.downstream_since
                 )
 
                 LOGGER.info(
@@ -137,7 +104,9 @@ class Downstream:
         """
 
         missing_cherries = self.repo.get_missing_cherries(
-            reference, self.repo.get_tracked_paths(self.config.sections), since=self.config.since
+            reference,
+            self.repo.get_tracked_paths(self.config.sections),
+            since=self.config.upstream_since,
         )
         LOGGER.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
 
@@ -194,6 +163,9 @@ class Downstream:
                 .order_by(PatchData.commitTime)
                 .all()
             )
+            if not patches:
+                return []
+
             # We only want to check downstream patches as old as the oldest upstream missing patch
             earliest_commit_date = min(patch.commitTime for patch in patches).isoformat()
             LOGGER.debug("Processing commits since %s", earliest_commit_date)

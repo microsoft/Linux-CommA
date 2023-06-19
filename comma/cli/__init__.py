@@ -34,7 +34,7 @@ def run(options, database):
                 session.add_all(config.default_monitoring_subjects)
 
     if options.print_tracked_paths:
-        for path in get_linux_repo(since=config.since).get_tracked_paths(config.sections):
+        for path in get_linux_repo(config.upstream_since).get_tracked_paths(config.sections):
             print(path)
 
     if options.upstream:
@@ -44,7 +44,7 @@ def run(options, database):
 
     if options.downstream:
         LOGGER.info("Begin monitoring downstream")
-        Downstream(config, database).monitor_downstream()
+        Downstream(config, database).monitor()
         LOGGER.info("Finishing monitoring downstream")
 
 
@@ -62,7 +62,7 @@ def main(args: Optional[Sequence[str]] = None):
         datefmt="%m-%d %H:%M",
     )
 
-    for option in ("verbose", "dry_run", "since"):
+    for option in ("downstream_since", "upstream_since"):
         if hasattr(options, option):
             setattr(config, option, getattr(options, option))
 
@@ -77,14 +77,14 @@ def main(args: Optional[Sequence[str]] = None):
             print(f"  {commit}")
 
     if options.subcommand == "downstream":
-        downstream = Downstream(config, database)
         # Print current targets in database
         if options.action in {"list", None}:
-            downstream.list_targets()
+            for remote, reference in database.iter_downstream_targets():
+                print(f"{remote}\t{reference}")
 
         # Add downstream target
         if options.action == "add":
-            downstream.add_target(options.name, options.url, options.revision)
+            database.add_downstream_target(options.name, options.url, options.revision)
 
     if options.subcommand == "run":
         run(options, database)
