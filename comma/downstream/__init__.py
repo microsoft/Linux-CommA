@@ -64,7 +64,7 @@ class Downstream:
             for num, subject in enumerate(subjects, 1):
                 if subject.distroID.startswith("Debian"):
                     # TODO (Issue 51): Don't skip Debian
-                    LOGGER.debug("skipping Debian")
+                    LOGGER.info("(%d of %d) Skipping %s", num, total, subject.distroID)
                     continue
 
                 # Use distro name for local refs to prevent duplicates
