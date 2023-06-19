@@ -14,7 +14,6 @@ from contextlib import contextmanager
 import sqlalchemy
 
 from comma.database.model import Base, MonitoringSubjects
-from comma.util import config
 
 
 LOGGER = logging.getLogger(__name__)
@@ -25,24 +24,24 @@ class DatabaseDriver:
     Database driver managing connections
     """
 
-    _instance = None
+    def __init__(self, dry_run, echo=False):
+        # Enable INFO-level logging when program is logging debug
+        # It's not ideal, because the messages are INFO level, but only enabled with debug
 
-    def __init__(self):
-        if config.dry_run:
+        if dry_run:
             db_file = "comma.db"
             LOGGER.info("Using local SQLite database at '%s'.", db_file)
-            engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=config.verbose > 2)
+            engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=echo)
         else:
             LOGGER.info("Connecting to remote database...")
-            engine = self._get_mssql_engine()
-            LOGGER.info("Connected!")
+            engine = sqlalchemy.create_engine(self._get_mssql_conn_str(), echo=echo)
 
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)
-        self.session = sqlalchemy.orm.sessionmaker(bind=engine)
+        self.session_factory = sqlalchemy.orm.sessionmaker(bind=engine)
 
     @staticmethod
-    def _get_mssql_engine() -> sqlalchemy.engine.Engine:
+    def _get_mssql_conn_str() -> sqlalchemy.engine.Engine:
         """
         Create a connection string for MS SQL server and create engine instance
         """
@@ -64,22 +63,15 @@ class DatabaseDriver:
             )
         )
 
-        return sqlalchemy.create_engine(
-            f"mssql+pyodbc:///?odbc_connect={params}",
-            echo=(config.verbose > 2),
-        )
+        return f"mssql+pyodbc:///?odbc_connect={params}"
 
-    @classmethod
     @contextmanager
-    def get_session(cls) -> sqlalchemy.orm.session.Session:
+    def get_session(self) -> sqlalchemy.orm.session.Session:
         """
         Context manager for getting a database session
         """
 
-        # Only support a single instance
-        if cls._instance is None:
-            cls._instance = cls()
-        session = cls._instance.session()
+        session = self.session_factory()
 
         try:
             yield session
