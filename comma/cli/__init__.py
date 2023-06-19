@@ -21,13 +21,13 @@ from comma.util.tracking import get_linux_repo
 LOGGER = logging.getLogger("comma.cli")
 
 
-def run(options):
+def run(options, database):
     """
     Handle run subcommand
     """
 
     if options.dry_run:
-        with DatabaseDriver.get_session() as session:
+        with database.get_session() as session:
             if session.query(Distros).first() is None:
                 session.add_all(config.default_distros)
             if session.query(MonitoringSubjects).first() is None:
@@ -39,12 +39,12 @@ def run(options):
 
     if options.upstream:
         LOGGER.info("Begin monitoring upstream")
-        Upstream(config, DatabaseDriver()).process_commits()
+        Upstream(config, database).process_commits()
         LOGGER.info("Finishing monitoring upstream")
 
     if options.downstream:
         LOGGER.info("Begin monitoring downstream")
-        Downstream(config, DatabaseDriver()).monitor_downstream()
+        Downstream(config, database).monitor_downstream()
         LOGGER.info("Finishing monitoring downstream")
 
 
@@ -55,6 +55,7 @@ def main(args: Optional[Sequence[str]] = None):
 
     options = parse_args(args)
 
+    # Configure logging
     logging.basicConfig(
         level={0: logging.WARNING, 1: logging.INFO}.get(options.verbose, logging.DEBUG),
         format="%(asctime)s %(name)-5s %(levelname)-7s %(message)s",
@@ -67,14 +68,16 @@ def main(args: Optional[Sequence[str]] = None):
 
     # TODO(Issue 25: resolve configuration
 
+    database = DatabaseDriver(dry_run=options.dry_run, echo=options.verbose > 2)
+
     if options.subcommand == "symbols":
-        missing = Symbols(config, DatabaseDriver()).get_missing_commits(options.file)
+        missing = Symbols(config, database).get_missing_commits(options.file)
         print("Missing symbols from:")
         for commit in missing:
             print(f"  {commit}")
 
     if options.subcommand == "downstream":
-        downstream = Downstream(config, DatabaseDriver())
+        downstream = Downstream(config, database)
         # Print current targets in database
         if options.action in {"list", None}:
             downstream.list_targets()
@@ -84,10 +87,10 @@ def main(args: Optional[Sequence[str]] = None):
             downstream.add_target(options.name, options.url, options.revision)
 
     if options.subcommand == "run":
-        run(options)
+        run(options, database)
 
     if options.subcommand == "spreadsheet":
-        spreadsheet = Spreadsheet(config, DatabaseDriver())
+        spreadsheet = Spreadsheet(config, database)
         if args.export_commits:
             spreadsheet.export_commits(args.in_file, args.out_file)
         if args.update_commits:
