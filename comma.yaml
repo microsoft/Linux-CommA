@@ -1,0 +1,28 @@
+
+repos:
+  linux: https://github.com/torvalds/linux.git
+  Debian9-backport: https://salsa.debian.org/kernel-team/linux.git
+  Debian10-backport: https://salsa.debian.org/kernel-team/linux.git
+  SUSE12: https://github.com/openSUSE/kernel
+  SUSE15: https://github.com/openSUSE/kernel
+  Ubuntu18.04: https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/bionic
+  Ubuntu20.04: https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/focal
+  Ubuntu22.04: https://git.launchpad.net/~canonical-kernel/ubuntu/+source/linux-azure/+git/jammy
+
+upstream:
+  repo: linux
+  reference: origin/HEAD
+  paths: []
+  sections:
+    - Hyper-V/Azure CORE AND DRIVERS
+    - DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE
+
+downstream:
+  - repo: SUSE12
+    reference: SLE12-SP5-AZURE
+  - repo: SUSE15
+    reference: SLE15-SP4-AZURE
+  - repo: Debian9-backport
+    reference: stretch-backports
+  - repo: Debian10-backport
+    reference: bullseye-backports

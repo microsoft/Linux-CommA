@@ -105,7 +105,7 @@ class Downstream:
 
         missing_cherries = self.repo.get_missing_cherries(
             reference,
-            self.repo.get_tracked_paths(self.config.sections),
+            self.repo.get_tracked_paths(self.config.upstream.sections),
             since=self.config.upstream_since,
         )
         LOGGER.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
@@ -154,7 +154,7 @@ class Downstream:
         Attempt to determine which patches are missing from a list of missing cherries
         """
 
-        paths = self.repo.get_tracked_paths(self.config.sections)
+        paths = self.repo.get_tracked_paths(self.config.upstream.sections)
 
         with self.database.get_session() as session:
             patches = (

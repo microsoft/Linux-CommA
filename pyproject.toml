@@ -20,6 +20,8 @@ dependencies = [
   "fuzzywuzzy[speedup] ~= 0.18.0",
   "sqlalchemy[mssql] ~= 1.4.48",
   "openpyxl ~= 3.1.2",
+  "pydantic ~= 1.10.9",
+  "ruamel.yaml ~= 0.17.32",
 
 ]
 dynamic = ["version"]
@@ -54,6 +56,7 @@ isort = [
 
 pylint = [
   "pylint[spelling]",
+  "pylint-pydantic",
 ]
 
 [project.urls]
@@ -122,8 +125,14 @@ load-plugins = [
   "pylint.extensions.private_import",
   "pylint.extensions.redefined_loop_name",
   "pylint.extensions.redefined_variable_type",
-  "pylint.extensions.set_membership"
+  "pylint.extensions.set_membership",
+  "pylint_pydantic",
 ]
+
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code.
+extension-pkg-allow-list= ["pydantic"]
 
 # Minimum Python version to use for version dependent checks. Will default to the
 # version used to run pylint.
@@ -155,7 +164,7 @@ spelling-ignore-words = [
   "ORM",
   "parsers", "PatchData", "preprocessing",
   "repo", "repos",
-  "setuptools", "SHA", "subclassed", "subcommand", "subcommands",
+  "setuptools", "SHA", "subclassed", "subcommand", "subcommands", "subparsers",
   "untracked",
   "virtualenv",
 ]

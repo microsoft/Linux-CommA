@@ -9,22 +9,35 @@ from pathlib import Path
 from typing import Optional, Sequence
 
 
+DEFAULT_CONFIG = Path("comma.yaml")
+
+
 def get_base_parsers():
     """
     Options common to parsers
     """
 
     parsers = {
+        "config": ArgumentParser(add_help=False),
         "database": ArgumentParser(add_help=False),
         "logging": ArgumentParser(add_help=False),
         "repo": ArgumentParser(add_help=False),
     }
+
+    parsers["config"].add_argument(
+        "-c",
+        "--config",
+        metavar="FILEPATH",
+        type=Path,
+        help="Path to configuration file. Defaults to comma.yaml in current directory",
+    )
 
     parsers["database"].add_argument(
         "--dry-run",
         action="store_true",
         help="Do not connect to production database",
     )
+
     parsers["logging"].add_argument(
         "-v",
         "--verbose",
@@ -32,6 +45,7 @@ def get_base_parsers():
         default=0,
         help="Increase output verbosity",
     )
+
     parsers["repo"].add_argument(
         "-U",
         "--upstream-since",
@@ -123,7 +137,7 @@ def get_symbol_parser():
     parser = ArgumentParser(
         "symbols",
         description="Compare symbols against patches",
-        parents=[BASE_PARSERS["database"], BASE_PARSERS["logging"]],
+        parents=[BASE_PARSERS["config"], BASE_PARSERS["database"], BASE_PARSERS["logging"]],
     )
     parser.add_argument(
         "file",
@@ -144,7 +158,7 @@ def get_downstream_parser():
     parser = ArgumentParser(
         "distro",
         description="List or modify downstream references",
-        parents=[BASE_PARSERS["database"], BASE_PARSERS["logging"]],
+        parents=[BASE_PARSERS["config"], BASE_PARSERS["database"], BASE_PARSERS["logging"]],
     )
     actions = parser.add_mutually_exclusive_group()
 
@@ -201,12 +215,14 @@ def parse_args(args: Optional[Sequence[str]] = None):
     parser = ArgumentParser(description="Commit Analyzer")
     subparsers = parser.add_subparsers(title="subcommands", required=True, dest="subcommand")
 
+    # Populate subparsers
     for name, func in SUBPARSERS.items():
         subparser = func()
         subparsers.add_parser(
             name, parents=[subparser], conflict_handler="resolve", help=subparser.description
         )
 
+    # Check for required options
     options = parser.parse_args(args)
     if (
         options.subcommand == "downstream"
@@ -214,5 +230,20 @@ def parse_args(args: Optional[Sequence[str]] = None):
         and None in (options.name, options.revision)
     ):
         parser.error("URL and revision are required")
+
+    # Configuration file was specified
+    if options.config is not None:
+        if not options.config.is_file():
+            parser.error(f"Specified configuration file {options.config} does not exist")
+
+    # Default configuration file found
+    elif DEFAULT_CONFIG.is_file():
+        options.config = DEFAULT_CONFIG
+
+    # Configuration file required, but not specified and default does not exist
+    elif options.subcommand in {"run", "spreadsheet", "symbols"}:
+        parser.error(
+            f"No value for configuration file specified and {DEFAULT_CONFIG} is not present in the current directory"
+        )
 
     return options
