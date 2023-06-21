@@ -5,10 +5,8 @@ Functions for parsing commit objects into patch objects
 """
 
 import logging
-from functools import cached_property
 
 from comma.database.model import PatchData
-from comma.util.tracking import get_linux_repo
 
 
 LOGGER = logging.getLogger(__name__)
@@ -19,16 +17,10 @@ class Upstream:
     Parent object for downstream operations
     """
 
-    def __init__(self, config, database) -> None:
+    def __init__(self, config, database, repo) -> None:
         self.config = config
         self.database = database
-
-    @cached_property
-    def repo(self):
-        """
-        Get repo when first accessed
-        """
-        return get_linux_repo(since=self.config.upstream_since)
+        self.repo = repo
 
     def process_commits(self):
         """

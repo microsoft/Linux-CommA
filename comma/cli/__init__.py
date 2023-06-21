@@ -20,50 +20,132 @@ from comma.downstream import Downstream
 from comma.upstream import Upstream
 from comma.util.spreadsheet import Spreadsheet
 from comma.util.symbols import Symbols
-from comma.util.tracking import get_linux_repo
+from comma.util.tracking import Repo
 
 
 LOGGER = logging.getLogger("comma.cli")
 YAML = R_YAML(typ="safe")
 
 
-def run(options, config, database):
+class Session:
     """
-    Handle run subcommand
+    Container for session data to avoid duplicate actions
     """
 
-    if options.dry_run:
-        # Populate database from configuration file
-        with database.get_session() as session:
-            if session.query(Distros).first() is None:
-                session.add_all(
-                    Distros(distroID=name, repoLink=url) for name, url in config.repos.items()
-                )
+    def __init__(self, config, database) -> None:
+        self.config: Config = config
+        self.database: DatabaseDriver = database
 
-            if session.query(MonitoringSubjects).first() is None:
-                session.add_all(
-                    MonitoringSubjects(distroID=target.repo, revision=target.reference)
-                    for target in config.downstream
-                )
+    def _get_repo(
+        self,
+        since: Optional[str] = None,
+        pull: bool = False,
+        suffix: Optional[str] = None,
+    ) -> Repo:
+        """
+        Clone or update a repo
+        """
 
-    if options.print_tracked_paths:
-        for path in get_linux_repo(config.upstream_since).get_tracked_paths(
-            config.upstream.sections
-        ):
-            print(path)
+        name = self.config.upstream.repo
+        if suffix:
+            name += f"-{suffix}"
+        repo = Repo(name, self.config.repos[self.config.upstream.repo])
 
-    if options.upstream:
-        LOGGER.info("Begin monitoring upstream")
-        Upstream(config, database).process_commits()
-        LOGGER.info("Finishing monitoring upstream")
+        if not repo.exists:
+            # No local repo, clone from source
+            repo.clone(since)
 
-    if options.downstream:
-        LOGGER.info("Begin monitoring downstream")
-        Downstream(config, database).monitor()
-        LOGGER.info("Finishing monitoring downstream")
+        elif pull:
+            repo.pull()
+
+        else:
+            repo.fetch(since)
+
+        return repo
+
+    def run(self, options):
+        """
+        Handle run subcommand
+        """
+
+        if options.dry_run:
+            # Populate database from configuration file
+            with self.database.get_session() as session:
+                if session.query(Distros).first() is None:
+                    session.add_all(
+                        Distros(distroID=name, repoLink=url)
+                        for name, url in self.config.repos.items()
+                    )
+
+                if session.query(MonitoringSubjects).first() is None:
+                    session.add_all(
+                        MonitoringSubjects(distroID=target.repo, revision=target.reference)
+                        for target in self.config.downstream
+                    )
+
+        repo = self._get_repo(since=self.config.upstream_since)
+
+        if options.print_tracked_paths:
+            for path in repo.get_tracked_paths(self.config.upstream.sections):
+                print(path)
+
+        if options.upstream:
+            LOGGER.info("Begin monitoring upstream")
+            Upstream(self.config, self.database, repo).process_commits()
+            LOGGER.info("Finishing monitoring upstream")
+
+        if options.downstream:
+            LOGGER.info("Begin monitoring downstream")
+            Downstream(self.config, self.database, repo).monitor()
+            LOGGER.info("Finishing monitoring downstream")
+
+    def symbols(self, options):
+        """
+        Handle symbols subcommand
+        """
+        repo = self._get_repo(pull=True, suffix="sym")
+
+        missing = Symbols(self.config, self.database, repo).get_missing_commits(options.file)
+        print("Missing symbols from:")
+        for commit in missing:
+            print(f"  {commit}")
+
+    def downstream(self, options):
+        """
+        Handle downstream subcommand
+        """
+
+        # Print current targets in database
+        if options.action in {"list", None}:
+            for remote, reference in self.database.iter_downstream_targets():
+                print(f"{remote}\t{reference}")
+
+        # Add downstream target
+        if options.action == "add":
+            self.database.add_downstream_target(options.name, options.url, options.revision)
+
+    def spreadsheet(self, options):
+        """
+        Handle spreadsheet subcommand
+        """
+
+        repo = self._get_repo(since=self.config.upstream_since)
+        spreadsheet = Spreadsheet(self.config, self.database, repo)
+
+        if options.export_commits:
+            spreadsheet.export_commits(options.in_file, options.out_file)
+        if options.update_commits:
+            spreadsheet.update_commits(options.in_file, options.out_file)
+
+    def __call__(self, options) -> None:
+        """
+        Runs the specified subcommand
+        """
+
+        getattr(self, options.subcommand)(options)
 
 
-def main(args: Optional[Sequence[str]] = None):  # pylint: disable=too-many-branches
+def main(args: Optional[Sequence[str]] = None):
     """
     Main CLI entry point
     """
@@ -93,33 +175,11 @@ def main(args: Optional[Sequence[str]] = None):  # pylint: disable=too-many-bran
         if hasattr(options, option):
             setattr(config, option, getattr(options, option))
 
+    # Get database object
     database = DatabaseDriver(dry_run=options.dry_run, echo=options.verbose > 2)
 
-    if options.subcommand == "symbols":
-        missing = Symbols(config, database).get_missing_commits(options.file)
-        print("Missing symbols from:")
-        for commit in missing:
-            print(f"  {commit}")
-
-    if options.subcommand == "downstream":
-        # Print current targets in database
-        if options.action in {"list", None}:
-            for remote, reference in database.iter_downstream_targets():
-                print(f"{remote}\t{reference}")
-
-        # Add downstream target
-        if options.action == "add":
-            database.add_downstream_target(options.name, options.url, options.revision)
-
-    if options.subcommand == "run":
-        run(options, config, database)
-
-    if options.subcommand == "spreadsheet":
-        spreadsheet = Spreadsheet(config, database)
-        if args.export_commits:
-            spreadsheet.export_commits(args.in_file, args.out_file)
-        if args.update_commits:
-            spreadsheet.update_commits(args.in_file, args.out_file)
+    # Create session object and invoke subcommand
+    Session(config, database)(options)
 
 
 if __name__ == "__main__":

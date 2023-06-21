@@ -8,7 +8,6 @@ import logging
 import re
 import sys
 from datetime import datetime
-from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -20,7 +19,7 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.model import Distros, MonitoringSubjects, PatchData
-from comma.util.tracking import get_filenames, get_linux_repo
+from comma.util.tracking import get_filenames
 
 
 LOGGER = logging.getLogger(__name__)
@@ -72,16 +71,10 @@ class Spreadsheet:
     Parent object for symbol operations
     """
 
-    def __init__(self, config, database) -> None:
+    def __init__(self, config, database, repo) -> None:
         self.config = config
         self.database = database
-
-    @cached_property
-    def repo(self):
-        """
-        Get repo when first accessed
-        """
-        return get_linux_repo(since=self.config.upstream_since)
+        self.repo = repo
 
     def get_db_commits(self) -> Dict[str, int]:
         """Query the 'PatchData' table for all commit hashes and IDs."""
