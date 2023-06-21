@@ -230,61 +230,6 @@ class Repo:
         self.obj.head.reset(index=True, working_tree=True)
 
 
-class Session:
-    """
-    Container for session data to avoid duplicate actions
-    """
-
-    def __init__(self) -> None:
-        self.repos: dict = {}
-
-    def get_repo(
-        self,
-        name: str,
-        url: str,
-        since: Optional[str] = None,
-        pull: bool = False,
-    ) -> Repo:
-        """
-        Clone and optionally update a repo, returning the object.
-
-        Only clones, fetches, or pulls once per session
-        """
-
-        if name in self.repos:
-            # Repo has been cloned, fetched, or pulled already in this session
-            return self.repos[name]
-
-        repo = self.repos[name] = Repo(name, url)
-        if not repo.exists:
-            # No local repo, clone from source
-            repo.clone(since)
-
-        elif pull:
-            repo.pull()
-        else:
-            repo.fetch(since)
-
-        return repo
-
-
-# TODO (Issue 56): Move session creation to main program logic
-SESSION = Session()
-
-
-def get_linux_repo(
-    name: str = "linux.git",
-    url: str = "https://github.com/torvalds/linux.git",
-    since: Optional[str] = None,
-    pull: bool = False,
-) -> Repo:
-    """
-    Shortcut for getting Linux repo
-    """
-
-    return SESSION.get_repo(name, url, since=since, pull=pull)
-
-
 def extract_paths(sections: Iterable, content: str) -> Set[str]:
     # pylint: disable=wrong-spelling-in-docstring
     """
