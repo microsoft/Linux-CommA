@@ -77,7 +77,7 @@ class Symbols:
                     .order_by(PatchData.commitTime)
                     .all()
                 ],
-                self.repo.get_tracked_paths(self.config.sections),
+                self.repo.get_tracked_paths(self.config.upstream.sections),
             )
 
     def map_symbols_to_patch(

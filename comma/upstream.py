@@ -35,7 +35,7 @@ class Upstream:
         Generate patches for commits affecting tracked paths
         """
 
-        paths = self.repo.get_tracked_paths(self.config.sections)
+        paths = self.repo.get_tracked_paths(self.config.upstream.sections)
         added = 0
         total = 0
 
