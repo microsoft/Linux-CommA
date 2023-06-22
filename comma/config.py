@@ -25,7 +25,7 @@ class Upstream(BaseModel):
     """
 
     paths: Tuple[str, ...]  # TODO (Issue 28): This should pull from plugins
-    reference: str = "origin/HEAD"
+    reference: str = "HEAD"
     repo: str
     sections: Tuple[str, ...]
 

@@ -34,7 +34,7 @@ class Upstream:
         # We use `--min-parents=1 --max-parents=1` to avoid both merges and graft commits.
         LOGGER.info("Determining upstream commits from tracked files")
         for commit in self.repo.iter_commits(
-            rev="origin/master",
+            rev=f"origin/{self.config.upstream.reference}",
             paths=paths,
             min_parents=1,
             max_parents=1,
