@@ -153,6 +153,7 @@ class Spreadsheet:
 
         # Collect the commits in the database and not in the workbook, but that we want to include.
         db_commits = self.get_db_commits()
+        # TODO (Issue 50): Don't use a hard-coded value here, use --upstream_since instead
         tag = "v4.15"
         if tag in self.repo.references:
             LOGGER.info("Skipping commits before tag '%s'!", tag)

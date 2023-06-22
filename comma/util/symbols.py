@@ -72,6 +72,7 @@ class Symbols:
                 self.repo.get_tracked_paths(self.config.upstream.sections),
             )
 
+    # TODO (Issue 65): Avoid hard-coding commit ID
     def map_symbols_to_patch(
         self, commits: Iterable[str], paths, prev_commit="097c1bd5673edaf2a162724636858b71f658fdd2"
     ):
