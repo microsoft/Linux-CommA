@@ -39,7 +39,6 @@ class Session:
     def _get_repo(
         self,
         since: Optional[str] = None,
-        pull: bool = False,
         suffix: Optional[str] = None,
     ) -> Repo:
         """
@@ -49,17 +48,18 @@ class Session:
         name = self.config.upstream.repo
         if suffix:
             name += f"-{suffix}"
-        repo = Repo(name, self.config.repos[self.config.upstream.repo])
+        repo = Repo(
+            name, self.config.repos[self.config.upstream.repo], self.config.upstream.reference
+        )
 
         if not repo.exists:
             # No local repo, clone from source
             repo.clone(since)
 
-        elif pull:
-            repo.pull()
+        # Fetch in case reference isn't the default branch
+        repo.fetch(since, self.config.upstream.reference)
 
-        else:
-            repo.fetch(since)
+        repo.checkout(repo.default_ref)
 
         return repo
 
@@ -103,7 +103,7 @@ class Session:
         """
         Handle symbols subcommand
         """
-        repo = self._get_repo(pull=True, suffix="sym")
+        repo = self._get_repo(suffix="sym")
 
         missing = Symbols(self.config, self.database, repo).get_missing_commits(options.file)
         print("Missing symbols from:")

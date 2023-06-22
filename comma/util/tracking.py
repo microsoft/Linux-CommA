@@ -37,17 +37,18 @@ class Repo:
     Wraps git.Repo, so unimplemented methods are passed to self.obj
     """
 
-    def __init__(self, name: str, url: str) -> None:
+    def __init__(self, name: str, url: str, default_ref: str = "HEAD") -> None:
         self.name: str = name
         self.url: str = url
         self.path = path = pathlib.Path("Repos", name).resolve()
         self.obj: Optional[git.Repo] = git.Repo(path) if path.exists() else None
         self._tracked_paths: Optional[tuple] = None
+        self.default_ref = default_ref
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.obj, name)
 
-    def fetch(self, since: Optional[str] = None, repack: bool = False):
+    def fetch(self, since: Optional[str] = None, ref: Optional[str] = None, repack: bool = False):
         """Fetch repo"""
 
         if repack:
@@ -62,7 +63,9 @@ class Repo:
             kwargs = {}
 
         try:
-            self.obj.remotes.origin.fetch(verbose=True, progress=GitProgressPrinter(), **kwargs)
+            self.obj.remotes.origin.fetch(
+                ref or self.default_ref, verbose=True, progress=GitProgressPrinter(), **kwargs
+            )
             LOGGER.info("Completed fetching %s", self.name)
         except git.GitCommandError as e:
             # Sometimes a shallow-fetched repo will need repacking before fetching again
@@ -85,10 +88,12 @@ class Repo:
         self.obj = git.Repo.clone_from(self.url, self.path, **args, progress=GitProgressPrinter())
         LOGGER.info("Completed cloning %s", self.name)
 
-    def pull(self):
+    def pull(self, ref: Optional[str] = None):
         """Pull repo"""
         LOGGER.info("Pulling '%s' repo.", self.name)
-        self.obj.remotes.origin.pull(progress=GitProgressPrinter())
+        self.obj.remotes.origin.pull(
+            ref or self.default_ref, verbose=True, progress=GitProgressPrinter()
+        )
         LOGGER.info("Completed pulling %s", self.name)
 
     @property
@@ -111,7 +116,7 @@ class Repo:
             for tag in self.obj.git.tag("v[^123]*", list=True).split()
             if re.match(r"v\d+\.+$", tag)
         ]
-        refs.append("origin/HEAD")  # Include default branch (Usually master or main)
+        refs.append(f"origin/{self.default_ref}")  # Include default reference
 
         for ref in refs:
             paths |= extract_paths(sections, self.obj.git.show(f"{ref}:MAINTAINERS"))
@@ -191,7 +196,7 @@ class Repo:
         upstream_commits = set(
             self.obj.git.log(
                 *args,
-                "origin/master",
+                f"origin/{self.default_ref}",
                 "--",
                 paths,
             ).splitlines()
@@ -203,7 +208,7 @@ class Repo:
                 *args,
                 "--right-only",
                 "--cherry-pick",
-                f"{reference}...origin/master",
+                f"{reference}...origin/{self.default_ref}",
             ).splitlines()
         )
 
@@ -226,7 +231,19 @@ class Repo:
         Checkout the given reference
         """
 
-        self.obj.head.reference = self.obj.commit(reference)
+        # Use the reference object directly if it was given
+        if isinstance(reference, git.Reference):
+            self.obj.head.reference = reference
+
+        # If the reference is a known reference, use it
+        elif reference in self.obj.references:
+            self.obj.head.reference = self.obj.references[reference]
+
+        # Otherwise, treat as a commit
+        else:
+            self.obj.head.reference = self.obj.commit(reference)
+
+        # Reset head
         self.obj.head.reset(index=True, working_tree=True)
 
 

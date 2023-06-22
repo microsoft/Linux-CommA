@@ -11,7 +11,7 @@ repos:
 
 upstream:
   repo: linux
-  reference: origin/HEAD
+  reference: master
   paths: []
   sections:
     - Hyper-V/Azure CORE AND DRIVERS
