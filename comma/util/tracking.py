@@ -111,6 +111,7 @@ class Repo:
         paths = set()
 
         # All tags starting with v4, also master.
+        # TODO (Issue 66): This uses a hard-coded regex and relies on tags that may not be available
         refs = [
             tag
             for tag in self.obj.git.tag("v[^123]*", list=True).split()
