@@ -142,3 +142,13 @@ class DatabaseDriver:
             # Add target
             session.add(MonitoringSubjects(distroID=name, revision=revision))
             LOGGER.info("Successfully added new revision '%s' for distro '%s'", revision, name)
+
+    def get_downstream_repos(self):
+        """
+        Get the repos used in downstream targets
+        """
+
+        with self.get_session() as session:
+            return tuple(
+                repo for (repo,) in session.query(MonitoringSubjects.distroID).distinct().all()
+            )

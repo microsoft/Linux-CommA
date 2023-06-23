@@ -9,7 +9,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import git
 import openpyxl
@@ -18,7 +18,7 @@ from openpyxl.cell.cell import Cell
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from comma.database.model import Distros, MonitoringSubjects, PatchData
+from comma.database.model import MonitoringSubjects, PatchData
 from comma.util.tracking import get_filenames
 
 
@@ -175,16 +175,6 @@ class Spreadsheet:
         workbook.save(out_file)
         LOGGER.info("Finished exporting!")
 
-    def get_distros(self) -> List[str]:
-        """Collect the distros we’re tracking in the database."""
-        with self.database.get_session() as session:
-            # TODO (Issue 51): Handle Debian.
-            return [
-                distro
-                for (distro,) in session.query(Distros.distroID)
-                if not distro.startswith("Debian")
-            ]
-
     def get_fixed_patches(self, commit: str, commits: Dict[str, int]) -> str:
         """Get the fixed patches for the given commit."""
         with self.database.get_session() as session:
@@ -217,7 +207,10 @@ class Spreadsheet:
         """Update each row with the 'Fixes' and distro information."""
         workbook, worksheet = get_workbook(in_file)
         commits = self.get_db_commits()
-        distros = self.get_distros()
+        distros = tuple(  # TODO (Issue 51): Handle Debian.
+            repo for repo in self.database.get_downstream_repos() if not repo.startswith("Debian")
+        )
+
         for distro in distros:
             try:
                 get_column(worksheet, distro)
