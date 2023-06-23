@@ -35,9 +35,15 @@ class Downstream:
 
         repo = self.repo
 
-        # Add repos as a remote if not already added
+        # Add repos as a remote if not already added. Only if used in a downstream target
         with self.database.get_session() as session:
-            for distro_id, url in session.query(Distros.distroID, Distros.repoLink).all():
+            for distro_id, url in (
+                session.query(Distros.distroID, Distros.repoLink)
+                .select_from(MonitoringSubjects)
+                .join(MonitoringSubjects.distro)
+                .distinct()
+                .all()
+            ):
                 # Skip Debian for now
                 if distro_id not in self.repo.remotes and not distro_id.startswith("Debian"):
                     LOGGER.debug("Adding remote %s from %s", distro_id, url)
@@ -45,9 +51,8 @@ class Downstream:
 
         # Update stored revisions for repos as appropriate
         LOGGER.info("Updating tracked revisions for each repo.")
-        with self.database.get_session() as session:
-            for (distro_id,) in session.query(Distros.distroID).all():
-                self.update_tracked_revisions(distro_id)
+        for _repo in self.database.get_downstream_repos():
+            self.update_tracked_revisions(_repo)
 
         with self.database.get_session() as session:
             subjects = session.query(MonitoringSubjects).all()
