@@ -134,22 +134,51 @@ class Repo:
         Shallow fetch remote reference so it is available locally
         """
 
+        local_sha = None
+        remote_sha = None
+        kwargs = {"verbose": True, "progress": GitProgressPrinter()}
         remote = self.obj.remote(remote)
+
+        # Check if we already have a local reference
+        if hasattr(self.obj.references, local_ref):
+            local_ref_obj = self.obj.references[local_ref]
+            local_sha = (
+                local_ref_obj.object.hexsha
+                if hasattr(local_ref_obj, "object")
+                else local_ref_obj.commit.hexsha
+            )
+
+            # If we have the ref locally, we still want to update, but give negotiation hint
+            kwargs["negotiation_tip"] = local_ref
+
+            # Get remote ref so we can check against the local ref
+            if output := self.obj.git.ls_remote(remote, remote_ref):
+                remote_sha = output.split()[0]
 
         # No fetch window specified
         if not since:
             LOGGER.info("Fetching ref %s from remote %s", remote_ref, remote)
-            remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
-            return
+            remote.fetch(remote_ref, **kwargs)
 
-        # Initially fetch revision at depth 1
-        LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
-        fetch_info = remote.fetch(remote_ref, depth=1, verbose=True, progress=GitProgressPrinter())
+            # Create tag at FETCH_HEAD to preserve reference locally
+            if local_sha is None or local_sha != remote_sha:
+                self.obj.create_tag(local_ref, "FETCH_HEAD", force=True)
+                return
+
+        # If we have the ref locally, see if the ref is the same to avoid resetting depth
+        if local_sha and remote_sha == local_sha:
+            commit_date = self.obj.references[local_ref].commit.committed_date
+
+        # Otherwise, initially fetch revision at depth 1. This will reset local depth
+        else:
+            LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
+            fetch_info = remote.fetch(remote_ref, depth=1, **kwargs)[-1]
+            commit_date = fetch_info.commit.committed_date
 
         # If last commit for revision is in the fetch window, expand depth
         # This check is necessary because some servers will throw an error when there are
         # no commits in the fetch window
-        if fetch_info[-1].commit.committed_date >= approxidate.approx(since):
+        if commit_date >= approxidate.approx(since):
             LOGGER.info(
                 'Fetching ref %s from remote %s shallow since "%s"',
                 remote_ref,
@@ -157,19 +186,14 @@ class Repo:
                 since,
             )
             try:
-                remote.fetch(
-                    remote_ref,
-                    shallow_since=since,
-                    verbose=True,
-                    progress=GitProgressPrinter(),
-                )
+                remote.fetch(remote_ref, shallow_since=since, **kwargs)
             except git.GitCommandError as e:
                 # ADO repos do not currently support --shallow-since, only depth
                 if "Server does not support --shallow-since" in e.stderr:
                     LOGGER.warning(
                         "Server does not support --shallow-since, retrying fetch without option."
                     )
-                    remote.fetch(remote_ref, verbose=True, progress=GitProgressPrinter())
+                    remote.fetch(remote_ref, **kwargs)
                 else:
                     raise
         else:
@@ -181,8 +205,8 @@ class Repo:
             )
 
         # Create tag at FETCH_HEAD to preserve reference locally
-        if not hasattr(self.obj.references, local_ref):
-            self.obj.create_tag(local_ref, "FETCH_HEAD")
+        if local_sha is None or local_sha != remote_sha:
+            self.obj.create_tag(local_ref, "FETCH_HEAD", force=True)
 
     def get_missing_cherries(self, reference, paths, since: Optional[str] = None):
         """
