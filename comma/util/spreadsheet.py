@@ -175,9 +175,10 @@ class Spreadsheet:
         LOGGER.info("Finished exporting!")
 
     def update_commits(self, in_file: str, out_file: str) -> None:
+        # pylint: disable=too-many-locals
         """Update each row with the 'Fixes' and distro information."""
         workbook, worksheet = get_workbook(in_file)
-        commits = self.get_db_commits()
+        db_commits = self.get_db_commits()
         targets = {}
 
         with self.database.get_session() as session:
@@ -202,12 +203,19 @@ class Spreadsheet:
                     .one()
                 )
 
+            commits_cells = worksheet[get_column(worksheet, "Commit ID").column_letter][1:]
+            total_rows = len(commits_cells)
+            LOGGER.info("Evaluating updates for %d rows", total_rows)
+
             # Iterate through commit IDs in spreadsheet. Skip the header row.
-            for commit_cell in worksheet[get_column(worksheet, "Commit ID").column_letter][1:]:
+            for count, commit_cell in enumerate(commits_cells):
+                if count and not count % 50:
+                    LOGGER.info("Evaluated updates for %d of %d rows", count, total_rows)
+
                 if commit_cell.value is None:
                     continue  # Ignore empty rows.
 
-                patch_id = commits.get(commit_cell.value)
+                patch_id = db_commits.get(commit_cell.value)
 
                 # If patch isn't in the database, set all distros to unknown
                 if patch_id is None:
@@ -231,6 +239,8 @@ class Spreadsheet:
                     get_cell(worksheet, distro, commit_cell.row).value = (
                         subject.revision if missing_patch is None else "Absent"
                     )
+
+            LOGGER.info("Updates evaluated for %s rows", total_rows)
 
             workbook.save(out_file)
             LOGGER.info("Finished updating!")

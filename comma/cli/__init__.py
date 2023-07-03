@@ -156,7 +156,7 @@ def main(args: Optional[Sequence[str]] = None):
     logging.basicConfig(
         level={0: logging.WARNING, 1: logging.INFO}.get(options.verbose, logging.DEBUG),
         format="%(asctime)s %(name)-5s %(levelname)-7s %(message)s",
-        datefmt="%m-%d %H:%M",
+        datefmt="%m-%d %H:%M:%S",
     )
 
     # Start with a basic configuration object
