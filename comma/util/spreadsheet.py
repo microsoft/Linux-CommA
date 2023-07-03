@@ -13,7 +13,6 @@ from typing import Any, Dict, Tuple
 
 import git
 import openpyxl
-import sqlalchemy
 from openpyxl.cell.cell import Cell
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
@@ -187,12 +186,11 @@ class Spreadsheet:
         # NOTE: For some distros (e.g. Ubuntu), we continually add new revisions (Git tags) as they
         # become available, so we need the max ID, which is the most recent.
         with self.database.get_session() as session:
-            subject, _ = (
-                session.query(
-                    MonitoringSubjects,
-                    sqlalchemy.func.max(MonitoringSubjects.monitoringSubjectID),
-                )
+            subject = (
+                session.query(MonitoringSubjects)
                 .filter_by(distroID=distro)
+                .order_by(MonitoringSubjects.monitoringSubjectID.desc())
+                .limit(1)
                 .one()
             )
 
