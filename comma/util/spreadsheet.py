@@ -174,69 +174,63 @@ class Spreadsheet:
         workbook.save(out_file)
         LOGGER.info("Finished exporting!")
 
-    def get_fixed_patches(self, commit: str, commits: Dict[str, int]) -> str:
-        """Get the fixed patches for the given commit."""
-        with self.database.get_session() as session:
-            patch = session.query(PatchData).filter_by(patchID=commits[commit]).one()
-            # The database stores these separated by a space, but we want commas in the spreadsheet.
-            return ", ".join(patch.fixedPatches.split()) if patch.fixedPatches else None
-
-    def get_revision(self, distro: str, commit: str, commits: Dict[str, int]) -> str:
-        """Get the kernel revision which includes commit or 'Absent'."""
-        # NOTE: For some distros (e.g. Ubuntu), we continually add new revisions (Git tags) as they
-        # become available, so we need the max ID, which is the most recent.
-        with self.database.get_session() as session:
-            subject = (
-                session.query(MonitoringSubjects)
-                .filter_by(distroID=distro)
-                .order_by(MonitoringSubjects.monitoringSubjectID.desc())
-                .limit(1)
-                .one()
-            )
-
-            # TODO (Issue 40): We could try to simplify this using the ‘monitoringSubject’
-            # relationship on the ‘PatchData’ table, but because the database tracks what’s missing,
-            # it becomes hard to state where the patch is present.
-            missing_patch = subject.missingPatches.filter_by(patchID=commits[commit]).one_or_none()
-
-            return subject.revision if missing_patch is None else "Absent"
-
     def update_commits(self, in_file: str, out_file: str) -> None:
         """Update each row with the 'Fixes' and distro information."""
         workbook, worksheet = get_workbook(in_file)
         commits = self.get_db_commits()
-        distros = tuple(  # TODO (Issue 51): Handle Debian.
-            repo for repo in self.database.get_downstream_repos() if not repo.startswith("Debian")
-        )
+        targets = {}
 
-        for distro in distros:
-            try:
-                get_column(worksheet, distro)
-            except StopIteration:
-                LOGGER.error("No column with distro '%s', please fix spreadsheet!", distro)
-                sys.exit(1)
+        with self.database.get_session() as session:
+            for repo in self.database.get_downstream_repos():
+                # TODO (Issue 51): Handle Debian
+                if repo.startswith("Debian"):
+                    continue
 
-        commit_column = get_column(worksheet, "Commit ID").column_letter
+                # Make sure there is a column in the spreadsheet
+                try:
+                    get_column(worksheet, repo)
+                except StopIteration:
+                    LOGGER.error("No column with distro '%s', please fix spreadsheet!", repo)
+                    sys.exit(1)
 
-        for commit_cell in worksheet[commit_column][1:]:  # Skip the header row
-            commit = commit_cell.value
-            if commit is None:
-                continue  # Ignore empty rows.
-
-            # Update “Fixes” column.
-            if commit in commits:
-                get_cell(worksheet, "Fixes", commit_cell.row).value = self.get_fixed_patches(
-                    commit, commits
+                # Get the latest monitoring subject for the remote
+                targets[repo] = (
+                    session.query(MonitoringSubjects)
+                    .filter_by(distroID=repo)
+                    .order_by(MonitoringSubjects.monitoringSubjectID.desc())
+                    .limit(1)
+                    .one()
                 )
 
-            # Update all distro columns.
-            for distro in distros:
-                if commit in commits:
-                    get_cell(worksheet, distro, commit_cell.row).value = self.get_revision(
-                        distro, commit, commits
-                    )
-                else:
-                    get_cell(worksheet, distro, commit_cell.row).value = "Unknown"
+            # Iterate through commit IDs in spreadsheet. Skip the header row.
+            for commit_cell in worksheet[get_column(worksheet, "Commit ID").column_letter][1:]:
+                if commit_cell.value is None:
+                    continue  # Ignore empty rows.
 
-        workbook.save(out_file)
-        LOGGER.info("Finished updating!")
+                patch_id = commits.get(commit_cell.value)
+
+                # If patch isn't in the database, set all distros to unknown
+                if patch_id is None:
+                    for distro in targets:
+                        get_cell(worksheet, distro, commit_cell.row).value = "Unknown"
+                    continue
+
+                # Update “Fixes” column.
+                patch = session.query(PatchData).filter_by(patchID=patch_id).one()
+                # The database stores these separated by a space, but we want commas
+                get_cell(worksheet, "Fixes", commit_cell.row).value = (
+                    ", ".join(patch.fixedPatches.split()) if patch.fixedPatches else None
+                )
+
+                # Update all distro columns.
+                for distro, subject in targets.items():
+                    # TODO (Issue 40): We could try to simplify this using the monitoringSubject
+                    # relationship on the PatchData table, but because the database tracks
+                    # what’s missing, it becomes hard to state where the patch is present.
+                    missing_patch = subject.missingPatches.filter_by(patchID=patch_id).one_or_none()
+                    get_cell(worksheet, distro, commit_cell.row).value = (
+                        subject.revision if missing_patch is None else "Absent"
+                    )
+
+            workbook.save(out_file)
+            LOGGER.info("Finished updating!")
