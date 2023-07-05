@@ -4,6 +4,18 @@
 Utility functions and classes
 """
 
+import approxidate
+
+
+class DateString(str):
+    """
+    Wrapper for build-in string type with an additional attribute, epoch
+    """
+
+    def __init__(self, object_, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.epoch: float = approxidate.approx(str(object_))
+
 
 def format_diffs(commit, paths):
     """

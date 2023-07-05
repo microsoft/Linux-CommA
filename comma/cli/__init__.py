@@ -159,21 +159,18 @@ def main(args: Optional[Sequence[str]] = None):
         datefmt="%m-%d %H:%M:%S",
     )
 
-    # Start with a basic configuration object
-    config: BaseConfig = BaseConfig()
-
     # If a full configuration is required, CLI parser would ensure this is set
     if options.config:
+        options_values = {field: getattr(options, field, None) for field in BaseConfig.__fields__}
         try:
-            config = Config(**YAML.load(options.config))
+            config = Config(**YAML.load(options.config) | options_values)
         except (ValidationError, YAMLError) as e:
             print(f"Unable to validate config file: {options.config}")
             sys.exit(e)
 
-    # Overwrite some values if they were specified on the command line
-    for option in ("downstream_since", "upstream_since"):
-        if hasattr(options, option):
-            setattr(config, option, getattr(options, option))
+    # Fallback to basic configuration
+    else:
+        config: BaseConfig = BaseConfig(**vars(options))
 
     # Get database object
     database = DatabaseDriver(dry_run=options.dry_run, echo=options.verbose > 2)
