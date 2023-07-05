@@ -6,8 +6,9 @@ Configuration data model
 
 from typing import Dict, Optional, Tuple
 
-import approxidate
 from pydantic import AnyUrl, BaseModel, validator
+
+from comma.util import DateString
 
 
 class Target(BaseModel):
@@ -35,16 +36,19 @@ class BaseConfig(BaseModel):
     Minimal configuration model
     """
 
-    downstream_since: Optional[str] = None
-    upstream_since: Optional[str] = None
+    downstream_since: Optional[DateString] = None
+    upstream_since: Optional[DateString] = None
 
     @validator("downstream_since", "upstream_since")
-    def check_date(cls, value: str):
-        """Ensure date can be interpreted"""
+    def coerce_date(cls, value: str):
+        """Coerce date string"""
 
-        approxidate.approx(value)
+        return value if value is None else DateString(value)
 
-        return value
+    class Config:
+        """Model configuration"""
+
+        validate_assignment = True
 
 
 class Config(BaseConfig):

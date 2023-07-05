@@ -9,8 +9,9 @@ import pathlib
 import re
 from typing import Any, Iterable, List, Optional, Set, Tuple
 
-import approxidate
 import git
+
+from comma.util import DateString
 
 
 LOGGER = logging.getLogger(__name__)
@@ -128,7 +129,7 @@ class Repo:
         return self._tracked_paths
 
     def fetch_remote_ref(
-        self, remote: str, local_ref: str, remote_ref: str, since: Optional[str] = None
+        self, remote: str, local_ref: str, remote_ref: str, since: Optional[DateString] = None
     ) -> None:
         """
         Shallow fetch remote reference so it is available locally
@@ -178,7 +179,7 @@ class Repo:
         # If last commit for revision is in the fetch window, expand depth
         # This check is necessary because some servers will throw an error when there are
         # no commits in the fetch window
-        if commit_date >= approxidate.approx(since):
+        if commit_date >= since.epoch:
             LOGGER.info(
                 'Fetching ref %s from remote %s shallow since "%s"',
                 remote_ref,
