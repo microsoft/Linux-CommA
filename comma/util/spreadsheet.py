@@ -9,7 +9,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import git
 import openpyxl
@@ -75,32 +75,33 @@ class Spreadsheet:
         self.database = database
         self.repo = repo
 
-    def get_db_commits(self) -> Dict[str, int]:
+    def get_db_commits(self, since: Optional[float] = None) -> Dict[str, int]:
         """Query the 'PatchData' table for all commit hashes and IDs."""
         with self.database.get_session() as session:  # type: sqlalchemy.orm.session.Session
-            return dict(
-                session.query(PatchData.commitID, PatchData.patchID).filter(
-                    # Exclude ~1000 CIFS patches.
-                    ~PatchData.affectedFilenames.like("%fs/cifs%")
-                )
+            query = session.query(PatchData.commitID, PatchData.patchID).filter(
+                # Exclude ~1000 CIFS patches.
+                ~PatchData.affectedFilenames.like("%fs/cifs%")
             )
+            if since:
+                query = query.filter(PatchData.commitTime >= since)
 
-    def include_commit(self, sha: str, base_commit: git.Commit) -> bool:
+            return dict(query)
+
+    def include_commit(self, sha: str) -> bool:
         """Determine if we should export the commit."""
+
         # Skip empty values (such as if ‘cell.value’ was passed).
         if sha is None:
             LOGGER.warning("Given SHA was 'None'!")
             return False
+
         # Skip commits that are not in the repo.
         try:
             commit = self.repo.commit(sha)
         except ValueError:
             LOGGER.warning("Commit '%s' not in repo!", sha)
             return False
-        # Skip commits before the chosen base.
-        if base_commit and not self.repo.is_ancestor(base_commit, commit):
-            LOGGER.debug("Commit '%s' is too old!", sha)
-            return False
+
         # Skip commits to tools.
         filenames = get_filenames(commit)
         if any(f.startswith("tools/hv/") for f in filenames):
@@ -151,19 +152,9 @@ class Spreadsheet:
         wb_commits = {cell.value for cell in worksheet[column][1:] if cell.value is not None}
 
         # Collect the commits in the database and not in the workbook, but that we want to include.
-        db_commits = self.get_db_commits()
-        # TODO (Issue 50): Don't use a hard-coded value here, use --upstream_since instead
-        tag = "v4.15"
-        if tag in self.repo.references:
-            LOGGER.info("Skipping commits before tag '%s'!", tag)
-            base_commit = self.repo.commit(tag)
-        else:
-            LOGGER.warning("Tag '%s' not in local repo, not limiting commits by age", tag)
-            base_commit = None
+        db_commits = self.get_db_commits(since=self.config.upstream_since.epoch)
         missing_commits = [
-            commit
-            for commit in list(db_commits.keys() - wb_commits)
-            if self.include_commit(commit, base_commit)
+            commit for commit in list(db_commits.keys() - wb_commits) if self.include_commit(commit)
         ]
 
         # Append each missing commit as a new row to the commits worksheet.
