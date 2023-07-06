@@ -13,7 +13,7 @@ from ruamel.yaml import YAML as R_YAML
 from ruamel.yaml import YAMLError
 
 from comma.cli.parser import parse_args
-from comma.config import BaseConfig, Config
+from comma.config import BasicConfig, FullConfig
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream import Downstream
@@ -33,7 +33,7 @@ class Session:
     """
 
     def __init__(self, config, database) -> None:
-        self.config: Config = config
+        self.config: FullConfig = config
         self.database: DatabaseDriver = database
 
     def _get_repo(
@@ -161,16 +161,16 @@ def main(args: Optional[Sequence[str]] = None):
 
     # If a full configuration is required, CLI parser would ensure this is set
     if options.config:
-        options_values = {field: getattr(options, field, None) for field in BaseConfig.__fields__}
+        options_values = {field: getattr(options, field, None) for field in BasicConfig.__fields__}
         try:
-            config = Config(**YAML.load(options.config) | options_values)
+            config = FullConfig(**YAML.load(options.config) | options_values)
         except (ValidationError, YAMLError) as e:
             print(f"Unable to validate config file: {options.config}")
             sys.exit(e)
 
     # Fallback to basic configuration
     else:
-        config: BaseConfig = BaseConfig(**vars(options))
+        config: BasicConfig = BasicConfig(**vars(options))
 
     # Get database object
     database = DatabaseDriver(dry_run=options.dry_run, echo=options.verbose > 2)

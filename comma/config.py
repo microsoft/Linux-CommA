@@ -31,7 +31,7 @@ class Upstream(BaseModel):
     sections: Tuple[str, ...]
 
 
-class BaseConfig(BaseModel):
+class BasicConfig(BaseModel):
     """
     Minimal configuration model
     """
@@ -51,9 +51,11 @@ class BaseConfig(BaseModel):
         validate_assignment = True
 
 
-class Config(BaseConfig):
+class FullConfig(BasicConfig):
     """
-    Main configuration model
+    Full configuration model
+    Requires:
+        upstream to be defined
     """
 
     repos: Dict[str, AnyUrl]
