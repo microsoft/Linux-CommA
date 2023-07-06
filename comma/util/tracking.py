@@ -22,7 +22,7 @@ def get_filenames(commit: git.Commit) -> List[str]:
     Get all paths affected by a given commit
     """
 
-    if commit.parents:
+    if not commit.parents:
         return []
     diffs = commit.tree.diff(commit.parents[0])
     # Sometimes a path is in A and not B but we want all filenames.
