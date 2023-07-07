@@ -9,7 +9,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 import git
 import openpyxl
@@ -18,7 +18,6 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.model import MonitoringSubjects, PatchData
-from comma.util.tracking import get_filenames
 
 
 LOGGER = logging.getLogger(__name__)
@@ -75,13 +74,17 @@ class Spreadsheet:
         self.database = database
         self.repo = repo
 
-    def get_db_commits(self, since: Optional[float] = None) -> Dict[str, int]:
+    def get_db_commits(
+        self, since: Optional[float] = None, exclude_files: Optional[Iterable[str]] = None
+    ) -> Dict[str, int]:
         """Query the 'PatchData' table for all commit hashes and IDs."""
-        with self.database.get_session() as session:  # type: sqlalchemy.orm.session.Session
-            query = session.query(PatchData.commitID, PatchData.patchID).filter(
-                # Exclude ~1000 CIFS patches.
-                ~PatchData.affectedFilenames.like("%fs/cifs%")
-            )
+        with self.database.get_session() as session:
+            query = session.query(PatchData.commitID, PatchData.patchID)
+
+            if exclude_files:
+                for entry in exclude_files:
+                    query = query.filter(~PatchData.affectedFilenames.like(entry))
+
             if since:
                 query = query.filter(PatchData.commitTime >= since)
 
@@ -97,16 +100,11 @@ class Spreadsheet:
 
         # Skip commits that are not in the repo.
         try:
-            commit = self.repo.commit(sha)
+            self.repo.commit(sha)
         except ValueError:
             LOGGER.warning("Commit '%s' not in repo!", sha)
             return False
 
-        # Skip commits to tools.
-        filenames = get_filenames(commit)
-        if any(f.startswith("tools/hv/") for f in filenames):
-            LOGGER.debug("Commit '%s' is in 'tools/hv/'!", sha)
-            return False
         return True
 
     def get_release(self, sha: str) -> str:
@@ -152,7 +150,10 @@ class Spreadsheet:
         wb_commits = {cell.value for cell in worksheet[column][1:] if cell.value is not None}
 
         # Collect the commits in the database and not in the workbook, but that we want to include.
-        db_commits = self.get_db_commits(since=self.config.upstream_since.epoch)
+        # Exclude ~1000 CIFS patches and anything that touches tools/hv  # pylint: disable=wrong-spelling-in-comment
+        db_commits = self.get_db_commits(
+            since=self.config.upstream_since.epoch, exclude_files=("%fs/cifs%", "%tools/hv/%")
+        )
         missing_commits = [
             commit for commit in list(db_commits.keys() - wb_commits) if self.include_commit(commit)
         ]
@@ -169,7 +170,8 @@ class Spreadsheet:
         # pylint: disable=too-many-locals
         """Update each row with the 'Fixes' and distro information."""
         workbook, worksheet = get_workbook(in_file)
-        db_commits = self.get_db_commits()
+        # Exclude ~1000 CIFS patches
+        db_commits = self.get_db_commits(exclude_files=("%fs/cifs%",))
         targets = {}
 
         with self.database.get_session() as session:
