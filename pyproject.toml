@@ -161,7 +161,7 @@ spelling-ignore-words = [
   "iterable", "isort",
   "monitoringSubject",
   "namespace", "Nox",
-  "ORM",
+  "ORM", "openpyxl",
   "parsers", "PatchData", "preprocessing",
   "repo", "repos",
   "setuptools", "SHA", "subclassed", "subcommand", "subcommands", "subparsers",

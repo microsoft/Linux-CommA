@@ -8,8 +8,9 @@ import logging
 import re
 import sys
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import git
 import openpyxl
@@ -23,25 +24,42 @@ from comma.database.model import MonitoringSubjects, PatchData
 LOGGER = logging.getLogger(__name__)
 
 
-def get_column(worksheet: Worksheet, name: str) -> Cell:
-    """Gets the header cell for the given column name.
-
-    The column names are the values of the cells in the first row,
-    e.g. 'Commit Title'. Use 'cell.column' for the numeric column, or
-    'cell.column_letter' for the letter. Given a row, index into it
-    with 'row[get_column(ws, "Commit Title").column]'.
-
+class WorksheetWrapper:
     """
-    LOGGER.debug("Looking for column with name '%s'...", name)
-    return next(cell for cell in worksheet[1] if cell.value == name)
+    Wrapper for openpyxl worksheet
+    Consolidates common worksheet logic
+    """
+
+    def __init__(self, worksheet: Worksheet) -> None:
+        self.worksheet = worksheet
+
+    @lru_cache  # noqa: B019
+    def get_column(self, name: str) -> int:
+        """Get column by letter"""
+        return next(cell for cell in self.worksheet[1] if cell.value == name).column
+
+    def get_column_cells(self, name: str) -> List[Cell]:
+        """Get cells for a specified column if the cell has a value"""
+
+        column = self.get_column(name)
+        return tuple(
+            cell
+            for cell in next(self.worksheet.iter_cols(min_row=2, min_col=column, max_col=column))
+            if cell.value is not None
+        )
+
+    def get_cell(self, name: str, row) -> Cell:
+        """Get the cell of the named column in this commit's row."""
+        return self.worksheet.cell(row, self.get_column(name))
+
+    def append(self, row: Dict[str, Any]) -> None:
+        """
+        Given a dictionary with column headers as rows, format and append to worksheet
+        """
+        self.worksheet.append({self.get_column(key): value for key, value in row.items()})
 
 
-def get_cell(worksheet, name: str, row) -> Cell:
-    """Get the cell of the named column in this commit's row."""
-    return worksheet[f"{get_column(worksheet, name).column_letter}{row}"]
-
-
-def get_workbook(in_file: str) -> Tuple[Workbook, Worksheet]:
+def get_workbook(in_file: str) -> Tuple[Workbook, WorksheetWrapper]:
     """Open the spreadsheet and return it and the 'git log' worksheet.
 
     Also fix the pivot table so the spreadsheet doesn't crash.
@@ -61,7 +79,7 @@ def get_workbook(in_file: str) -> Tuple[Workbook, Worksheet]:
     LOGGER.debug("Finding worksheet named 'git log'...")
     worksheet = workbook["git log"]
 
-    return (workbook, worksheet)
+    return (workbook, WorksheetWrapper(worksheet))
 
 
 class Spreadsheet:
@@ -117,27 +135,6 @@ class Spreadsheet:
         except git.GitCommandError:
             return "N/A"
 
-    def create_commit_row(self, sha: str, worksheet: Worksheet) -> Dict[str, Any]:
-        """Create a row with the commit's SHA, date, release and title."""
-        commit = self.repo.commit(sha)
-        # TODO (Issue 40): Some (but not all) of this info is available in the
-        # database, so if add the release to the database we can skip
-        # using the commit here.
-        date = datetime.utcfromtimestamp(commit.authored_date).date()
-        title = commit.message.split("\n")[0]
-
-        # The worksheet has additional columns with manually entered
-        # info, which we can’t insert, so we skip them.
-        def get_letter(name: str) -> str:
-            return get_column(worksheet, name).column_letter
-
-        return {
-            get_letter("Commit ID"): sha,
-            get_letter("Date"): date,
-            get_letter("Release"): self.get_release(sha),
-            get_letter("Commit Title"): title[: min(len(title), 120)],
-        }
-
     def export_commits(self, in_file: str, out_file: str) -> None:
         """This adds commits from the database to the spreadsheet.
 
@@ -146,8 +143,7 @@ class Spreadsheet:
 
         """
         workbook, worksheet = get_workbook(in_file)
-        column = get_column(worksheet, "Commit ID").column_letter
-        wb_commits = {cell.value for cell in worksheet[column][1:] if cell.value is not None}
+        wb_commits = {cell.value for cell in worksheet.get_column_cells("Commit ID")}
 
         # Collect the commits in the database and not in the workbook, but that we want to include.
         # Exclude ~1000 CIFS patches and anything that touches tools/hv  # pylint: disable=wrong-spelling-in-comment
@@ -160,8 +156,18 @@ class Spreadsheet:
 
         # Append each missing commit as a new row to the commits worksheet.
         LOGGER.info("Exporting %d commits to %s", len(missing_commits), out_file)
-        for commit in missing_commits:
-            worksheet.append(self.create_commit_row(commit, worksheet))
+        for sha in missing_commits:
+            # TODO (Issue 40): If release was added to the database, commit could be skipped and
+            # all data could be pulled from the database
+            commit = self.repo.commit(sha)
+            worksheet.append(
+                {
+                    "Commit ID": sha,
+                    "Date": datetime.utcfromtimestamp(commit.authored_date).date(),
+                    "Release": self.get_release(sha),
+                    "Commit Title": "{:.120}".format(commit.message.split("\n")[0]),
+                }
+            )
 
         workbook.save(out_file)
         LOGGER.info("Finished exporting!")
@@ -182,7 +188,7 @@ class Spreadsheet:
 
                 # Make sure there is a column in the spreadsheet
                 try:
-                    get_column(worksheet, repo)
+                    worksheet.get_column(repo)
                 except StopIteration:
                     LOGGER.error("No column with distro '%s', please fix spreadsheet!", repo)
                     sys.exit(1)
@@ -196,7 +202,7 @@ class Spreadsheet:
                     .one()
                 )
 
-            commits_cells = worksheet[get_column(worksheet, "Commit ID").column_letter][1:]
+            commits_cells = worksheet.get_column_cells("Commit ID")
             total_rows = len(commits_cells)
             LOGGER.info("Evaluating updates for %d rows", total_rows)
 
@@ -205,21 +211,18 @@ class Spreadsheet:
                 if count and not count % 50:
                     LOGGER.info("Evaluated updates for %d of %d rows", count, total_rows)
 
-                if commit_cell.value is None:
-                    continue  # Ignore empty rows.
-
                 patch_id = db_commits.get(commit_cell.value)
 
                 # If patch isn't in the database, set all distros to unknown
                 if patch_id is None:
                     for distro in targets:
-                        get_cell(worksheet, distro, commit_cell.row).value = "Unknown"
+                        worksheet.get_cell(distro, commit_cell.row).value = "Unknown"
                     continue
 
                 # Update “Fixes” column.
                 patch = session.query(PatchData).filter_by(patchID=patch_id).one()
                 # The database stores these separated by a space, but we want commas
-                get_cell(worksheet, "Fixes", commit_cell.row).value = (
+                worksheet.get_cell("Fixes", commit_cell.row).value = (
                     ", ".join(patch.fixedPatches.split()) if patch.fixedPatches else None
                 )
 
@@ -229,7 +232,7 @@ class Spreadsheet:
                     # relationship on the PatchData table, but because the database tracks
                     # what’s missing, it becomes hard to state where the patch is present.
                     missing_patch = subject.missingPatches.filter_by(patchID=patch_id).one_or_none()
-                    get_cell(worksheet, distro, commit_cell.row).value = (
+                    worksheet.get_cell(distro, commit_cell.row).value = (
                         subject.revision if missing_patch is None else "Absent"
                     )
 
