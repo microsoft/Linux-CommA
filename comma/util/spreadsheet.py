@@ -108,23 +108,6 @@ class Spreadsheet:
 
             return dict(query)
 
-    def include_commit(self, sha: str) -> bool:
-        """Determine if we should export the commit."""
-
-        # Skip empty values (such as if ‘cell.value’ was passed).
-        if sha is None:
-            LOGGER.warning("Given SHA was 'None'!")
-            return False
-
-        # Skip commits that are not in the repo.
-        try:
-            self.repo.commit(sha)
-        except ValueError:
-            LOGGER.warning("Commit '%s' not in repo!", sha)
-            return False
-
-        return True
-
     def get_release(self, sha: str) -> str:
         """Get the ‘v5.7’ from ‘v5.7-rc1-2-gc81992e7f’."""
         try:
@@ -143,32 +126,47 @@ class Spreadsheet:
 
         """
         workbook, worksheet = get_workbook(in_file)
-        wb_commits = {cell.value for cell in worksheet.get_column_cells("Commit ID")}
 
-        # Collect the commits in the database and not in the workbook, but that we want to include.
+        # Get commits in database, but not in spreadsheet
         # Exclude ~1000 CIFS patches and anything that touches tools/hv  # pylint: disable=wrong-spelling-in-comment
-        db_commits = self.get_db_commits(
+        missing_commits = self.get_db_commits(
             since=self.config.upstream_since.epoch, exclude_files=("%fs/cifs%", "%tools/hv/%")
-        )
-        missing_commits = [
-            commit for commit in list(db_commits.keys() - wb_commits) if self.include_commit(commit)
-        ]
+        ).keys() - {cell.value for cell in worksheet.get_column_cells("Commit ID")}
+
+        exported = 0
+        to_export = len(missing_commits)
+        LOGGER.info("Exporting %d commits to %s", to_export, out_file)
 
         # Append each missing commit as a new row to the commits worksheet.
-        LOGGER.info("Exporting %d commits to %s", len(missing_commits), out_file)
-        for sha in missing_commits:
+        for commit_id in missing_commits:
+            if commit_id is None:
+                LOGGER.error("Commit in database has an empty commit ID")
+                continue
+
+            # Skip commits that are not in the repo.
+            try:
+                commit = self.repo.commit(commit_id)
+            except ValueError:
+                LOGGER.warning("Commit '%s' not in repo!", commit_id)
+                continue
+
             # TODO (Issue 40): If release was added to the database, commit could be skipped and
             # all data could be pulled from the database
-            commit = self.repo.commit(sha)
             worksheet.append(
                 {
-                    "Commit ID": sha,
+                    "Commit ID": commit_id,
                     "Date": datetime.utcfromtimestamp(commit.authored_date).date(),
-                    "Release": self.get_release(sha),
+                    "Release": self.get_release(commit_id),
                     "Commit Title": "{:.120}".format(commit.message.split("\n")[0]),
                 }
             )
 
+            # Periodically report status in case we have a lot of commits
+            exported += 1
+            if exported and not exported % 50:
+                LOGGER.info("Exported %d of %d commits", exported, to_export)
+
+        LOGGER.info("%d commits exported to %s", exported, out_file)
         workbook.save(out_file)
         LOGGER.info("Finished exporting!")
 
