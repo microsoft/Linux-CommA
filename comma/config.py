@@ -68,7 +68,7 @@ class FullConfig(BasicConfig):
 
     repos: Dict[str, AnyUrl]
     upstream: Upstream
-    downstream: Optional[Tuple[Target, ...]]
+    downstream: Optional[Tuple[Target, ...]] = ()
     spreadsheet: Optional[Spreadsheet] = Spreadsheet()
 
     @validator("repos")
