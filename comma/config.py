@@ -31,6 +31,14 @@ class Upstream(BaseModel):
     sections: Tuple[str, ...]
 
 
+class Spreadsheet(BaseModel):
+    """
+    Model for spreadsheet configuration
+    """
+
+    excluded_paths: Optional[Tuple[str, ...]]
+
+
 class BasicConfig(BaseModel):
     """
     Minimal configuration model
@@ -61,6 +69,7 @@ class FullConfig(BasicConfig):
     repos: Dict[str, AnyUrl]
     upstream: Upstream
     downstream: Optional[Tuple[Target, ...]]
+    spreadsheet: Optional[Spreadsheet] = Spreadsheet()
 
     @validator("repos")
     def check_repo(cls, repos):

@@ -93,14 +93,14 @@ class Spreadsheet:
         self.repo = repo
 
     def get_db_commits(
-        self, since: Optional[float] = None, exclude_files: Optional[Iterable[str]] = None
+        self, since: Optional[float] = None, excluded_paths: Optional[Iterable[str]] = None
     ) -> Dict[str, int]:
         """Query the 'PatchData' table for all commit hashes and IDs."""
         with self.database.get_session() as session:
             query = session.query(PatchData.commitID, PatchData.patchID)
 
-            if exclude_files:
-                for entry in exclude_files:
+            if excluded_paths:
+                for entry in excluded_paths:
                     query = query.filter(~PatchData.affectedFilenames.like(entry))
 
             if since:
@@ -130,7 +130,8 @@ class Spreadsheet:
         # Get commits in database, but not in spreadsheet
         # Exclude ~1000 CIFS patches and anything that touches tools/hv  # pylint: disable=wrong-spelling-in-comment
         missing_commits = self.get_db_commits(
-            since=self.config.upstream_since.epoch, exclude_files=("%fs/cifs%", "%tools/hv/%")
+            since=self.config.upstream_since.epoch,
+            excluded_paths=self.config.spreadsheet.excluded_paths,
         ).keys() - {cell.value for cell in worksheet.get_column_cells("Commit ID")}
 
         exported = 0
@@ -175,7 +176,7 @@ class Spreadsheet:
         """Update each row with the 'Fixes' and distro information."""
         workbook, worksheet = get_workbook(in_file)
         # Exclude ~1000 CIFS patches
-        db_commits = self.get_db_commits(exclude_files=("%fs/cifs%",))
+        db_commits = self.get_db_commits(excluded_paths=self.config.spreadsheet.excluded_paths)
         targets = {}
 
         with self.database.get_session() as session:

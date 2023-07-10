@@ -26,3 +26,8 @@ downstream:
     reference: stretch-backports
   - repo: Debian10-backport
     reference: bullseye-backports
+
+spreadsheet:
+  excluded_paths:
+    - '%fs/cifs%'
+    - '%tools/hv/%'
