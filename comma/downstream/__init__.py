@@ -58,6 +58,9 @@ class Downstream:
             subjects = session.query(MonitoringSubjects).all()
             total = len(subjects)
 
+            if not total:
+                LOGGER.warning("No downstream targets defined")
+
             for num, subject in enumerate(subjects, 1):
                 if subject.distroID.startswith("Debian"):
                     # TODO (Issue 51): Don't skip Debian
