@@ -17,6 +17,7 @@ from comma.config import BasicConfig, FullConfig
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream import Downstream
+from comma.exceptions import CommaError
 from comma.upstream import Upstream
 from comma.util.spreadsheet import Spreadsheet
 from comma.util.symbols import Symbols
@@ -172,11 +173,15 @@ def main(args: Optional[Sequence[str]] = None):
     else:
         config: BasicConfig = BasicConfig(**vars(options))
 
-    # Get database object
-    database = DatabaseDriver(dry_run=options.dry_run, echo=options.verbose > 2)
+    try:
+        # Get database object
+        database = DatabaseDriver(dry_run=options.dry_run, echo=options.verbose > 2)
 
-    # Create session object and invoke subcommand
-    Session(config, database)(options)
+        # Create session object and invoke subcommand
+        Session(config, database)(options)
+
+    except CommaError as e:
+        sys.exit(f"ERROR: {e}")
 
 
 if __name__ == "__main__":
