@@ -6,7 +6,6 @@ Functions for exporting data to Excel spreadsheets
 
 import logging
 import re
-import sys
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -21,6 +20,7 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.model import MonitoringSubjects, PatchData
+from comma.exceptions import CommaSpreadsheetError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -113,8 +113,8 @@ def get_workbook(in_file: str) -> Tuple[Workbook, WorksheetWrapper]:
 
     """
     if not Path(in_file).exists():
-        LOGGER.error("The file %s does not exist", in_file)
-        sys.exit(1)
+        raise CommaSpreadsheetError(f"Input spreadsheet '{in_file}' does not exist")
+
     workbook = openpyxl.load_workbook(filename=in_file)
 
     # Force refresh of pivot table in “Pivot” worksheet.
@@ -236,9 +236,10 @@ class Spreadsheet:
                 # Make sure there is a column in the spreadsheet
                 try:
                     worksheet.get_column(repo)
-                except StopIteration:
-                    LOGGER.error("No column with distro '%s', please fix spreadsheet!", repo)
-                    sys.exit(1)
+                except StopIteration as e:
+                    raise CommaSpreadsheetError(
+                        f"No column with distro '{repo}', please fix spreadsheet!"
+                    ) from e
 
                 # Get the latest monitoring subject for the remote
                 targets[repo] = (

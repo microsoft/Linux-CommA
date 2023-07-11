@@ -7,13 +7,13 @@ Provide a class for managing database connections and sessions
 
 import logging
 import os
-import sys
 import urllib
 from contextlib import contextmanager
 
 import sqlalchemy
 
 from comma.database.model import Base, Distros, MonitoringSubjects
+from comma.exceptions import CommaDatabaseError, CommaDataError
 
 
 LOGGER = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class DatabaseDriver:
         # Verify credentials are available
         for envvar in ("COMMA_DB_URL", "COMMA_DB_NAME", "COMMA_DB_USERNAME", "COMMA_DB_PW"):
             if not os.environ.get(envvar):
-                sys.exit(f"{envvar} is not defined in the current environment")
+                raise CommaDatabaseError(f"{envvar} is not defined in the current environment")
 
         params = urllib.parse.quote_plus(
             ";".join(
@@ -137,7 +137,7 @@ class DatabaseDriver:
 
             # If URL wasn't given, make sure repo is in database
             elif (name,) not in session.query(Distros.distroID).all():
-                sys.exit(f"Repository '{name}' given without URL not found in database")
+                raise CommaDataError(f"Repository '{name}' given without URL not found in database")
 
             # Add target
             session.add(MonitoringSubjects(distroID=name, revision=revision))
