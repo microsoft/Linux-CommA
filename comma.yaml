@@ -28,6 +28,7 @@ downstream:
     reference: bullseye-backports
 
 spreadsheet:
+  # Commits that include excluded paths are not included in spreadsheet exports
   excluded_paths:
-    - '%fs/cifs%'
-    - '%tools/hv/%'
+    # - '%fs/cifs%'
+    # - '%tools/hv/%'
