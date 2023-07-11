@@ -15,6 +15,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import git
 import openpyxl
 from openpyxl.cell.cell import Cell
+from openpyxl.formula.translate import Translator
+from openpyxl.styles import DEFAULT_FONT
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -57,6 +59,51 @@ class WorksheetWrapper:
         Given a dictionary with column headers as rows, format and append to worksheet
         """
         self.worksheet.append({self.get_column(key): value for key, value in row.items()})
+
+    def sort(self, column=2, key=None, reverse=True):
+        """
+        Sort spreadsheet based on specified column
+        Drops row that do not have value for column
+        Assumes the first row is a header
+        """
+        idx = column - 1
+
+        if key is None:
+
+            def key(row):
+                value = row[idx].value
+                if isinstance(value, datetime):
+                    value = value.date()
+                return value
+
+        # Sort rows
+        rows = sorted(
+            (row for row in self.worksheet.iter_rows(min_row=2) if row[idx].value is not None),
+            key=key,
+            reverse=reverse,
+        )
+
+        # Clear worksheet
+        self.worksheet.delete_rows(2, self.worksheet.max_row - 1)
+
+        # Clean up values
+        for row_num, row in enumerate(rows, 2):
+            for old_cell in row:
+                new_cell = self.worksheet.cell(row_num, old_cell.column, old_cell.value)
+                new_cell.font = DEFAULT_FONT
+
+                # Fix dates so they get stored properly
+                if isinstance(old_cell.value, datetime) and not any(
+                    (old_cell.value.hour, old_cell.value.minute, old_cell.value.second)
+                ):
+                    new_cell.value = old_cell.value.date()
+                    new_cell.number_format = "YYYY-MM-DD"
+
+                # If value is a formula, translate it
+                if old_cell.data_type == "f":
+                    new_cell.value = Translator(
+                        new_cell.value, old_cell.coordinate
+                    ).translate_formula(new_cell.coordinate)
 
 
 def get_workbook(in_file: str) -> Tuple[Workbook, WorksheetWrapper]:
@@ -168,6 +215,7 @@ class Spreadsheet:
                 LOGGER.info("Exported %d of %d commits", exported, to_export)
 
         LOGGER.info("%d commits exported to %s", exported, out_file)
+        worksheet.sort()
         workbook.save(out_file)
         LOGGER.info("Finished exporting!")
 
