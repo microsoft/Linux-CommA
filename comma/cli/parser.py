@@ -177,6 +177,15 @@ def get_downstream_parser():
     )
 
     actions.add_argument(
+        "-D",
+        "--delete",
+        action="store_const",
+        const="delete",
+        dest="action",
+        help="Delete downstream target, must specify name, revision optional",
+    )
+
+    actions.add_argument(
         "-l",
         "--list",
         action="store_const",
@@ -193,7 +202,7 @@ def get_downstream_parser():
     parser.add_argument(
         "-u",
         "--url",
-        help="Repository URL. Required if repo in not in database",
+        help="Repository URL. Required for add if repo in not in database",
     )
     parser.add_argument(
         "-r",
@@ -229,12 +238,12 @@ def parse_args(args: Optional[Sequence[str]] = None):
 
     # Check for required options
     options = parser.parse_args(args)
-    if (
-        options.subcommand == "downstream"
-        and options.action == "add"
-        and None in (options.name, options.revision)
-    ):
-        parser.error("URL and revision are required")
+
+    if options.subcommand == "downstream":
+        if options.action == "add" and None in (options.name, options.revision):
+            parser.error("Name and revision are required")
+        elif options.action == "delete" and options.name is None:
+            parser.error("Name is required")
 
     # Configuration file was specified
     if options.config is not None:

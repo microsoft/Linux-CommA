@@ -125,6 +125,12 @@ class Session:
         if options.action == "add":
             self.database.add_downstream_target(options.name, options.url, options.revision)
 
+        elif options.action == "delete":
+            if options.revision:
+                self.database.delete_downstream_target(options.name, options.revision)
+            else:
+                self.database.delete_repo(options.name)
+
     def spreadsheet(self, options):
         """
         Handle spreadsheet subcommand
