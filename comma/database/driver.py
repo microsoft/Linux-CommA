@@ -130,18 +130,73 @@ class DatabaseDriver:
         """
 
         with self.get_session() as session:
-            # Add repo
-            if url:
+            # See if remote exists
+            if existing := session.query(Distros).filter_by(distroID=name).one_or_none():
+                # If URL is different, overwrite with warning
+                if url and existing.repoLink != url:
+                    LOGGER.warning(
+                        "Overwriting existing remote %s URL: %s", name, existing.repoLink
+                    )
+                    existing.repoLink = url
+
+                else:
+                    LOGGER.info(
+                        "Using existing remote %s at %s", existing.distroID, existing.repoLink
+                    )
+
+            # If new remote, create
+            elif url:
                 session.add(Distros(distroID=name, repoLink=url))
                 LOGGER.info("Successfully added new repo %s at %s", name, url)
 
-            # If URL wasn't given, make sure repo is in database
-            elif (name,) not in session.query(Distros.distroID).all():
+            # If no URL was given, error
+            else:
                 raise CommaDataError(f"Repository '{name}' given without URL not found in database")
 
-            # Add target
-            session.add(MonitoringSubjects(distroID=name, revision=revision))
-            LOGGER.info("Successfully added new revision '%s' for distro '%s'", revision, name)
+            # See if target exists
+            if (
+                existing := session.query(MonitoringSubjects.distroID)
+                .filter_by(distroID=name)
+                .filter_by(revision=revision)
+                .one_or_none()
+            ):
+                LOGGER.info(
+                    "Target already exists for revision '%s' in distro '%s'", revision, name
+                )
+
+            # If new target, create
+            else:
+                session.add(MonitoringSubjects(distroID=name, revision=revision))
+                LOGGER.info(
+                    "Successfully added target for revision '%s' in distro '%s'", revision, name
+                )
+
+    def delete_repo(self, name):
+        """
+        Deletes a repo and all associated monitoring subjects
+        """
+
+        with self.get_session() as session:
+            targets = session.query(MonitoringSubjects).filter_by(distroID=name)
+            for target in targets:
+                LOGGER.info(
+                    "Deleting downstream target: remote=%s revision=%s", name, target.revision
+                )
+            targets.delete(synchronize_session=False)
+
+            LOGGER.info("Deleting remote: %s", name)
+            session.query(Distros).filter_by(distroID=name).delete(synchronize_session=False)
+
+    def delete_downstream_target(self, name, revision):
+        """
+        Remove a downstream target
+        """
+
+        with self.get_session() as session:
+            LOGGER.info("Deleting downstream target: remote=%s revision=%s", name, revision)
+            session.query(MonitoringSubjects).filter_by(distroID=name).filter_by(
+                revision=revision
+            ).delete(synchronize_session=False)
 
     def get_downstream_repos(self):
         """
