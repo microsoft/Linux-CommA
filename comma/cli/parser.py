@@ -89,6 +89,11 @@ def get_run_parser():
         metavar="APPROXIDATE",
         help="Passed to underlying git commands. By default, the history is not limited",
     )
+    parser.add_argument(
+        "--force-update",
+        action="store_true",
+        help="Force update to existing upstream patch records",
+    )
 
     return parser
 

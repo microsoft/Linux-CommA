@@ -92,7 +92,7 @@ class Session:
 
         if options.upstream:
             LOGGER.info("Begin monitoring upstream")
-            Upstream(self.config, self.database, repo).process_commits()
+            Upstream(self.config, self.database, repo).process_commits(options.force_update)
             LOGGER.info("Finishing monitoring upstream")
 
         if options.downstream:
