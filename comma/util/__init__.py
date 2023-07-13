@@ -4,6 +4,8 @@
 Utility functions and classes
 """
 
+from datetime import datetime
+
 import approxidate
 
 
@@ -15,6 +17,7 @@ class DateString(str):
     def __init__(self, object_, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.epoch: float = approxidate.approx(str(object_))
+        self.datetime = datetime.utcfromtimestamp(self.epoch)
 
 
 def format_diffs(commit, paths):
