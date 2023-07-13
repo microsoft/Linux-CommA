@@ -281,7 +281,7 @@ class Spreadsheet:
                     # what’s missing, it becomes hard to state where the patch is present.
                     missing_patch = subject.missingPatches.filter_by(patchID=patch_id).one_or_none()
                     worksheet.get_cell(distro, commit_cell.row).value = (
-                        subject.revision if missing_patch is None else "Absent"
+                        "Absent" if missing_patch is None else subject.revision
                     )
 
             LOGGER.info("Updates evaluated for %s rows", total_rows)
