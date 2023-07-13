@@ -177,7 +177,7 @@ class Spreadsheet:
         # Get commits in database, but not in spreadsheet
         # Exclude ~1000 CIFS patches and anything that touches tools/hv  # pylint: disable=wrong-spelling-in-comment
         missing_commits = self.get_db_commits(
-            since=self.config.upstream_since.epoch,
+            since=self.config.upstream_since.datetime,
             excluded_paths=self.config.spreadsheet.excluded_paths,
         ).keys() - {cell.value for cell in worksheet.get_column_cells("Commit ID")}
 
