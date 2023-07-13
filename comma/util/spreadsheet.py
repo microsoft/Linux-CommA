@@ -19,7 +19,7 @@ from openpyxl.styles import DEFAULT_FONT
 from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
-from comma.database.model import MonitoringSubjects, PatchData
+from comma.database.model import MonitoringSubjects, MonitoringSubjectsMissingPatches, PatchData
 from comma.exceptions import CommaSpreadsheetError
 
 
@@ -243,7 +243,9 @@ class Spreadsheet:
 
                 # Get the latest monitoring subject for the remote
                 targets[repo] = (
-                    session.query(MonitoringSubjects)
+                    session.query(
+                        MonitoringSubjects.monitoringSubjectID, MonitoringSubjects.revision
+                    )
                     .filter_by(distroID=repo)
                     .order_by(MonitoringSubjects.monitoringSubjectID.desc())
                     .limit(1)
@@ -279,7 +281,12 @@ class Spreadsheet:
                     # TODO (Issue 40): We could try to simplify this using the monitoringSubject
                     # relationship on the PatchData table, but because the database tracks
                     # what’s missing, it becomes hard to state where the patch is present.
-                    missing_patch = subject.missingPatches.filter_by(patchID=patch_id).one_or_none()
+                    missing_patch = (
+                        session.query(MonitoringSubjectsMissingPatches.monitoringSubjectID)
+                        .filter_by(patchID=patch_id)
+                        .filter_by(monitoringSubjectID=subject.monitoringSubjectID)
+                        .scalar()
+                    )
                     worksheet.get_cell(distro, commit_cell.row).value = (
                         "Absent" if missing_patch is None else subject.revision
                     )
