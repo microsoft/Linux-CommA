@@ -165,7 +165,7 @@ spelling-ignore-words = [
   "parsers", "PatchData", "preprocessing",
   "repo", "repos",
   "setuptools", "SHA", "subclassed", "subcommand", "subcommands", "subparsers",
-  "untracked",
+  "unshallow", "untracked",
   "virtualenv",
 ]
 
