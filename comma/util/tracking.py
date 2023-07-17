@@ -8,6 +8,7 @@ import logging
 import pathlib
 import re
 from typing import Any, Iterable, List, Optional, Set, Tuple
+from urllib.parse import urlparse
 
 import git
 
@@ -157,14 +158,18 @@ class Repo:
                 remote_sha = output.split()[0]
 
         # No fetch window specified
-        if not since:
+        # Or using Azure DevOps since it doesn't support shallow-since or unshallow
+        if not since or any(
+            urlparse(url).hostname == "msazure.visualstudio.com" for url in remote.urls
+        ):
             LOGGER.info("Fetching ref %s from remote %s", remote_ref, remote)
             remote.fetch(remote_ref, **kwargs)
 
             # Create tag at FETCH_HEAD to preserve reference locally
             if local_sha is None or local_sha != remote_sha:
                 self.obj.create_tag(local_ref, "FETCH_HEAD", force=True)
-                return
+
+            return
 
         # If we have the ref locally, see if the ref is the same to avoid resetting depth
         if local_sha and remote_sha == local_sha:
