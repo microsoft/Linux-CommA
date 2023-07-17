@@ -276,19 +276,25 @@ class Spreadsheet:
                     ", ".join(patch.fixedPatches.split()) if patch.fixedPatches else None
                 )
 
-                # Update all distro columns.
-                for distro, subject in targets.items():
-                    # TODO (Issue 40): We could try to simplify this using the monitoringSubject
-                    # relationship on the PatchData table, but because the database tracks
-                    # what’s missing, it becomes hard to state where the patch is present.
-                    missing_patch = (
+                # Query for subjects missing patch. Only missing is tracked
+                # TODO (Issue 40): We could try to simplify this using the monitoringSubject
+                # relationship on the PatchData table, but because the database tracks
+                # what’s missing, it becomes hard to state where the patch is present.
+                subjects_missing_patch = {
+                    id_[0]
+                    for id_ in (
                         session.query(MonitoringSubjectsMissingPatches.monitoringSubjectID)
                         .filter_by(patchID=patch_id)
-                        .filter_by(monitoringSubjectID=subject.monitoringSubjectID)
-                        .scalar()
+                        .all()
                     )
+                }
+
+                # Update all distro columns
+                for distro, subject in targets.items():
                     worksheet.get_cell(distro, commit_cell.row).value = (
-                        subject.revision if missing_patch is None else "Absent"
+                        "Absent"
+                        if subject.monitoringSubjectID in subjects_missing_patch
+                        else subject.revision
                     )
 
             LOGGER.info("Updates evaluated for %s rows", total_rows)
