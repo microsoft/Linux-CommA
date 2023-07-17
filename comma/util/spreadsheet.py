@@ -288,7 +288,7 @@ class Spreadsheet:
                         .scalar()
                     )
                     worksheet.get_cell(distro, commit_cell.row).value = (
-                        "Absent" if missing_patch is None else subject.revision
+                        subject.revision if missing_patch is None else "Absent"
                     )
 
             LOGGER.info("Updates evaluated for %s rows", total_rows)
