@@ -18,6 +18,50 @@ from comma.util import DateString
 LOGGER = logging.getLogger(__name__)
 
 
+class GitRetry:
+    """
+    Specific wrapper for git functions
+    Looks for common errors in output and retries, otherwise raises
+    """
+
+    errors = (
+        "fatal: expected 'acknowledgments'",
+        "error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500",
+    )
+
+    def __init__(self, func: callable, max_tries: int = 3):
+        self.func = func
+        self.max_tries = max_tries
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        for tries in range(1, self.max_tries + 1):
+            try:
+                # Call function with provided arguments
+                return self.func(*args, **kwargs)
+            except git.GitCommandError as e:
+                # Raise if retries are exhausted
+                if tries >= self.max_tries:
+                    LOGGER.error(
+                        "Function call (%r) exceeded maximum tries (%d): args=%r, kwargs=%r",
+                        self.func,
+                        self.max_tries,
+                        args,
+                        kwargs,
+                    )
+                    raise
+
+                # Retry on known errors
+                if any(error in e.stderr for error in self.errors):
+                    LOGGER.warning("Likely transient error, retrying: %s", e)
+
+                else:
+                    # Raise on anything else
+                    raise
+
+        # We should never get here
+        raise RuntimeError("Unexpectedly exited loop!")
+
+
 def get_filenames(commit: git.Commit) -> List[str]:
     """
     Get all paths affected by a given commit
@@ -140,6 +184,7 @@ class Repo:
         remote_sha = None
         kwargs = {"verbose": True, "progress": GitProgressPrinter()}
         remote = self.obj.remote(remote)
+        fetch = GitRetry(remote.fetch)
 
         # Check if we already have a local reference
         if hasattr(self.obj.references, local_ref):
@@ -163,7 +208,7 @@ class Repo:
             urlparse(url).hostname == "msazure.visualstudio.com" for url in remote.urls
         ):
             LOGGER.info("Fetching ref %s from remote %s", remote_ref, remote)
-            remote.fetch(remote_ref, **kwargs)
+            fetch(remote_ref, **kwargs)
 
             # Create tag at FETCH_HEAD to preserve reference locally
             if local_sha is None or local_sha != remote_sha:
@@ -178,7 +223,7 @@ class Repo:
         # Otherwise, initially fetch revision at depth 1. This will reset local depth
         else:
             LOGGER.info("Fetching remote ref %s from remote %s at depth 1", remote_ref, remote)
-            fetch_info = remote.fetch(remote_ref, depth=1, **kwargs)[-1]
+            fetch_info = fetch(remote_ref, depth=1, **kwargs)[-1]
             commit_date = fetch_info.commit.committed_date
 
         # If last commit for revision is in the fetch window, expand depth
@@ -192,14 +237,14 @@ class Repo:
                 since,
             )
             try:
-                remote.fetch(remote_ref, shallow_since=since, **kwargs)
+                fetch(remote_ref, shallow_since=since, **kwargs)
             except git.GitCommandError as e:
                 # ADO repos do not currently support --shallow-since, only depth
                 if "Server does not support --shallow-since" in e.stderr:
                     LOGGER.warning(
                         "Server does not support --shallow-since, retrying fetch without option."
                     )
-                    remote.fetch(remote_ref, **kwargs)
+                    fetch(remote_ref, **kwargs)
                 else:
                     raise
         else:
