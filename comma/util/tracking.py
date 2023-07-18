@@ -26,7 +26,7 @@ class GitRetry:
 
     errors = (
         "fatal: expected 'acknowledgments'",
-        "error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500",
+        "The requested URL returned error: 500",
     )
 
     def __init__(self, func: callable, max_tries: int = 3):
