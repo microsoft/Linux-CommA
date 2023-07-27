@@ -4,10 +4,12 @@
 Configuration data model
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
-from pydantic import AnyUrl, BaseModel, validator
+from pluginlib import PluginlibError, PluginLoader
+from pydantic import AnyUrl, BaseModel, root_validator, validator
 
+import comma.plugins  # pylint: disable=unused-import  # Loads parent classes  # noqa: F401
 from comma.util import DateString
 
 
@@ -25,10 +27,32 @@ class Upstream(BaseModel):
     Model for upstream definition
     """
 
-    paths: Tuple[str, ...]  # TODO (Issue 28): This should pull from plugins
+    paths: Tuple[Union[str, Dict[str, Any]], ...]
     reference: str = "HEAD"
     repo: str
-    sections: Tuple[str, ...]
+
+    @validator("paths")
+    def check_paths(cls, value: str):
+        """Coerce date string"""
+
+        seen = []
+        for path in value:
+            if path in seen:
+                raise ValueError(f"Duplicate entries for path '{path}'")
+
+            if isinstance(path, dict):
+                if len(path) > 1:
+                    raise ValueError(
+                        f"Multiple keys specified for dictionary: {value}\nAre plugin options indented under plugin name?"
+                    )
+
+                plugin_name = next(iter(path))
+                if not plugin_name.startswith("^"):
+                    raise ValueError(f"Plugin name '{plugin_name}' does not start with '^'")
+
+            seen.append(path)
+
+        return value
 
 
 class Spreadsheet(BaseModel):
@@ -46,12 +70,28 @@ class BasicConfig(BaseModel):
 
     downstream_since: Optional[DateString] = None
     upstream_since: Optional[DateString] = None
+    plugin_modules: Optional[Sequence[str]] = ["comma.plugins.paths"]
+    plugin_paths: Optional[Sequence[str]] = None
+    plugins: Optional[Dict[str, Any]] = None
 
     @validator("downstream_since", "upstream_since")
     def coerce_date(cls, value: str):
         """Coerce date string"""
 
         return value if value is None else DateString(value)
+
+    @root_validator
+    def load_plugins(cls, values):
+        """Load plugins"""
+
+        try:
+            values["plugins"] = PluginLoader(
+                modules=values["plugin_modules"], paths=values["plugin_paths"]
+            ).plugins
+        except PluginlibError as e:
+            raise ValueError(f"Unable to load plugins: {e}") from e
+
+        return values
 
     class Config:
         """Model configuration"""

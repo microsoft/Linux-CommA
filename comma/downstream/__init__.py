@@ -4,7 +4,10 @@
 Operations for downstream targets
 """
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from comma.database.model import (
     Distros,
@@ -15,6 +18,10 @@ from comma.database.model import (
 from comma.downstream.matcher import patch_matches
 
 
+if TYPE_CHECKING:
+    from comma.cli import Session
+
+
 LOGGER = logging.getLogger(__name__.split(".", 1)[0])
 
 
@@ -23,10 +30,11 @@ class Downstream:
     Parent object for downstream operations
     """
 
-    def __init__(self, config, database, repo) -> None:
-        self.config = config
-        self.database = database
-        self.repo = repo
+    def __init__(self, session: Session) -> None:
+        self.config = session.config
+        self.database = session.database
+        self.repo = session.repo
+        self.session = session
 
     def monitor(self):
         """
@@ -105,7 +113,7 @@ class Downstream:
 
         missing_cherries = self.repo.get_missing_cherries(
             reference,
-            self.repo.get_tracked_paths(self.config.upstream.sections),
+            self.session.get_tracked_paths(),
             since=self.config.upstream_since,
         )
         LOGGER.debug("Found %d missing patches through cherry-pick.", len(missing_cherries))
@@ -154,7 +162,7 @@ class Downstream:
         Attempt to determine which patches are missing from a list of missing cherries
         """
 
-        paths = self.repo.get_tracked_paths(self.config.upstream.sections)
+        paths = self.session.get_tracked_paths()
 
         with self.database.get_session() as session:
             patches = (
