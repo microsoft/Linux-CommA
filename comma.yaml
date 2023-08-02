@@ -12,10 +12,12 @@ repos:
 upstream:
   repo: linux
   reference: master
-  paths: []
-  sections:
-    - Hyper-V/Azure CORE AND DRIVERS
-    - DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE
+  paths:
+    # Use the linux_maintainers plugin to get paths
+    - ^linux_maintainers:
+        sections:
+          - Hyper-V/Azure CORE AND DRIVERS
+          - DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE
 
 downstream:
   - repo: SUSE12

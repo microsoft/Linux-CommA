@@ -6,8 +6,7 @@ Functions and classes for fetching and parsing data from Git
 
 import logging
 import pathlib
-import re
-from typing import Any, Iterable, List, Optional, Set, Tuple
+from typing import Any, List, Optional
 from urllib.parse import urlparse
 
 import git
@@ -26,7 +25,7 @@ class GitRetry:
 
     errors = (
         "fatal: expected 'acknowledgments'",
-        "error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500",
+        "The requested URL returned error: 500",
     )
 
     def __init__(self, func: callable, max_tries: int = 3):
@@ -146,32 +145,6 @@ class Repo:
     def exists(self):
         """Convenience property to see if repo abject has been populated"""
         return self.obj is not None
-
-    def get_tracked_paths(self, sections) -> Tuple[str]:
-        """Get list of files from MAINTAINERS for given sections."""
-
-        if self._tracked_paths is not None:
-            return self._tracked_paths
-
-        LOGGER.debug("Parsing MAINTAINERS file for %s", self.name)
-        paths = set()
-
-        # All tags starting with v4, also master.
-        # TODO (Issue 66): This uses a hard-coded regex and relies on tags that may not be available
-        refs = [
-            tag
-            for tag in self.obj.git.tag("v[^123]*", list=True).split()
-            if re.match(r"v\d+\.+$", tag)
-        ]
-        refs.append(f"origin/{self.default_ref}")  # Include default reference
-
-        for ref in refs:
-            paths |= extract_paths(sections, self.obj.git.show(f"{ref}:MAINTAINERS"))
-
-        LOGGER.debug("Completed parsing MAINTAINERS file for %s", self.name)
-        self._tracked_paths = tuple(sorted(paths))
-
-        return self._tracked_paths
 
     def fetch_remote_ref(
         self, remote: str, local_ref: str, remote_ref: str, since: Optional[DateString] = None
@@ -321,55 +294,6 @@ class Repo:
 
         # Reset head
         self.obj.head.reset(index=True, working_tree=True)
-
-
-def extract_paths(sections: Iterable, content: str) -> Set[str]:
-    # pylint: disable=wrong-spelling-in-docstring
-    """
-    Get set of files under the given sections.
-
-    The MAINTAINERS file sections look like:
-
-    Hyper-V CORE AND DRIVERS
-    M:	"K. Y. Srinivasan" <kys@microsoft.com>
-    ...
-    F:	Documentation/ABI/stable/sysfs-bus-vmbus
-    F:	arch/x86/hyperv
-    F:	drivers/clocksource/hyperv_timer.c
-    F:	drivers/hv/
-    ...
-    F:	tools/hv/
-
-    Each section ends with a blank line.
-    """
-
-    remaining = set(sections)
-    in_section = False
-    paths = set()
-    for line in content.splitlines():
-        if in_section:
-            # Section ends with a blank line
-            if not line.strip():
-                in_section = False
-
-                # If there are no more sections, end now
-                if not remaining:
-                    break
-
-            # Extract Paths
-            if line.startswith("F:"):
-                path = line.strip().split(maxsplit=1)[-1]
-
-                # Skip Documentation
-                if not path.startswith("Documentation"):
-                    paths.add(path)
-
-        # Look for start of a section
-        elif current := next((section for section in remaining if section in line), None):
-            in_section = True
-            remaining.remove(current)
-
-    return paths
 
 
 class GitProgressPrinter(git.RemoteProgress):

@@ -3,10 +3,16 @@
 """
 Functions for parsing commit objects into patch objects
 """
+from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from comma.database.model import PatchData
+
+
+if TYPE_CHECKING:
+    from comma.cli import Session
 
 
 LOGGER = logging.getLogger(__name__)
@@ -17,17 +23,18 @@ class Upstream:
     Parent object for downstream operations
     """
 
-    def __init__(self, config, database, repo) -> None:
-        self.config = config
-        self.database = database
-        self.repo = repo
+    def __init__(self, session: Session) -> None:
+        self.config = session.config
+        self.database = session.database
+        self.repo = session.repo
+        self.session = session
 
     def process_commits(self, force_update=False):
         """
         Generate patches for commits affecting tracked paths
         """
 
-        paths = self.repo.get_tracked_paths(self.config.upstream.sections)
+        paths = self.session.get_tracked_paths()
         added = 0
         updated = 0
         total = 0

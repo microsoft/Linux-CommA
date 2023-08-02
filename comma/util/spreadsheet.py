@@ -4,12 +4,14 @@
 Functions for exporting data to Excel spreadsheets
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple
 
 import git
 import openpyxl
@@ -21,6 +23,10 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from comma.database.model import MonitoringSubjects, MonitoringSubjectsMissingPatches, PatchData
 from comma.exceptions import CommaSpreadsheetError
+
+
+if TYPE_CHECKING:
+    from comma.cli import Session
 
 
 LOGGER = logging.getLogger(__name__)
@@ -134,10 +140,11 @@ class Spreadsheet:
     Parent object for symbol operations
     """
 
-    def __init__(self, config, database, repo) -> None:
-        self.config = config
-        self.database = database
-        self.repo = repo
+    def __init__(self, session: Session) -> None:
+        self.config = session.config
+        self.database = session.database
+        self.repo = session.repo
+        self.session = session
 
     def get_db_commits(
         self, since: Optional[float] = None, excluded_paths: Optional[Iterable[str]] = None

@@ -6,6 +6,7 @@ CLI entry point for program
 
 import logging
 import sys
+from functools import cached_property
 from typing import Optional, Sequence
 
 from pydantic import ValidationError
@@ -17,7 +18,7 @@ from comma.config import BasicConfig, FullConfig
 from comma.database.driver import DatabaseDriver
 from comma.database.model import Distros, MonitoringSubjects
 from comma.downstream import Downstream
-from comma.exceptions import CommaError
+from comma.exceptions import CommaError, CommaPluginError
 from comma.upstream import Upstream
 from comma.util.spreadsheet import Spreadsheet
 from comma.util.symbols import Symbols
@@ -36,6 +37,15 @@ class Session:
     def __init__(self, config, database) -> None:
         self.config: FullConfig = config
         self.database: DatabaseDriver = database
+        self._tracked_paths = None
+
+    @cached_property
+    def repo(self):
+        """
+        Cached property for default repo lookup
+        """
+
+        return self._get_repo(since=self.config.upstream_since)
 
     def _get_repo(
         self,
@@ -84,20 +94,18 @@ class Session:
                         for target in self.config.downstream
                     )
 
-        repo = self._get_repo(since=self.config.upstream_since)
-
         if options.print_tracked_paths:
-            for path in repo.get_tracked_paths(self.config.upstream.sections):
+            for path in self.get_tracked_paths():
                 print(path)
 
         if options.upstream:
             LOGGER.info("Begin monitoring upstream")
-            Upstream(self.config, self.database, repo).process_commits(options.force_update)
+            Upstream(self).process_commits(options.force_update)
             LOGGER.info("Finishing monitoring upstream")
 
         if options.downstream:
             LOGGER.info("Begin monitoring downstream")
-            Downstream(self.config, self.database, repo).monitor()
+            Downstream(self).monitor()
             LOGGER.info("Finishing monitoring downstream")
 
     def symbols(self, options):
@@ -106,10 +114,44 @@ class Session:
         """
         repo = self._get_repo(suffix="sym")
 
-        missing = Symbols(self.config, self.database, repo).get_missing_commits(options.file)
+        missing = Symbols(self, repo).get_missing_commits(options.file)
         print("Missing symbols from:")
         for commit in missing:
             print(f"  {commit}")
+
+    def get_tracked_paths(self):
+        """
+        Get list of files paths to monitor for upstream
+        This is based on the configuration and can include specific paths or paths dynamically
+        determined via plugins
+        """
+        if self._tracked_paths is not None:
+            return self._tracked_paths
+
+        paths = set()
+        for path in self.config.upstream.paths:
+            plugin_name = None
+            if isinstance(path, dict):
+                # Configuration verifies there is only one entry and the name starts with '^'
+                plugin_name = next(iter(path))[1:]
+            elif path.startswith("^"):
+                plugin_name = path[1:]
+
+            if plugin_name is None:
+                paths.add(path)
+                continue
+
+            plugin = self.config.plugins.paths.get(plugin_name)
+
+            if plugin is None:
+                raise CommaPluginError(f"No plugin with the name '{plugin_name}' is loaded")
+
+            paths |= plugin(self, path[f"^{plugin_name}"]).get_paths()
+
+        # Sort and cache results
+        self._tracked_paths = tuple(sorted(paths))
+
+        return self._tracked_paths
 
     def downstream(self, options):
         """
@@ -136,8 +178,7 @@ class Session:
         Handle spreadsheet subcommand
         """
 
-        repo = self._get_repo(since=self.config.upstream_since)
-        spreadsheet = Spreadsheet(self.config, self.database, repo)
+        spreadsheet = Spreadsheet(self)
 
         if options.export_commits:
             spreadsheet.export_commits(options.in_file, options.out_file)
@@ -168,7 +209,11 @@ def main(args: Optional[Sequence[str]] = None):
 
     # If a full configuration is required, CLI parser would ensure this is set
     if options.config:
-        options_values = {field: getattr(options, field, None) for field in BasicConfig.__fields__}
+        options_values = {
+            field: getattr(options, field)
+            for field in BasicConfig.model_fields
+            if hasattr(options, field)
+        }
         try:
             config = FullConfig(**YAML.load(options.config) | options_values)
         except (ValidationError, YAMLError) as e:

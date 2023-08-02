@@ -19,3 +19,7 @@ class CommaDataError(CommaError):
 
 class CommaSpreadsheetError(CommaError):
     """Errors with spreadsheet operations"""
+
+
+class CommaPluginError(CommaError):
+    """Errors due to plugins"""
