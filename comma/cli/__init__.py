@@ -211,7 +211,7 @@ def main(args: Optional[Sequence[str]] = None):
     if options.config:
         options_values = {
             field: getattr(options, field)
-            for field in BasicConfig.__fields__
+            for field in BasicConfig.model_fields
             if hasattr(options, field)
         }
         try:

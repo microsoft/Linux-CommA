@@ -21,7 +21,7 @@ dependencies = [
   "sqlalchemy[mssql] ~= 1.4.48",
   "openpyxl ~= 3.1.2",
   "pluginlib",
-  "pydantic ~= 1.10.9",
+  "pydantic",
   "ruamel.yaml ~= 0.17.32",
 
 ]
