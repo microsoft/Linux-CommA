@@ -3,13 +3,18 @@
 """
 Functions for generating symbol maps
 """
+from __future__ import annotations
 
 import logging
 import subprocess
 from pathlib import Path
-from typing import Iterable
+from typing import TYPE_CHECKING, Iterable
 
 from comma.database.model import PatchData
+
+
+if TYPE_CHECKING:
+    from comma.cli import Session
 
 
 LOGGER = logging.getLogger(__name__)
@@ -42,10 +47,11 @@ class Symbols:
     Parent object for symbol operations
     """
 
-    def __init__(self, config, database, repo) -> None:
-        self.config = config
-        self.database = database
+    def __init__(self, session: Session, repo) -> None:
+        self.config = session.config
+        self.database = session.database
         self.repo = repo
+        self.session = session
 
     def get_missing_commits(self, symbol_file):
         """Returns a sorted list of commit IDs whose symbols are missing from the given file"""
@@ -69,7 +75,7 @@ class Symbols:
                     .order_by(PatchData.commitTime)
                     .all()
                 ],
-                self.repo.get_tracked_paths(self.config.upstream.sections),
+                self.session.get_tracked_paths(),
             )
 
     # TODO (Issue 65): Avoid hard-coding commit ID

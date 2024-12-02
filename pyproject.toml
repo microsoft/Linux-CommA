@@ -20,7 +20,8 @@ dependencies = [
   "fuzzywuzzy[speedup] ~= 0.18.0",
   "sqlalchemy[mssql] ~= 1.4.48",
   "openpyxl ~= 3.1.2",
-  "pydantic ~= 1.10.9",
+  "pluginlib",
+  "pydantic",
   "ruamel.yaml ~= 0.17.32",
   "azure-identity ~= 1.17.1",
 ]

@@ -4,7 +4,7 @@
 Utility functions and classes
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import approxidate
 
@@ -17,7 +17,7 @@ class DateString(str):
     def __init__(self, object_, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.epoch: float = approxidate.approx(str(object_))
-        self.datetime = datetime.utcfromtimestamp(self.epoch)
+        self.datetime = datetime.fromtimestamp(self.epoch, tz=timezone.utc)
 
 
 def format_diffs(commit, paths):
