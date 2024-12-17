@@ -27,6 +27,8 @@ class GitRetry:
     errors = (
         "fatal: expected 'acknowledgments'",
         "error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500",
+        "The requested URL returned error: 504",
+        "remote: Path translation timed out",
     )
 
     def __init__(self, func: callable, max_tries: int = 3):
@@ -297,7 +299,7 @@ class Repo:
 
         return tuple(
             line.split("/", 1)[-1]
-            for line in self.obj.git.ls_remote(
+            for line in GitRetry(self.obj.git.ls_remote)(
                 "--tags", "--refs", "--sort=v:refname", remote
             ).splitlines()
         )
