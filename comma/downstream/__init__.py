@@ -6,6 +6,8 @@ Operations for downstream targets
 
 import logging
 
+import git
+
 from comma.database.model import (
     Distros,
     MonitoringSubjects,
@@ -82,9 +84,14 @@ class Downstream:
                     remote_ref,
                     subject.distroID,
                 )
-                repo.fetch_remote_ref(
-                    subject.distroID, local_ref, remote_ref, since=self.config.downstream_since
-                )
+                try:
+                    repo.fetch_remote_ref(
+                        subject.distroID, local_ref, remote_ref, since=self.config.downstream_since
+                    )
+                except git.GitCommandError as e:
+                    LOGGER.error("Failed to fetch remote ref %s: %s", remote_ref, e)
+                    LOGGER.info("Skipping %s", subject.distroID)
+                    continue
 
                 LOGGER.info(
                     "(%d of %d) Monitoring Script starting for distro: %s, revision: %s",
