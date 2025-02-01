@@ -249,9 +249,8 @@ class Spreadsheet:
                 try:
                     worksheet.get_column(repo)
                 except StopIteration as e:
-                    raise CommaSpreadsheetError(
-                        f"No column with distro '{repo}', please fix spreadsheet!"
-                    ) from e
+                    max_column = worksheet.max_column + 1
+                    worksheet.cell(row=1, column=max_column, value=repo)
 
                 # Get the latest monitoring subject for the remote
                 targets[repo] = (
