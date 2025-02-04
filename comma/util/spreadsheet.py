@@ -35,6 +35,18 @@ class WorksheetWrapper:
     def __init__(self, worksheet: Worksheet) -> None:
         self.worksheet = worksheet
 
+    # Allow WorksheetWrapper to behave like a subclass of Worksheet
+    def __getattr__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+        return getattr(self.worksheet, name)
+
+    def __setattr__(self, name, value):
+        if name == 'worksheet':
+            super().__setattr__(name, value)
+        else:
+            setattr(self.worksheet, name, value)
+
     @lru_cache  # noqa: B019
     def get_column(self, name: str) -> int:
         """Get column by letter"""
