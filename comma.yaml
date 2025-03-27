@@ -16,6 +16,7 @@ upstream:
   sections:
     - Hyper-V/Azure CORE AND DRIVERS
     - DRM DRIVER FOR HYPERV SYNTHETIC VIDEO DEVICE
+    - MICROSOFT MANA RDMA DRIVER
 
 downstream:
   - repo: SUSE12
