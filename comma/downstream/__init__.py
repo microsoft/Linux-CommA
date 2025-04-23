@@ -216,6 +216,6 @@ class Downstream:
             tag_names = tuple(
                 tag
                 for tag in self.repo.get_remote_tags(distro_id)
-                if "azure" in tag and all(label not in tag for label in ("edge", "cvm", "fde"))
+                if "azure" in tag and all(label not in tag for label in ("edge", "cvm", "fde", "nvidia"))
             )
             self.database.update_revisions_for_distro(distro_id, tag_names[-2:])
