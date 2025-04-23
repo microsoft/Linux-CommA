@@ -51,11 +51,6 @@ class Downstream:
                     LOGGER.debug("Adding remote %s from %s", distro_id, url)
                     repo.create_remote(distro_id, url=url)
 
-        # Update stored revisions for repos as appropriate
-        LOGGER.info("Updating tracked revisions for each repo.")
-        for _repo in self.database.get_downstream_repos():
-            self.update_tracked_revisions(_repo)
-
         with self.database.get_session() as session:
             subjects = session.query(MonitoringSubjects).all()
             total = len(subjects)
@@ -201,21 +196,3 @@ class Downstream:
 
         return missing_patches
 
-    def update_tracked_revisions(self, distro_id):
-        """
-        This updates the stored two latest revisions stored per distro_id.
-        This method contains distro-specific logic
-
-        repo: the git repo object of whatever repo to check revisions in
-        """
-        # This sorts alphabetically and not by the actual date
-        # While technically wrong, this is preferred
-        # ls-remote could naturally sort by date, but that would require all the objects to be local
-
-        if distro_id.startswith("Ubuntu"):
-            tag_names = tuple(
-                tag
-                for tag in self.repo.get_remote_tags(distro_id)
-                if "azure" in tag and all(label not in tag for label in ("edge", "cvm", "fde"))
-            )
-            self.database.update_revisions_for_distro(distro_id, tag_names[-2:])
