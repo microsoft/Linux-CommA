@@ -9,6 +9,7 @@ import logging
 import os
 import struct
 import urllib
+import pyodbc
 from contextlib import contextmanager
 from typing import Any
 
@@ -41,11 +42,23 @@ class DatabaseDriver:
             engine = sqlalchemy.create_engine(f"sqlite:///{db_file}", echo=echo)
         else:
             LOGGER.info("Connecting to remote database...")
-            engine = self.create_engine("ODBC Driver 17 for SQL Server")
+            engine = self.create_engine()
 
         Base.metadata.bind = engine
         Base.metadata.create_all(engine)
         self.session_factory = sqlalchemy.orm.sessionmaker(bind=engine)
+
+    def get_driver_name(self) -> str:
+        driver_names = [x for x in pyodbc.drivers() if x.endswith(" for SQL Server")]
+        LOGGER.debug("Available ODBC drivers: %s", driver_names)
+        if not driver_names:
+            raise CommaDatabaseError(
+                "No ODBC drivers found. Please install the Microsoft ODBC Driver for SQL Server."
+            )
+        
+        driver_names.sort()
+        LOGGER.debug("Using ODBC driver: %s", driver_names[-1])
+        return driver_names[-1]
 
     def get_token(self) -> bytes:
         try:
@@ -57,7 +70,8 @@ class DatabaseDriver:
         except Exception as e:
             raise RuntimeError("Failed to obtain Azure AD token") from e
 
-    def create_engine(self, driver: str) -> Any:
+    def create_engine(self) -> Any:
+        driver = self.get_driver_name()
         if os.environ.get('COMMA_DB_USERNAME') and os.environ.get('COMMA_DB_PW'):
             return self.create_engine_with_pass(driver)
         else:
