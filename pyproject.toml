@@ -27,7 +27,7 @@ dependencies = [
 dynamic = ["version"]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.8,<3.14"
 authors = [
   {name = "Ryan Feldman", email = "ryfeldma@microsoft.com"},
   {name = "Abhishek Marathe", email = "abmarath@microsoft.com"},
